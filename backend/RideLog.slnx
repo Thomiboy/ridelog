@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RideLog.Api/RideLog.Api.csproj" />
+    <Project Path="src/RideLog.Application/RideLog.Application.csproj" />
+    <Project Path="src/RideLog.Domain/RideLog.Domain.csproj" />
+    <Project Path="src/RideLog.Infrastructure/RideLog.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RideLog.UnitTests/RideLog.UnitTests.csproj" />
+  </Folder>
+</Solution>
