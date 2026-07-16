@@ -1,0 +1,148 @@
+using System.Text;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using RideLog.Application.Import;
+using RideLog.Domain.Rides;
+using RideLog.Infrastructure.Import;
+using RideLog.Infrastructure.Persistence;
+
+namespace RideLog.UnitTests.Import;
+
+public sealed class ActivityImporterTests : IDisposable
+{
+    private readonly SqliteConnection _connection;
+    private readonly DbContextOptions<RideLogDbContext> _options;
+
+    public ActivityImporterTests()
+    {
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+        _options = new DbContextOptionsBuilder<RideLogDbContext>().UseSqlite(_connection).Options;
+        using var context = new RideLogDbContext(_options);
+        context.Database.EnsureCreated();
+    }
+
+    public void Dispose() => _connection.Dispose();
+
+    private const string StartTime = "2026-06-01T08:00:00Z";
+
+    private static byte[] Gpx(string start = StartTime, string end = "2026-06-01T09:00:00Z") => Encoding.UTF8.GetBytes($"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+          <trk><type>cycling</type><trkseg>
+            <trkpt lat="47.5" lon="19.0"><ele>100</ele><time>{start}</time></trkpt>
+            <trkpt lat="47.6" lon="19.1"><ele>150</ele><time>{end}</time></trkpt>
+          </trkseg></trk>
+        </gpx>
+        """);
+
+    private ActivityImporter NewImporter(RideLogDbContext context) =>
+        new(context, [new GpxActivityParser(), new TcxActivityParser()]);
+
+    [Fact]
+    public async Task Imports_a_gpx_file_as_a_ride_with_route_and_raw_file()
+    {
+        ImportSummary summary;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            summary = await NewImporter(context).ImportAsync([new ActivityFile("ride.gpx", Gpx())], "user-1");
+        }
+
+        Assert.Equal(ImportOutcome.Imported, Assert.Single(summary.Files).Outcome);
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            var ride = await context.Rides.Include(r => r.RawFiles).SingleAsync();
+            Assert.Equal("user-1", ride.UserId);
+            Assert.Equal(RideSource.Import, ride.Source);
+            Assert.Equal("cycling", ride.Sport);
+            Assert.False(string.IsNullOrEmpty(ride.RoutePolyline));
+
+            var raw = Assert.Single(ride.RawFiles);
+            Assert.Equal(RawFileFormat.Gpx, raw.Format);
+            Assert.Equal("ride.gpx", raw.FileName);
+        }
+    }
+
+    [Fact]
+    public async Task Re_importing_an_overlapping_ride_is_skipped()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync([new ActivityFile("ride.gpx", Gpx())], "user-1");
+        }
+
+        ImportSummary second;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            // Same time window, different file name — still the same ride.
+            second = await NewImporter(context).ImportAsync([new ActivityFile("again.gpx", Gpx())], "user-1");
+        }
+
+        Assert.Equal(ImportOutcome.Skipped, Assert.Single(second.Files).Outcome);
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Equal(1, await verify.Rides.CountAsync());
+        }
+    }
+
+    [Fact]
+    public async Task Another_user_may_import_a_ride_at_the_same_time()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync([new ActivityFile("ride.gpx", Gpx())], "user-1");
+        }
+
+        ImportSummary other;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            other = await NewImporter(context).ImportAsync([new ActivityFile("ride.gpx", Gpx())], "user-2");
+        }
+
+        Assert.Equal(ImportOutcome.Imported, Assert.Single(other.Files).Outcome);
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Equal(2, await verify.Rides.CountAsync());
+        }
+    }
+
+    [Fact]
+    public async Task A_malformed_file_fails_without_aborting_the_batch()
+    {
+        var malformed = Encoding.UTF8.GetBytes("<gpx>not really</gpx>");
+
+        ImportSummary summary;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            summary = await NewImporter(context).ImportAsync(
+                [new ActivityFile("broken.gpx", malformed), new ActivityFile("ride.gpx", Gpx())],
+                "user-1");
+        }
+
+        Assert.Equal(1, summary.Failed);
+        Assert.Equal(1, summary.Imported);
+        Assert.Equal(ImportOutcome.Failed, summary.Files[0].Outcome);
+        Assert.NotNull(summary.Files[0].Error);
+        Assert.Equal(ImportOutcome.Imported, summary.Files[1].Outcome);
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Equal(1, await verify.Rides.CountAsync());
+        }
+    }
+
+    [Fact]
+    public async Task An_unsupported_extension_fails()
+    {
+        ImportSummary summary;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            summary = await NewImporter(context).ImportAsync([new ActivityFile("notes.txt", [1, 2, 3])], "user-1");
+        }
+
+        Assert.Equal(ImportOutcome.Failed, Assert.Single(summary.Files).Outcome);
+    }
+}

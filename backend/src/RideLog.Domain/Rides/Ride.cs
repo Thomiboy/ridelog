@@ -45,6 +45,5 @@ public class Ride
     /// </summary>
     public bool Overlaps(Ride other)
         => UserId == other.UserId
-           && StartTime < other.EndTime
-           && other.StartTime < EndTime;
+           && RideOverlap.Intersects(StartTime, EndTime, other.StartTime, other.EndTime);
 }

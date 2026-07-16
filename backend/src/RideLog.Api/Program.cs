@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using RideLog.Application.Auth;
+using RideLog.Application.Import;
 using RideLog.Infrastructure.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ builder.Services.AddRideLogPersistence(
     builder.Configuration.GetConnectionString("RideLog")
         ?? throw new InvalidOperationException("Connection string 'RideLog' is missing."));
 builder.Services.AddRideLogAuth(builder.Configuration);
+builder.Services.AddRideLogImport();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("JWT configuration ('Jwt') is missing.");
@@ -79,6 +81,31 @@ app.MapGet("/auth/me", (ClaimsPrincipal user) => Results.Ok(new
         roles = user.FindAll(ClaimTypes.Role).Select(c => c.Value),
     }))
     .RequireAuthorization(AdminSeedOptions.RoleName);
+
+// Admin-only historical GPX/TCX bulk import; returns a per-file result.
+app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, ClaimsPrincipal user) =>
+{
+    if (!request.HasFormContentType)
+    {
+        return Results.BadRequest("Expected a multipart/form-data upload.");
+    }
+
+    var form = await request.ReadFormAsync();
+    var userId = user.FindFirstValue("sub")!;
+
+    var files = new List<ActivityFile>();
+    foreach (var formFile in form.Files)
+    {
+        using var buffer = new MemoryStream();
+        await formFile.CopyToAsync(buffer);
+        files.Add(new ActivityFile(formFile.FileName, buffer.ToArray()));
+    }
+
+    var summary = await importer.ImportAsync(files, userId);
+    return Results.Ok(summary);
+})
+    .RequireAuthorization(AdminSeedOptions.RoleName)
+    .DisableAntiforgery();
 
 app.Run();
 
