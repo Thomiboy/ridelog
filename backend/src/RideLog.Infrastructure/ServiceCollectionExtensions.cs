@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RideLog.Application.Auth;
+using RideLog.Application.Import;
 using RideLog.Infrastructure.Auth;
+using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 
 // Placed in the DI namespace so callers get the extensions without an extra using.
@@ -33,6 +35,16 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<RideLogInitializer>();
+
+        return services;
+    }
+
+    /// <summary>Registers the GPX/TCX file parsers and the historical-import service.</summary>
+    public static IServiceCollection AddRideLogImport(this IServiceCollection services)
+    {
+        services.AddScoped<IActivityFileParser, GpxActivityParser>();
+        services.AddScoped<IActivityFileParser, TcxActivityParser>();
+        services.AddScoped<IActivityImporter, ActivityImporter>();
 
         return services;
     }
