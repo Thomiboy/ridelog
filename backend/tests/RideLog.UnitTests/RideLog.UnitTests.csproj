@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
@@ -23,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\RideLog.Application\RideLog.Application.csproj" />
     <ProjectReference Include="..\..\src\RideLog.Infrastructure\RideLog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\RideLog.Api\RideLog.Api.csproj" />
   </ItemGroup>
 
 </Project>
