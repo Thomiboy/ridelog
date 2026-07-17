@@ -18,7 +18,22 @@ const en = {
     columns: { date: 'Date', distance: 'Distance', duration: 'Duration', avgSpeed: 'Avg speed', elevation: 'Elevation' },
   },
   rideDetail: { title: 'Ride detail', placeholder: 'Ride details and route map will appear here.' },
-  admin: { title: 'Admin', placeholder: 'Sync and upload actions will appear here.' },
+  admin: {
+    title: 'Admin',
+    polar: { title: 'Polar', hint: 'Connect your Polar account.', connect: 'Connect Polar' },
+    import: {
+      title: 'Import history',
+      hint: 'Upload GPX/TCX files.',
+      button: 'Import',
+      result: 'Imported {{imported}}, skipped {{skipped}}, failed {{failed}}.',
+    },
+    sync: {
+      title: 'Sync',
+      hint: 'Pull new rides from Polar now.',
+      button: 'Sync now',
+      result: 'Imported {{imported}}, skipped {{skipped}}, failed {{failed}}.',
+    },
+  },
   login: {
     title: 'Log in',
     email: 'Email',

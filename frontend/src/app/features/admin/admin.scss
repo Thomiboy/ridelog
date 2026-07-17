@@ -1,0 +1,26 @@
+.admin {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 40rem;
+}
+
+.card {
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+
+  h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+  }
+
+  button {
+    margin-top: 0.5rem;
+  }
+
+  .result {
+    margin-bottom: 0;
+    color: #333;
+  }
+}

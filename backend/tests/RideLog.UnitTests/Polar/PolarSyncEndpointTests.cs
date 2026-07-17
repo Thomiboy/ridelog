@@ -87,18 +87,18 @@ public class PolarSyncEndpointTests(PolarApiFactory factory) : IClassFixture<Pol
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    private sealed record AuthorizeResponse(string AuthorizeUrl);
+
     [Fact]
-    public async Task Admin_authorize_redirects_to_polar()
+    public async Task Admin_authorize_returns_the_polar_url_for_the_spa()
     {
-        var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-        });
+        var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AdminTokenAsync(client));
 
         var response = await client.GetAsync("/polar/authorize");
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.StartsWith("https://flow.polar.com/oauth2/authorization", response.Headers.Location!.ToString());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<AuthorizeResponse>();
+        Assert.StartsWith("https://flow.polar.com/oauth2/authorization", body!.AuthorizeUrl);
     }
 }

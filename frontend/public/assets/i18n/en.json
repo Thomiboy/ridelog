@@ -32,7 +32,23 @@
   },
   "admin": {
     "title": "Admin",
-    "placeholder": "Sync and upload actions will appear here."
+    "polar": {
+      "title": "Polar",
+      "hint": "Connect your Polar account so new rides sync automatically.",
+      "connect": "Connect Polar"
+    },
+    "import": {
+      "title": "Import history",
+      "hint": "Upload GPX/TCX files exported from Polar Flow.",
+      "button": "Import",
+      "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
+    },
+    "sync": {
+      "title": "Sync",
+      "hint": "Pull new rides from Polar now.",
+      "button": "Sync now",
+      "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
+    }
   },
   "login": {
     "title": "Log in",
