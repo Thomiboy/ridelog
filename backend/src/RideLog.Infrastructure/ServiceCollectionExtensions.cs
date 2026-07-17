@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
+using RideLog.Application.Polar;
 using RideLog.Infrastructure.Auth;
 using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
+using RideLog.Infrastructure.Polar;
 
 // Placed in the DI namespace so callers get the extensions without an extra using.
 namespace Microsoft.Extensions.DependencyInjection;
@@ -45,6 +47,23 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IActivityFileParser, GpxActivityParser>();
         services.AddScoped<IActivityFileParser, TcxActivityParser>();
         services.AddScoped<IActivityImporter, ActivityImporter>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the Polar AccessLink OAuth flow, API client, encrypted token store, and sync service.
+    /// Depends on the GPX/TCX parsers from <see cref="AddRideLogImport"/>.
+    /// </summary>
+    public static IServiceCollection AddRideLogPolar(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<PolarOptions>(configuration.GetSection(PolarOptions.SectionName));
+        services.AddDataProtection();
+
+        services.AddScoped<IPolarTokenStore, PolarTokenStore>();
+        services.AddScoped<IPolarSyncService, PolarSyncService>();
+        services.AddHttpClient<IPolarClient, PolarApiClient>();
+        services.AddHttpClient<IPolarOAuth, PolarOAuthClient>();
 
         return services;
     }

@@ -10,6 +10,7 @@ public class RideLogDbContext(DbContextOptions<RideLogDbContext> options)
 {
     public DbSet<Ride> Rides => Set<Ride>();
     public DbSet<RawFile> RawFiles => Set<RawFile>();
+    public DbSet<PolarConnection> PolarConnections => Set<PolarConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

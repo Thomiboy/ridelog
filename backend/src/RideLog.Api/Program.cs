@@ -1,10 +1,14 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
+using RideLog.Application.Polar;
 using RideLog.Infrastructure.Auth;
+using RideLog.Infrastructure.Polar;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +19,7 @@ builder.Services.AddRideLogPersistence(
         ?? throw new InvalidOperationException("Connection string 'RideLog' is missing."));
 builder.Services.AddRideLogAuth(builder.Configuration);
 builder.Services.AddRideLogImport();
+builder.Services.AddRideLogPolar(builder.Configuration);
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("JWT configuration ('Jwt') is missing.");
@@ -106,6 +111,60 @@ app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, C
 })
     .RequireAuthorization(AdminSeedOptions.RoleName)
     .DisableAntiforgery();
+
+// Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
+const string OAuthStatePurpose = "Polar.OAuthState";
+
+app.MapGet("/polar/authorize", (IPolarOAuth oauth, IDataProtectionProvider protection, ClaimsPrincipal user) =>
+{
+    var state = protection.CreateProtector(OAuthStatePurpose).Protect(user.FindFirstValue("sub")!);
+    return Results.Redirect(oauth.BuildAuthorizeUrl(state));
+})
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
+app.MapGet("/polar/callback", async (
+    string code, string state, IPolarOAuth oauth, IPolarTokenStore tokenStore, IDataProtectionProvider protection) =>
+{
+    string appUserId;
+    try
+    {
+        appUserId = protection.CreateProtector(OAuthStatePurpose).Unprotect(state);
+    }
+    catch (System.Security.Cryptography.CryptographicException)
+    {
+        return Results.BadRequest("Invalid OAuth state.");
+    }
+
+    var token = await oauth.ExchangeCodeAsync(code);
+    await tokenStore.SaveAsync(appUserId, token);
+    return Results.Ok(new { linked = true });
+});
+
+// Sync accepts an admin JWT (manual trigger) or the shared secret header (the cron).
+app.MapPost("/sync", async (
+    HttpRequest request,
+    IPolarSyncService sync,
+    IPolarTokenStore tokenStore,
+    ClaimsPrincipal user,
+    IOptions<PolarOptions> polarOptions) =>
+{
+    var secret = polarOptions.Value.SyncSharedSecret;
+    var providedSecret = request.Headers["X-Sync-Secret"].ToString();
+    var authorized = user.IsInRole(AdminSeedOptions.RoleName)
+        || (!string.IsNullOrEmpty(secret) && providedSecret == secret);
+    if (!authorized)
+    {
+        return Results.Unauthorized();
+    }
+
+    var appUserId = user.FindFirstValue("sub") ?? (await tokenStore.GetConnectionAsync())?.AppUserId;
+    if (appUserId is null)
+    {
+        return Results.BadRequest("No Polar account is linked.");
+    }
+
+    return Results.Ok(await sync.SyncAsync(appUserId));
+});
 
 app.Run();
 
