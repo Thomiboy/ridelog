@@ -59,10 +59,17 @@ control via user-secrets (issuer/audience, admin email and CORS origin ship in
 cd backend/src/RideLog.Api
 dotnet user-secrets set "Jwt:SigningKey" "<random string, at least 32 bytes>"
 dotnet user-secrets set "AdminUser:Password" "<initial admin password>"
+
+# Polar AccessLink (from https://admin.polaraccesslink.com)
+dotnet user-secrets set "Polar:ClientId" "<polar client id>"
+dotnet user-secrets set "Polar:ClientSecret" "<polar client secret>"
+# Shared secret the hourly sync cron sends in the X-Sync-Secret header
+dotnet user-secrets set "Polar:SyncSharedSecret" "<random string>"
 ```
 
 Apply the schema with `dotnet ef database update --project ../RideLog.Infrastructure`.
-The admin user (`AdminUser:Email`) is seeded on first run.
+The admin user (`AdminUser:Email`) is seeded on first run. Link Polar by signing in
+and visiting `/polar/authorize`; the hourly cron calls `/sync` with the shared secret.
 
 ## Roadmap
 

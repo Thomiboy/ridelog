@@ -14,10 +14,11 @@ namespace RideLog.UnitTests.Auth;
 /// Boots the real API pipeline for thin HTTP tests, swapping SQL Server for a shared
 /// in-memory SQLite database and supplying JWT + seeded-admin configuration.
 /// </summary>
-public sealed class RideLogApiFactory : WebApplicationFactory<Program>
+public class RideLogApiFactory : WebApplicationFactory<Program>
 {
     public const string AdminEmail = "admin@ridelog.test";
     public const string AdminPassword = "Str0ng!Passw0rd";
+    public const string SyncSharedSecret = "cron-shared-secret";
 
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 
@@ -37,6 +38,9 @@ public sealed class RideLogApiFactory : WebApplicationFactory<Program>
             ["AdminUser:Email"] = AdminEmail,
             ["AdminUser:Password"] = AdminPassword,
             ["Cors:AllowedOrigins:0"] = "https://localhost:4200",
+            ["Polar:SyncSharedSecret"] = SyncSharedSecret,
+            ["Polar:ClientId"] = "test-client",
+            ["Polar:RedirectUri"] = "https://localhost:7016/polar/callback",
         };
         foreach (var (key, value) in settings)
         {
@@ -57,7 +61,14 @@ public sealed class RideLogApiFactory : WebApplicationFactory<Program>
             }
 
             services.AddDbContext<RideLogDbContext>(options => options.UseSqlite(_connection));
+
+            ConfigureExtraServices(services);
         });
+    }
+
+    /// <summary>Hook for subclasses to swap in test doubles (e.g. a fake Polar client).</summary>
+    protected virtual void ConfigureExtraServices(IServiceCollection services)
+    {
     }
 
     protected override void Dispose(bool disposing)
