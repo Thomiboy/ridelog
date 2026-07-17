@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { RideDetail, RideSummary } from './ride.models';
+import type { Paged, RideDetail, RideSummary } from './ride.models';
 
 /** Typed client for the public ride read endpoints. */
 @Injectable({ providedIn: 'root' })
@@ -10,8 +10,8 @@ export class RidesService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  getRides(): Observable<RideSummary[]> {
-    return this.http.get<RideSummary[]>(`${this.baseUrl}/rides`);
+  getRides(page = 1, pageSize = 20): Observable<Paged<RideSummary>> {
+    return this.http.get<Paged<RideSummary>>(`${this.baseUrl}/rides?page=${page}&pageSize=${pageSize}`);
   }
 
   getRide(id: string): Observable<RideDetail> {

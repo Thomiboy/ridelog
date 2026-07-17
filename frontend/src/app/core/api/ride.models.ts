@@ -1,4 +1,12 @@
-/** Summary of a ride for list views. Mirrors the backend read DTO (added in a later issue). */
+/** A page of results plus paging metadata, mirroring the backend PagedResult. */
+export interface Paged<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+/** Summary of a ride for list views. Mirrors the backend RideListItem DTO. */
 export interface RideSummary {
   id: string;
   startTime: string;

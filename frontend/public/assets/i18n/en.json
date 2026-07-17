@@ -15,7 +15,16 @@
   },
   "rides": {
     "title": "Rides",
-    "placeholder": "Your rides will appear here."
+    "empty": "No rides yet. Sign in as admin to import history or sync from Polar.",
+    "next": "Next",
+    "prev": "Previous",
+    "columns": {
+      "date": "Date",
+      "distance": "Distance",
+      "duration": "Duration",
+      "avgSpeed": "Avg speed",
+      "elevation": "Elevation"
+    }
   },
   "rideDetail": {
     "title": "Ride detail",
