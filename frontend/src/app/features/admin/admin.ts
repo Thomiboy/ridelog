@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AdminService } from '../../core/api/admin.service';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
-import type { ImportSummary, SyncSummary } from '../../core/api/admin.models';
+import type { ImportSummary, PolarStatus, SyncSummary } from '../../core/api/admin.models';
 
 @Component({
   selector: 'app-admin',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, DatePipe],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
 })
@@ -14,13 +15,23 @@ export class Admin {
   private readonly adminService = inject(AdminService);
   private readonly navigator = inject(ExternalNavigator);
 
+  readonly status = signal<PolarStatus | null>(null);
   readonly selectedFiles = signal<File[]>([]);
   readonly importResult = signal<ImportSummary | null>(null);
   readonly syncResult = signal<SyncSummary | null>(null);
   readonly busy = signal(false);
+  readonly failed = signal(false);
+
+  constructor() {
+    this.loadStatus();
+  }
 
   connectPolar(): void {
-    this.adminService.getPolarAuthorizeUrl().subscribe((r) => this.navigator.navigate(r.authorizeUrl));
+    this.failed.set(false);
+    this.adminService.getPolarAuthorizeUrl().subscribe({
+      next: (r) => this.navigator.navigate(r.authorizeUrl),
+      error: () => this.failed.set(true),
+    });
   }
 
   onFilesSelected(event: Event): void {
@@ -33,24 +44,45 @@ export class Admin {
     if (files.length === 0) {
       return;
     }
-    this.busy.set(true);
-    this.adminService.importRides(files).subscribe({
-      next: (result) => {
-        this.importResult.set(result);
-        this.busy.set(false);
-      },
-      error: () => this.busy.set(false),
-    });
+    this.run(() =>
+      this.adminService.importRides(files).subscribe({
+        next: (result) => {
+          this.importResult.set(result);
+          this.busy.set(false);
+        },
+        error: () => this.fail(),
+      }),
+    );
   }
 
   syncNow(): void {
-    this.busy.set(true);
-    this.adminService.sync().subscribe({
-      next: (result) => {
-        this.syncResult.set(result);
-        this.busy.set(false);
-      },
-      error: () => this.busy.set(false),
+    this.run(() =>
+      this.adminService.sync().subscribe({
+        next: (result) => {
+          this.syncResult.set(result);
+          this.busy.set(false);
+          this.loadStatus();
+        },
+        error: () => this.fail(),
+      }),
+    );
+  }
+
+  private loadStatus(): void {
+    this.adminService.getPolarStatus().subscribe({
+      next: (status) => this.status.set(status),
+      error: () => this.status.set(null),
     });
+  }
+
+  private run(action: () => unknown): void {
+    this.failed.set(false);
+    this.busy.set(true);
+    action();
+  }
+
+  private fail(): void {
+    this.busy.set(false);
+    this.failed.set(true);
   }
 }

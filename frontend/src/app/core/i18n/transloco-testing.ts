@@ -29,7 +29,14 @@ const en = {
   },
   admin: {
     title: 'Admin',
-    polar: { title: 'Polar', hint: 'Connect your Polar account.', connect: 'Connect Polar' },
+    error: 'Something went wrong. Please try again.',
+    polar: {
+      title: 'Polar',
+      hint: 'Connect your Polar account.',
+      connect: 'Connect Polar',
+      connected: 'Connected',
+      notConnected: 'Not connected',
+    },
     import: {
       title: 'Import history',
       hint: 'Upload GPX/TCX files.',
@@ -40,6 +47,8 @@ const en = {
       title: 'Sync',
       hint: 'Pull new rides from Polar now.',
       button: 'Sync now',
+      lastSync: 'Last sync:',
+      never: 'never',
       result: 'Imported {{imported}}, skipped {{skipped}}, failed {{failed}}.',
     },
   },

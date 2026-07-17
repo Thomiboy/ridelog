@@ -7,4 +7,7 @@ public interface IPolarTokenStore
 
     /// <summary>The current Polar connection, or null when no account is linked yet.</summary>
     Task<PolarConnectionInfo?> GetConnectionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Link and last-sync state for the admin UI.</summary>
+    Task<PolarStatus> GetStatusAsync(CancellationToken cancellationToken = default);
 }

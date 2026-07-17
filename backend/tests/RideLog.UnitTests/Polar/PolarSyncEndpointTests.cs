@@ -88,6 +88,35 @@ public class PolarSyncEndpointTests(PolarApiFactory factory) : IClassFixture<Pol
     }
 
     private sealed record AuthorizeResponse(string AuthorizeUrl);
+    private sealed record StatusResponse(bool Linked, DateTimeOffset? ConnectedAt, DateTimeOffset? LastSyncAt);
+
+    [Fact]
+    public async Task Status_requires_the_admin_role()
+    {
+        var response = await factory.CreateClient().GetAsync("/polar/status");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Status_reports_the_linked_connection_to_the_admin()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<IPolarTokenStore>();
+            await store.SaveAsync("admin-1", new PolarToken("tok", "pu-1"));
+        }
+
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await AdminTokenAsync(client));
+
+        var response = await client.GetAsync("/polar/status");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var status = await response.Content.ReadFromJsonAsync<StatusResponse>();
+        Assert.True(status!.Linked);
+        Assert.NotNull(status.ConnectedAt);
+    }
 
     [Fact]
     public async Task Admin_authorize_returns_the_polar_url_for_the_spa()

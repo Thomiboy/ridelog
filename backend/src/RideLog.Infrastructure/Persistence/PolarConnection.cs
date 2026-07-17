@@ -17,4 +17,7 @@ public class PolarConnection
     public required string AccessTokenProtected { get; set; }
 
     public required DateTimeOffset ConnectedAt { get; set; }
+
+    /// <summary>When the last sync run completed; null until the first sync.</summary>
+    public DateTimeOffset? LastSyncAt { get; set; }
 }

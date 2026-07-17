@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { Admin } from './admin';
 import { AdminService } from '../../core/api/admin.service';
@@ -9,6 +9,9 @@ import { translocoTesting } from '../../core/i18n/transloco-testing';
 describe('Admin', () => {
   function setup(overrides: Partial<Record<keyof AdminService, unknown>> = {}) {
     const adminService = {
+      getPolarStatus: vi
+        .fn()
+        .mockReturnValue(of({ linked: true, connectedAt: '2026-07-17T10:00:00Z', lastSyncAt: '2026-07-17T11:30:00Z' })),
       getPolarAuthorizeUrl: vi.fn().mockReturnValue(of({ authorizeUrl: 'https://flow.polar.com/x' })),
       sync: vi.fn().mockReturnValue(of({ imported: 3, skipped: 1, failed: 0 })),
       importRides: vi.fn().mockReturnValue(of({ files: [], imported: 2, skipped: 0, failed: 0 })),
@@ -44,6 +47,38 @@ describe('Admin', () => {
 
     expect(adminService.sync).toHaveBeenCalled();
     expect(el.textContent).toContain('3');
+  });
+
+  it('shows the Polar connection state and last sync time', () => {
+    const { el } = setup();
+
+    expect(el.textContent).toContain('Connected');
+    expect(el.querySelector('[data-last-sync]')?.textContent).toBeTruthy();
+  });
+
+  it('shows not connected when Polar is not linked', () => {
+    const { el } = setup({ getPolarStatus: vi.fn().mockReturnValue(of({ linked: false })) });
+
+    expect(el.textContent).toContain('Not connected');
+  });
+
+  it('refreshes the status after a sync', () => {
+    const { fixture, el, adminService } = setup();
+    expect(adminService.getPolarStatus).toHaveBeenCalledTimes(1);
+
+    (el.querySelector('[data-sync]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(adminService.getPolarStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows an error message when the sync fails', () => {
+    const { fixture, el } = setup({ sync: vi.fn().mockReturnValue(throwError(() => new Error('boom'))) });
+
+    (el.querySelector('[data-sync]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('went wrong');
   });
 
   it('imports selected files and shows the result', () => {
