@@ -36,6 +36,7 @@ const en = {
       connect: 'Connect Polar',
       connected: 'Connected',
       notConnected: 'Not connected',
+      justLinked: 'Polar account linked successfully.',
     },
     import: {
       title: 'Import history',

@@ -44,7 +44,8 @@
       "hint": "Connect your Polar account so new rides sync automatically.",
       "connect": "Connect Polar",
       "connected": "Connected",
-      "notConnected": "Not connected"
+      "notConnected": "Not connected",
+      "justLinked": "Polar account linked successfully."
     },
     "import": {
       "title": "Import history",

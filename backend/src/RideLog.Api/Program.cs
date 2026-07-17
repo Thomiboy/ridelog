@@ -141,8 +141,15 @@ app.MapGet("/polar/authorize", (IPolarOAuth oauth, IDataProtectionProvider prote
     .RequireAuthorization(AdminSeedOptions.RoleName);
 
 app.MapGet("/polar/callback", async (
-    string code, string state, IPolarOAuth oauth, IPolarTokenStore tokenStore, IDataProtectionProvider protection) =>
+    string code, string state, IPolarOAuth oauth, IPolarTokenStore tokenStore,
+    IDataProtectionProvider protection, ILogger<Program> logger) =>
 {
+    // Polar redirected the browser here, so always send the admin back to the app's admin
+    // page — with an error flag instead of a raw 500 when the exchange fails.
+    var frontend = allowedOrigins.FirstOrDefault();
+    string AdminUrl(string result) =>
+        frontend is null ? string.Empty : $"{frontend.TrimEnd('/')}/admin?polar={result}";
+
     string appUserId;
     try
     {
@@ -150,17 +157,24 @@ app.MapGet("/polar/callback", async (
     }
     catch (System.Security.Cryptography.CryptographicException)
     {
-        return Results.BadRequest("Invalid OAuth state.");
+        logger.LogWarning("Polar callback received an invalid OAuth state.");
+        return frontend is null ? Results.BadRequest("Invalid OAuth state.") : Results.Redirect(AdminUrl("error"));
     }
 
-    var token = await oauth.ExchangeCodeAsync(code);
-    await tokenStore.SaveAsync(appUserId, token);
+    try
+    {
+        var token = await oauth.ExchangeCodeAsync(code);
+        await tokenStore.SaveAsync(appUserId, token);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Polar code exchange failed.");
+        return frontend is null ? Results.Problem("Polar code exchange failed.") : Results.Redirect(AdminUrl("error"));
+    }
 
-    // Polar redirected the browser here, so send the admin back to the app's admin page.
-    var frontend = allowedOrigins.FirstOrDefault();
     return frontend is null
         ? Results.Ok(new { linked = true })
-        : Results.Redirect($"{frontend.TrimEnd('/')}/admin?polar=linked");
+        : Results.Redirect(AdminUrl("linked"));
 });
 
 // Sync accepts an admin JWT (manual trigger) or the shared secret header (the cron).

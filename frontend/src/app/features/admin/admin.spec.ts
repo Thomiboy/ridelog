@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { Admin } from './admin';
@@ -7,7 +8,7 @@ import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Admin', () => {
-  function setup(overrides: Partial<Record<keyof AdminService, unknown>> = {}) {
+  function setup(overrides: Partial<Record<keyof AdminService, unknown>> = {}, polarParam?: string) {
     const adminService = {
       getPolarStatus: vi
         .fn()
@@ -23,6 +24,12 @@ describe('Admin', () => {
       providers: [
         { provide: AdminService, useValue: adminService },
         { provide: ExternalNavigator, useValue: navigator },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { queryParamMap: convertToParamMap(polarParam ? { polar: polarParam } : {}) },
+          },
+        },
       ],
     });
     const fixture = TestBed.createComponent(Admin);
@@ -47,6 +54,18 @@ describe('Admin', () => {
 
     expect(adminService.sync).toHaveBeenCalled();
     expect(el.textContent).toContain('3');
+  });
+
+  it('shows a success note when returning from a successful Polar link', () => {
+    const { el } = setup({}, 'linked');
+
+    expect(el.textContent).toContain('linked');
+  });
+
+  it('shows an error when returning from a failed Polar link', () => {
+    const { el } = setup({}, 'error');
+
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('went wrong');
   });
 
   it('shows the Polar connection state and last sync time', () => {
