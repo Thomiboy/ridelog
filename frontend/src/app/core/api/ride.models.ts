@@ -21,6 +21,7 @@ export interface RideSummary {
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
+  source: string;
   maximumSpeedKmh?: number;
   maximumHeartRate?: number;
   averageCadence?: number;

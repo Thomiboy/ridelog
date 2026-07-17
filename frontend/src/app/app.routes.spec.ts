@@ -6,10 +6,11 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
+import { RideDetail } from './features/ride-detail/ride-detail';
 import { translocoTesting } from './core/i18n/transloco-testing';
 
 describe('app routing', () => {
-  async function navigate(url: string, admin = false) {
+  function configure(admin: boolean) {
     TestBed.configureTestingModule({
       imports: [translocoTesting()],
       providers: [
@@ -22,6 +23,10 @@ describe('app routing', () => {
         },
       ],
     });
+  }
+
+  async function navigate(url: string, admin = false) {
+    configure(admin);
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url);
     return harness.routeNativeElement?.textContent ?? '';
@@ -36,7 +41,10 @@ describe('app routing', () => {
   });
 
   it('serves the ride detail', async () => {
-    expect(await navigate('/rides/abc')).toContain('Ride detail');
+    configure(false);
+    const harness = await RouterTestingHarness.create();
+    const component = await harness.navigateByUrl('/rides/abc', RideDetail);
+    expect(component).toBeInstanceOf(RideDetail);
   });
 
   it('serves the login page', async () => {

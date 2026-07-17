@@ -17,7 +17,16 @@ const en = {
     prev: 'Previous',
     columns: { date: 'Date', distance: 'Distance', duration: 'Duration', avgSpeed: 'Avg speed', elevation: 'Elevation' },
   },
-  rideDetail: { title: 'Ride detail', placeholder: 'Ride details and route map will appear here.' },
+  rideDetail: {
+    distance: 'Distance',
+    duration: 'Duration',
+    avgSpeed: 'Avg speed',
+    maxSpeed: 'Max speed',
+    avgHr: 'Avg HR',
+    maxHr: 'Max HR',
+    elevation: 'Elevation',
+    cadence: 'Cadence',
+  },
   admin: {
     title: 'Admin',
     polar: { title: 'Polar', hint: 'Connect your Polar account.', connect: 'Connect Polar' },
