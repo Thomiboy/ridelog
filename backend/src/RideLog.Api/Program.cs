@@ -78,6 +78,11 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
 app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
     Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
 
+app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
+    await dispatcher.QueryAsync(new GetRideQuery(id)) is { } ride
+        ? Results.Ok(ride)
+        : Results.NotFound());
+
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {
     var token = await auth.LoginAsync(request.Email, request.Password);
