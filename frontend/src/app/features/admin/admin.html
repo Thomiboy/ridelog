@@ -4,6 +4,9 @@
   @if (failed()) {
     <p class="error" role="alert">{{ 'admin.error' | transloco }}</p>
   }
+  @if (justLinked()) {
+    <p class="status ok">{{ 'admin.polar.justLinked' | transloco }}</p>
+  }
 
   <section class="card">
     <h2>{{ 'admin.polar.title' | transloco }}</h2>

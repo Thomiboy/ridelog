@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AdminService } from '../../core/api/admin.service';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
@@ -14,6 +15,7 @@ import type { ImportSummary, PolarStatus, SyncSummary } from '../../core/api/adm
 export class Admin {
   private readonly adminService = inject(AdminService);
   private readonly navigator = inject(ExternalNavigator);
+  private readonly route = inject(ActivatedRoute);
 
   readonly status = signal<PolarStatus | null>(null);
   readonly selectedFiles = signal<File[]>([]);
@@ -21,8 +23,14 @@ export class Admin {
   readonly syncResult = signal<SyncSummary | null>(null);
   readonly busy = signal(false);
   readonly failed = signal(false);
+  readonly justLinked = signal(false);
 
   constructor() {
+    // The Polar callback lands back here with ?polar=linked|error.
+    const polar = this.route.snapshot.queryParamMap.get('polar');
+    this.justLinked.set(polar === 'linked');
+    this.failed.set(polar === 'error');
+
     this.loadStatus();
   }
 

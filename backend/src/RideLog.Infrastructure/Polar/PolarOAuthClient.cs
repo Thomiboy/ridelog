@@ -58,10 +58,12 @@ internal sealed class PolarOAuthClient(HttpClient http, IOptions<PolarOptions> o
 
     private async Task RegisterMemberAsync(string accessToken, string polarUserId, CancellationToken cancellationToken)
     {
+        // Polar's JSON is kebab-case ("member-id"), matching the rest of the AccessLink API.
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{_options.ApiBaseUrl.TrimEnd('/')}/v3/users")
         {
             Content = new StringContent(
-                JsonSerializer.Serialize(new { member_id = polarUserId }), Encoding.UTF8, "application/json"),
+                JsonSerializer.Serialize(new Dictionary<string, string> { ["member-id"] = polarUserId }),
+                Encoding.UTF8, "application/json"),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

@@ -8,10 +8,14 @@ internal sealed class MockHttpMessageHandler(Func<HttpRequestMessage, HttpRespon
 {
     public List<HttpRequestMessage> Requests { get; } = [];
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    /// <summary>Request bodies captured at send time (requests are disposed after the call).</summary>
+    public List<string?> RequestBodies { get; } = [];
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Requests.Add(request);
-        return Task.FromResult(responder(request));
+        RequestBodies.Add(request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken));
+        return responder(request);
     }
 
     public static HttpResponseMessage Json(string body) => new(HttpStatusCode.OK)
