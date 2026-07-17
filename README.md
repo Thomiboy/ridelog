@@ -90,9 +90,14 @@ AdminUser__Password            = <initial admin password>
 Polar__ClientId                = <polar client id>
 Polar__ClientSecret            = <polar client secret>
 Polar__SyncSharedSecret        = <random string, shared with the sync cron>
-Polar__RedirectUri             = https://ridelog-api.azurewebsites.net/polar/callback
+Polar__RedirectUri             = https://<app-default-domain>/polar/callback
 Cors__AllowedOrigins__0        = <Static Web App origin, set once the frontend is deployed>
 ```
+
+> The App Service default domain includes a unique suffix (e.g.
+> `ridelog-api-xxxx.polandcentral-01.azurewebsites.net`); use that exact host in
+> `Polar__RedirectUri`, whitelist the same callback URL on the Polar client, and keep it in
+> sync with `APP_URL` in `backend-ci.yml`.
 
 ## Roadmap
 

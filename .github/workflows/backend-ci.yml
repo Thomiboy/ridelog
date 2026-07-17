@@ -31,6 +31,10 @@ jobs:
       group: backend-deploy
       cancel-in-progress: false
     environment: production
+    env:
+      # App Service was created with a unique default hostname (random suffix), so this is not
+      # ridelog-api.azurewebsites.net. Update if the app's default domain ever changes.
+      APP_URL: https://ridelog-api-bbg9cqdhcxhfazfv.polandcentral-01.azurewebsites.net
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v4
@@ -54,18 +58,19 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ${{ github.workspace }}/publish
 
-      # F1 cold-starts, so poll /health until it answers (or fail the deploy loudly).
+      # First boot is slow on free tiers: F1 cold-starts and Azure SQL (auto-paused) must
+      # resume before the startup migration runs, so poll /health generously.
       - name: Health check
         run: |
-          url="https://ridelog-api.azurewebsites.net/health"
-          for attempt in $(seq 1 10); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$url" || echo "000")
+          url="${APP_URL}/health"
+          for attempt in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$url" || echo "000")
             echo "Attempt $attempt: $url -> $code"
             if [ "$code" = "200" ]; then
               echo "Health check passed."
               exit 0
             fi
-            sleep 15
+            sleep 20
           done
           echo "Health check failed: /health did not return 200."
           exit 1

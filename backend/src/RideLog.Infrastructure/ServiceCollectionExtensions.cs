@@ -15,7 +15,12 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddRideLogPersistence(this IServiceCollection services, string connectionString)
-        => services.AddDbContext<RideLogDbContext>(options => options.UseSqlServer(connectionString));
+        => services.AddDbContext<RideLogDbContext>(options =>
+            options.UseSqlServer(connectionString, sql =>
+                // Azure SQL free offer auto-pauses; the first connection after a cold start returns
+                // "database not currently available" (40613) while it resumes. Retry transient
+                // failures so startup migration and seeding wait it out instead of crashing.
+                sql.EnableRetryOnFailure(maxRetryCount: 10, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null)));
 
     /// <summary>
     /// Registers ASP.NET Core Identity (stored in RideLogDbContext), JWT token issuing, the login
