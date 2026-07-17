@@ -1,25 +1,21 @@
+import { Component, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-
-// Leaflet needs a real DOM/canvas; mock it so the embedded map component instantiates in tests.
-vi.mock('leaflet', () => {
-  const line: Record<string, unknown> = { getBounds: vi.fn(() => 'BOUNDS'), remove: vi.fn() };
-  line['addTo'] = vi.fn(() => line);
-  return {
-    map: vi.fn(() => ({ setView: vi.fn(), fitBounds: vi.fn(), remove: vi.fn() })),
-    tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
-    polyline: vi.fn(() => line),
-  };
-});
-
 import { RideDetail } from './ride-detail';
 import { RidesService } from '../../core/api/rides.service';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 import { RouteMap } from './route-map/route-map';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
+
+// Stub the map so this test never touches Leaflet (only route-map.spec mocks Leaflet, to avoid
+// two conflicting module mocks in the bundled test environment).
+@Component({ selector: 'app-route-map', template: '' })
+class RouteMapStub {
+  readonly polyline = input<string | null | undefined>();
+}
 
 describe('RideDetail', () => {
   const detail: RideDetailDto = {
@@ -47,6 +43,9 @@ describe('RideDetail', () => {
         { provide: RidesService, useValue: ridesService },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: 'r1' }) } } },
       ],
+    }).overrideComponent(RideDetail, {
+      remove: { imports: [RouteMap] },
+      add: { imports: [RouteMapStub] },
     });
     const fixture = TestBed.createComponent(RideDetail);
     fixture.detectChanges();
@@ -65,7 +64,7 @@ describe('RideDetail', () => {
   it('passes the route polyline to the map component', () => {
     const { fixture } = setup();
 
-    const routeMap = fixture.debugElement.query(By.directive(RouteMap)).componentInstance as RouteMap;
+    const routeMap = fixture.debugElement.query(By.directive(RouteMapStub)).componentInstance as RouteMapStub;
     expect(routeMap.polyline()).toBe('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
   });
 });
