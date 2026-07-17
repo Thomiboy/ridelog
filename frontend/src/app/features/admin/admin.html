@@ -1,0 +1,34 @@
+<section class="page admin">
+  <h1>{{ 'admin.title' | transloco }}</h1>
+
+  <section class="card">
+    <h2>{{ 'admin.polar.title' | transloco }}</h2>
+    <p>{{ 'admin.polar.hint' | transloco }}</p>
+    <button type="button" data-connect (click)="connectPolar()">{{ 'admin.polar.connect' | transloco }}</button>
+  </section>
+
+  <section class="card">
+    <h2>{{ 'admin.import.title' | transloco }}</h2>
+    <p>{{ 'admin.import.hint' | transloco }}</p>
+    <input type="file" multiple accept=".gpx,.tcx" (change)="onFilesSelected($event)" />
+    <button type="button" data-import [disabled]="busy() || selectedFiles().length === 0" (click)="importRides()">
+      {{ 'admin.import.button' | transloco }}
+    </button>
+    @if (importResult(); as result) {
+      <p class="result">
+        {{ 'admin.import.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}
+      </p>
+    }
+  </section>
+
+  <section class="card">
+    <h2>{{ 'admin.sync.title' | transloco }}</h2>
+    <p>{{ 'admin.sync.hint' | transloco }}</p>
+    <button type="button" data-sync [disabled]="busy()" (click)="syncNow()">{{ 'admin.sync.button' | transloco }}</button>
+    @if (syncResult(); as result) {
+      <p class="result">
+        {{ 'admin.sync.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}
+      </p>
+    }
+  </section>
+</section>
