@@ -21,3 +21,51 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
       - run: dotnet test --no-build --configuration Release
+
+  deploy:
+    # Only deploy pushes that land on main; PRs just build and test above.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    concurrency:
+      group: backend-deploy
+      cancel-in-progress: false
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # EF migrations are applied at startup by RideLogInitializer (Database.Migrate on
+      # SQL Server), so publishing the app is the whole deploy — no separate migration step.
+      # The App Service must have these app settings configured (never committed):
+      #   ConnectionStrings__RideLog, Jwt__SigningKey, AdminUser__Password,
+      #   Polar__ClientId, Polar__ClientSecret, Polar__SyncSharedSecret,
+      #   Polar__RedirectUri, Cors__AllowedOrigins__0 (the Static Web App origin).
+      - name: Publish
+        working-directory: backend
+        run: dotnet publish src/RideLog.Api -c Release -o ${{ github.workspace }}/publish
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ridelog-api
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ github.workspace }}/publish
+
+      # F1 cold-starts, so poll /health until it answers (or fail the deploy loudly).
+      - name: Health check
+        run: |
+          url="https://ridelog-api.azurewebsites.net/health"
+          for attempt in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$url" || echo "000")
+            echo "Attempt $attempt: $url -> $code"
+            if [ "$code" = "200" ]; then
+              echo "Health check passed."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Health check failed: /health did not return 200."
+          exit 1

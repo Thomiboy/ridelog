@@ -71,6 +71,29 @@ Apply the schema with `dotnet ef database update --project ../RideLog.Infrastruc
 The admin user (`AdminUser:Email`) is seeded on first run. Link Polar by signing in
 and visiting `/polar/authorize`; the hourly cron calls `/sync` with the shared secret.
 
+## Deployment
+
+Pushing to `main` runs the CI workflows, which deploy on green:
+
+- **Backend** (`backend-ci.yml`) publishes the API to App Service `ridelog-api` using the
+  `AZURE_WEBAPP_PUBLISH_PROFILE` secret, then polls `/health`. EF migrations run at startup
+  (`RideLogInitializer` calls `Database.Migrate()`), so there is no separate migration step.
+
+Configure these **App Service application settings** in the Azure portal (double underscore maps
+to the config hierarchy) — they are secrets and are never committed:
+
+```
+ConnectionStrings__RideLog     = <Azure SQL connection string>
+Jwt__SigningKey                = <random string, at least 32 bytes>
+AdminUser__Email               = <admin email>
+AdminUser__Password            = <initial admin password>
+Polar__ClientId                = <polar client id>
+Polar__ClientSecret            = <polar client secret>
+Polar__SyncSharedSecret        = <random string, shared with the sync cron>
+Polar__RedirectUri             = https://ridelog-api.azurewebsites.net/polar/callback
+Cors__AllowedOrigins__0        = <Static Web App origin, set once the frontend is deployed>
+```
+
 ## Roadmap
 
 - **Phase 1 (MVP):** Polar sync, historical import, ride list + detail with map, basic dashboard, public read-only + admin login, CI/CD
