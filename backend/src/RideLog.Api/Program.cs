@@ -127,6 +127,10 @@ app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, C
 // Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
 const string OAuthStatePurpose = "Polar.OAuthState";
 
+app.MapGet("/polar/status", async (IPolarTokenStore tokenStore) =>
+    Results.Ok(await tokenStore.GetStatusAsync()))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
 // Returns the Polar URL as JSON so the SPA can navigate the browser to it (a bearer-authorized
 // fetch can't be a redirect the browser follows).
 app.MapGet("/polar/authorize", (IPolarOAuth oauth, IDataProtectionProvider protection, ClaimsPrincipal user) =>

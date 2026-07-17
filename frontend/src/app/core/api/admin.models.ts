@@ -1,3 +1,10 @@
+/** Whether a Polar account is linked, since when, and when the last sync ran. */
+export interface PolarStatus {
+  linked: boolean;
+  connectedAt?: string | null;
+  lastSyncAt?: string | null;
+}
+
 /** Result of a Polar sync run. */
 export interface SyncSummary {
   imported: number;

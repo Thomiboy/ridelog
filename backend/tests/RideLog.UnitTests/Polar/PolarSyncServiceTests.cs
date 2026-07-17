@@ -152,6 +152,36 @@ public sealed class PolarSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Sync_stamps_the_last_sync_time_on_the_connection()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.PolarConnections.Add(new RideLog.Infrastructure.Persistence.PolarConnection
+            {
+                Id = Guid.NewGuid(),
+                UserId = "admin-1",
+                PolarUserId = "pu-1",
+                AccessTokenProtected = "protected",
+                ConnectedAt = DateTimeOffset.UtcNow.AddDays(-3),
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var before = DateTimeOffset.UtcNow;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(ClientWithOneExercise(), context).SyncAsync("admin-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var connection = await verify.PolarConnections.SingleAsync();
+            Assert.NotNull(connection.LastSyncAt);
+            Assert.True(connection.LastSyncAt >= before);
+        }
+    }
+
+    [Fact]
     public async Task Nothing_new_is_a_no_op()
     {
         var client = new FakePolarClient { Transaction = null };

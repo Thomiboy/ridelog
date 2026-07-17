@@ -59,4 +59,12 @@ internal sealed class PolarTokenStore : IPolarTokenStore
         var accessToken = _protector.Unprotect(connection.AccessTokenProtected);
         return new PolarConnectionInfo(connection.UserId, new PolarToken(accessToken, connection.PolarUserId));
     }
+
+    public async Task<PolarStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var connection = await _context.PolarConnections.FirstOrDefaultAsync(cancellationToken);
+        return connection is null
+            ? new PolarStatus(false, null, null)
+            : new PolarStatus(true, connection.ConnectedAt, connection.LastSyncAt);
+    }
 }

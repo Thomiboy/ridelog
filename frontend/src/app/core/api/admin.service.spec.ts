@@ -18,6 +18,17 @@ describe('AdminService', () => {
 
   afterEach(() => http.verify());
 
+  it('fetches the Polar connection status', () => {
+    let linked: boolean | undefined;
+    service.getPolarStatus().subscribe((s) => (linked = s.linked));
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/polar/status`);
+    expect(request.request.method).toBe('GET');
+    request.flush({ linked: true, connectedAt: '2026-07-17T10:00:00Z', lastSyncAt: null });
+
+    expect(linked).toBe(true);
+  });
+
   it('fetches the Polar authorize url', () => {
     let url: string | undefined;
     service.getPolarAuthorizeUrl().subscribe((r) => (url = r.authorizeUrl));

@@ -63,6 +63,36 @@ public sealed class PolarTokenStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Status_reports_not_linked_when_no_account_is_connected()
+    {
+        await using var context = new RideLogDbContext(_options);
+
+        var status = await NewStore(context).GetStatusAsync();
+
+        Assert.False(status.Linked);
+        Assert.Null(status.ConnectedAt);
+        Assert.Null(status.LastSyncAt);
+    }
+
+    [Fact]
+    public async Task Status_reports_linked_with_the_connection_time()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewStore(context).SaveAsync("admin-1", new PolarToken("tok", "polar-user-9"));
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var status = await NewStore(verify).GetStatusAsync();
+
+            Assert.True(status.Linked);
+            Assert.NotNull(status.ConnectedAt);
+            Assert.Null(status.LastSyncAt);
+        }
+    }
+
+    [Fact]
     public async Task Re_linking_replaces_the_existing_connection()
     {
         await using (var context = new RideLogDbContext(_options))

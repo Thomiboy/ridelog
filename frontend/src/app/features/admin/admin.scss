@@ -24,3 +24,17 @@
     color: #333;
   }
 }
+
+.error {
+  color: #b00020;
+}
+
+.status {
+  color: #666;
+  margin: 0.25rem 0;
+
+  &.ok {
+    color: #1a7f37;
+    font-weight: 600;
+  }
+}

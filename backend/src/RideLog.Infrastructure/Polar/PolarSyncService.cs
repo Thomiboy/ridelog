@@ -51,7 +51,20 @@ internal sealed class PolarSyncService(
         // Acknowledge only after processing, so a crash mid-run re-serves the exercises next time.
         await client.CommitTransactionAsync(transaction, cancellationToken);
 
+        await StampLastSyncAsync(userId, cancellationToken);
+
         return new SyncSummary(imported, skipped, failed);
+    }
+
+    private async Task StampLastSyncAsync(string userId, CancellationToken cancellationToken)
+    {
+        var connection = await context.PolarConnections
+            .SingleOrDefaultAsync(c => c.UserId == userId, cancellationToken);
+        if (connection is not null)
+        {
+            connection.LastSyncAt = DateTimeOffset.UtcNow;
+            await context.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private async Task<ImportOutcome> ImportExerciseAsync(string exerciseUrl, string userId, CancellationToken cancellationToken)
