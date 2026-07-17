@@ -6,14 +6,18 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
+using RideLog.Application.Messaging;
 using RideLog.Application.Polar;
+using RideLog.Application.Rides;
 using RideLog.Infrastructure.Auth;
+using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddCqrs();
+// Scan both Application and Infrastructure: query handlers that project via EF live in Infrastructure.
+builder.Services.AddCqrs(typeof(GetRidesQuery).Assembly, typeof(RideLogDbContext).Assembly);
 builder.Services.AddRideLogPersistence(
     builder.Configuration.GetConnectionString("RideLog")
         ?? throw new InvalidOperationException("Connection string 'RideLog' is missing."));
@@ -67,9 +71,12 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Public read endpoint.
+// Public read endpoints.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("HealthCheck");
+
+app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
 
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {
