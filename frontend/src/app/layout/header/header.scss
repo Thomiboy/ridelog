@@ -1,0 +1,32 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #e2e2e2;
+
+  .brand {
+    font-weight: 700;
+    font-size: 1.15rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .nav {
+    display: flex;
+    gap: 1rem;
+
+    a {
+      text-decoration: none;
+      color: inherit;
+
+      &.active {
+        font-weight: 600;
+      }
+    }
+  }
+
+  .session {
+    margin-left: auto;
+  }
+}

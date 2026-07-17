@@ -1,0 +1,21 @@
+<header class="app-header">
+  <a class="brand" routerLink="/">{{ 'app.title' | transloco }}</a>
+
+  <nav class="nav">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      {{ 'nav.dashboard' | transloco }}
+    </a>
+    <a routerLink="/rides" routerLinkActive="active">{{ 'nav.rides' | transloco }}</a>
+    @if (isAdmin()) {
+      <a routerLink="/admin" routerLinkActive="active">{{ 'nav.admin' | transloco }}</a>
+    }
+  </nav>
+
+  <div class="session">
+    @if (isLoggedIn()) {
+      <button type="button" (click)="logout()">{{ 'nav.logout' | transloco }}</button>
+    } @else {
+      <a routerLink="/login">{{ 'nav.login' | transloco }}</a>
+    }
+  </div>
+</header>
