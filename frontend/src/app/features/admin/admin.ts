@@ -2,13 +2,15 @@ import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { AdminService } from '../../core/api/admin.service';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import type { ImportSummary, PolarStatus, SyncSummary } from '../../core/api/admin.models';
 
 @Component({
   selector: 'app-admin',
-  imports: [TranslocoPipe, DatePipe],
+  imports: [TranslocoPipe, DatePipe, MatButtonModule, MatCardModule],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
 })

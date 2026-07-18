@@ -2,8 +2,9 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid #e2e2e2;
+  padding: 0.6rem 1.25rem;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
 
   .brand {
     font-weight: 700;
@@ -19,14 +20,21 @@
     a {
       text-decoration: none;
       color: inherit;
+      opacity: 0.85;
 
       &.active {
         font-weight: 600;
+        opacity: 1;
       }
     }
   }
 
   .session {
     margin-left: auto;
+
+    a,
+    button {
+      color: var(--mat-sys-on-primary);
+    }
   }
 }

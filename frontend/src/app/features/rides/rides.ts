@@ -2,12 +2,13 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { MatButtonModule } from '@angular/material/button';
 import { RidesService } from '../../core/api/rides.service';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
 @Component({
   selector: 'app-rides',
-  imports: [RouterLink, TranslocoPipe, DatePipe, DecimalPipe],
+  imports: [RouterLink, TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',
 })

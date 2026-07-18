@@ -13,9 +13,9 @@
 
   <div class="session">
     @if (isLoggedIn()) {
-      <button type="button" (click)="logout()">{{ 'nav.logout' | transloco }}</button>
+      <button mat-button type="button" (click)="logout()">{{ 'nav.logout' | transloco }}</button>
     } @else {
-      <a routerLink="/login">{{ 'nav.login' | transloco }}</a>
+      <a mat-button routerLink="/login">{{ 'nav.login' | transloco }}</a>
     }
   </div>
 </header>

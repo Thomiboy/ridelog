@@ -8,54 +8,72 @@
     <p class="status ok">{{ 'admin.polar.justLinked' | transloco }}</p>
   }
 
-  <section class="card">
-    <h2>{{ 'admin.polar.title' | transloco }}</h2>
-    @if (status(); as s) {
-      @if (s.linked) {
-        <p class="status ok" data-polar-status>
-          {{ 'admin.polar.connected' | transloco }}
-          @if (s.connectedAt) {
-            ({{ s.connectedAt | date: 'mediumDate' }})
-          }
+  <mat-card appearance="outlined" class="card">
+    <mat-card-header>
+      <mat-card-title>{{ 'admin.polar.title' | transloco }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (status(); as s) {
+        @if (s.linked) {
+          <p class="status ok" data-polar-status>
+            {{ 'admin.polar.connected' | transloco }}
+            @if (s.connectedAt) {
+              ({{ s.connectedAt | date: 'mediumDate' }})
+            }
+          </p>
+        } @else {
+          <p class="status" data-polar-status>{{ 'admin.polar.notConnected' | transloco }}</p>
+        }
+      }
+      <p>{{ 'admin.polar.hint' | transloco }}</p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-flat-button data-connect (click)="connectPolar()">{{ 'admin.polar.connect' | transloco }}</button>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-card appearance="outlined" class="card">
+    <mat-card-header>
+      <mat-card-title>{{ 'admin.import.title' | transloco }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p>{{ 'admin.import.hint' | transloco }}</p>
+      <input type="file" multiple accept=".gpx,.tcx" (change)="onFilesSelected($event)" />
+      @if (importResult(); as result) {
+        <p class="result">
+          {{ 'admin.import.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}
         </p>
-      } @else {
-        <p class="status" data-polar-status>{{ 'admin.polar.notConnected' | transloco }}</p>
       }
-    }
-    <p>{{ 'admin.polar.hint' | transloco }}</p>
-    <button type="button" data-connect (click)="connectPolar()">{{ 'admin.polar.connect' | transloco }}</button>
-  </section>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-flat-button data-import [disabled]="busy() || selectedFiles().length === 0" (click)="importRides()">
+        {{ 'admin.import.button' | transloco }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
 
-  <section class="card">
-    <h2>{{ 'admin.import.title' | transloco }}</h2>
-    <p>{{ 'admin.import.hint' | transloco }}</p>
-    <input type="file" multiple accept=".gpx,.tcx" (change)="onFilesSelected($event)" />
-    <button type="button" data-import [disabled]="busy() || selectedFiles().length === 0" (click)="importRides()">
-      {{ 'admin.import.button' | transloco }}
-    </button>
-    @if (importResult(); as result) {
-      <p class="result">
-        {{ 'admin.import.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}
+  <mat-card appearance="outlined" class="card">
+    <mat-card-header>
+      <mat-card-title>{{ 'admin.sync.title' | transloco }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p>{{ 'admin.sync.hint' | transloco }}</p>
+      <p class="status" data-last-sync>
+        {{ 'admin.sync.lastSync' | transloco }}
+        @if (status()?.lastSyncAt; as lastSync) {
+          {{ lastSync | date: 'medium' }}
+        } @else {
+          {{ 'admin.sync.never' | transloco }}
+        }
       </p>
-    }
-  </section>
-
-  <section class="card">
-    <h2>{{ 'admin.sync.title' | transloco }}</h2>
-    <p>{{ 'admin.sync.hint' | transloco }}</p>
-    <p class="status" data-last-sync>
-      {{ 'admin.sync.lastSync' | transloco }}
-      @if (status()?.lastSyncAt; as lastSync) {
-        {{ lastSync | date: 'medium' }}
-      } @else {
-        {{ 'admin.sync.never' | transloco }}
+      @if (syncResult(); as result) {
+        <p class="result">
+          {{ 'admin.sync.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}
+        </p>
       }
-    </p>
-    <button type="button" data-sync [disabled]="busy()" (click)="syncNow()">{{ 'admin.sync.button' | transloco }}</button>
-    @if (syncResult(); as result) {
-      <p class="result">
-        {{ 'admin.sync.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}
-      </p>
-    }
-  </section>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-flat-button data-sync [disabled]="busy()" (click)="syncNow()">{{ 'admin.sync.button' | transloco }}</button>
+    </mat-card-actions>
+  </mat-card>
 </section>

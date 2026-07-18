@@ -28,7 +28,8 @@ export function drawRoute(
     return null;
   }
 
-  const track = api.polyline(coordinates, { color: '#e63946', weight: 4 }).addTo(map);
+  // Navy, matching the app's Material accent (and the owner's bike).
+  const track = api.polyline(coordinates, { color: '#1b3a6b', weight: 4 }).addTo(map);
   map.fitBounds(track.getBounds());
   return track;
 }
