@@ -37,6 +37,21 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             return null;
         }
 
+        // Chronological neighbours within the cycling set the list shows. Ordered in memory because
+        // SQLite can't ORDER BY DateTimeOffset; at single-user scale the row set is small.
+        var cycling = context.Rides.AsQueryable();
+        foreach (var keyword in CyclingRides.NonCyclingKeywords)
+        {
+            cycling = cycling.Where(r => !r.Sport.ToLower().Contains(keyword));
+        }
+
+        var ordered = (await cycling.Select(r => new { r.Id, r.StartTime }).ToListAsync(cancellationToken))
+            .OrderBy(r => r.StartTime)
+            .ToList();
+        var index = ordered.FindIndex(r => r.Id == query.Id);
+        var previousId = index > 0 ? ordered[index - 1].Id : (Guid?)null; // older
+        var nextId = index >= 0 && index < ordered.Count - 1 ? ordered[index + 1].Id : (Guid?)null; // newer
+
         return new RideDetail
         {
             Id = ride.Id,
@@ -53,6 +68,8 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             ElevationGainMeters = ride.ElevationGainMeters,
             AverageCadence = ride.AverageCadence,
             Calories = ride.Calories,
+            PreviousId = previousId,
+            NextId = nextId,
             RoutePolyline = ride.RoutePolyline,
         };
     }

@@ -13,7 +13,28 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Guid Id, DateTimeOffset StartTime, DateTimeOffset EndTime, double DistanceKm, double DurationMinutes,
         string Sport, string Source, double? AverageSpeedKmh, double? MaximumSpeedKmh,
         int? AverageHeartRate, int? MaximumHeartRate, double? ElevationGainMeters, int? AverageCadence,
-        int? Calories, string? RoutePolyline);
+        int? Calories, Guid? PreviousId, Guid? NextId, string? RoutePolyline);
+
+    private static Ride CyclingRideAt(DateTimeOffset start) => new()
+    {
+        Id = Guid.NewGuid(),
+        UserId = "admin-1",
+        StartTime = start,
+        EndTime = start.AddHours(1),
+        Duration = TimeSpan.FromHours(1),
+        DistanceMeters = 30000,
+        Sport = "ROAD_BIKING",
+        Source = RideSource.Polar,
+    };
+
+    private async Task SeedRidesAsync(params Ride[] rides)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+        context.Rides.RemoveRange(context.Rides);
+        context.Rides.AddRange(rides);
+        await context.SaveChangesAsync();
+    }
 
     private async Task<Ride> SeedRideAsync()
     {
@@ -64,6 +85,37 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Assert.Equal("ROAD_BIKING", detail.Sport);
         Assert.Equal("Polar", detail.Source);
         Assert.Equal("_p~iF~ps|U_ulLnnqC_mqNvxq`@", detail.RoutePolyline);
+    }
+
+    [Fact]
+    public async Task Exposes_the_chronological_neighbours_of_a_ride()
+    {
+        var older = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        var middle = CyclingRideAt(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero));
+        var newer = CyclingRideAt(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero));
+        await SeedRidesAsync(older, middle, newer);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<RideDetailDto>($"/rides/{middle.Id}");
+
+        Assert.Equal(older.Id, detail!.PreviousId); // previous = the earlier (older) ride
+        Assert.Equal(newer.Id, detail.NextId); // next = the later (newer) ride
+    }
+
+    [Fact]
+    public async Task Neighbours_are_null_at_the_ends()
+    {
+        var older = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        var newer = CyclingRideAt(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero));
+        await SeedRidesAsync(older, newer);
+
+        var client = factory.CreateClient();
+        var oldest = await client.GetFromJsonAsync<RideDetailDto>($"/rides/{older.Id}");
+        var newest = await client.GetFromJsonAsync<RideDetailDto>($"/rides/{newer.Id}");
+
+        Assert.Null(oldest!.PreviousId); // nothing older
+        Assert.Equal(newer.Id, oldest.NextId);
+        Assert.Equal(older.Id, newest!.PreviousId);
+        Assert.Null(newest.NextId); // nothing newer
     }
 
     [Fact]

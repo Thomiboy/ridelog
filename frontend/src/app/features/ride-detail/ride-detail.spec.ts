@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { RideDetail } from './ride-detail';
@@ -25,11 +25,13 @@ describe('RideDetail', () => {
     elevationGainMeters: 460,
     averageCadence: 84,
     calories: 620,
+    previousId: 'r0',
+    nextId: 'r2',
     routePolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
   };
 
-  function setup() {
-    const ridesService = { getRide: vi.fn().mockReturnValue(of(detail)) };
+  function setup(ride: RideDetailDto = detail) {
+    const ridesService = { getRide: vi.fn().mockReturnValue(of(ride)) };
     const mapState = { showRoute: vi.fn() };
     const sheetState = { request: vi.fn() };
     TestBed.configureTestingModule({
@@ -42,9 +44,10 @@ describe('RideDetail', () => {
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: 'r1' }) } } },
       ],
     });
+    const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(RideDetail);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, sheetState };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, sheetState, router };
   }
 
   it('loads the ride by route id and shows its metrics', () => {
@@ -80,5 +83,23 @@ describe('RideDetail', () => {
     const { el } = setup();
 
     expect(el.querySelector('a[href="/rides"]')).toBeTruthy();
+  });
+
+  it('steps to the previous (older) and next (newer) ride', () => {
+    const { el, router } = setup();
+    const navigate = vi.spyOn(router, 'navigateByUrl');
+
+    (el.querySelector('[data-prev-ride]') as HTMLButtonElement).click();
+    expect(navigate).toHaveBeenCalledWith('/rides/r0');
+
+    (el.querySelector('[data-next-ride]') as HTMLButtonElement).click();
+    expect(navigate).toHaveBeenCalledWith('/rides/r2');
+  });
+
+  it('disables the stepper buttons at the ends of the list', () => {
+    const { el } = setup({ ...detail, previousId: null, nextId: null });
+
+    expect((el.querySelector('[data-prev-ride]') as HTMLButtonElement).disabled).toBe(true);
+    expect((el.querySelector('[data-next-ride]') as HTMLButtonElement).disabled).toBe(true);
   });
 });
