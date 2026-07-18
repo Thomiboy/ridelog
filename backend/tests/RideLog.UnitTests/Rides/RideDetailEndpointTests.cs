@@ -13,7 +13,7 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Guid Id, DateTimeOffset StartTime, DateTimeOffset EndTime, double DistanceKm, double DurationMinutes,
         string Sport, string Source, double? AverageSpeedKmh, double? MaximumSpeedKmh,
         int? AverageHeartRate, int? MaximumHeartRate, double? ElevationGainMeters, int? AverageCadence,
-        string? RoutePolyline);
+        int? Calories, string? RoutePolyline);
 
     private async Task<Ride> SeedRideAsync()
     {
@@ -31,6 +31,7 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
             MaximumHeartRate = 178,
             ElevationGainMeters = 460,
             AverageCadence = 84,
+            Calories = 620,
             Sport = "ROAD_BIKING",
             Source = RideSource.Polar,
             RoutePolyline = "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
@@ -59,6 +60,7 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Assert.Equal(118, detail.DurationMinutes, 0.5);
         Assert.Equal(178, detail.MaximumHeartRate);
         Assert.Equal(84, detail.AverageCadence);
+        Assert.Equal(620, detail.Calories);
         Assert.Equal("ROAD_BIKING", detail.Sport);
         Assert.Equal("Polar", detail.Source);
         Assert.Equal("_p~iF~ps|U_ulLnnqC_mqNvxq`@", detail.RoutePolyline);

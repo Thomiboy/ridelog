@@ -44,6 +44,7 @@ public sealed class RidePersistenceTests : IDisposable
             MaximumHeartRate = 178,
             ElevationGainMeters = 460,
             AverageCadence = 84,
+            Calories = 620,
             Sport = "ROAD_CYCLING",
             Source = RideSource.Polar,
             RoutePolyline = "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
@@ -83,6 +84,7 @@ public sealed class RidePersistenceTests : IDisposable
             Assert.Equal(31.3, loaded.AverageSpeedKmh);
             Assert.Equal(142, loaded.AverageHeartRate);
             Assert.Equal(460, loaded.ElevationGainMeters);
+            Assert.Equal(620, loaded.Calories);
             Assert.Equal("ROAD_CYCLING", loaded.Sport);
             Assert.Equal(RideSource.Polar, loaded.Source);
             Assert.Equal("_p~iF~ps|U_ulLnnqC_mqNvxq`@", loaded.RoutePolyline);

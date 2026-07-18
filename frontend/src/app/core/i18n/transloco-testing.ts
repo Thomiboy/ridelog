@@ -36,7 +36,7 @@ const en = {
     avgHr: 'Avg HR',
     maxHr: 'Max HR',
     elevation: 'Elevation',
-    cadence: 'Cadence',
+    calories: 'Calories',
   },
   admin: {
     title: 'Admin',

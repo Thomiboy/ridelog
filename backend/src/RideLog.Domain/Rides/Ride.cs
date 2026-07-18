@@ -25,6 +25,7 @@ public class Ride
     public int? MaximumHeartRate { get; set; }
     public double? ElevationGainMeters { get; set; }
     public int? AverageCadence { get; set; }
+    public int? Calories { get; set; }
 
     /// <summary>Sport type exactly as the source reports it (e.g. Polar "ROAD_CYCLING").</summary>
     public required string Sport { get; set; }

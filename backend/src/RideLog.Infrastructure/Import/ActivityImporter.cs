@@ -77,6 +77,7 @@ internal sealed class ActivityImporter(
             MaximumHeartRate = parsed.MaximumHeartRate,
             ElevationGainMeters = parsed.ElevationGainMeters,
             AverageCadence = parsed.AverageCadence,
+            Calories = parsed.Calories,
             Sport = parsed.Sport,
             Source = RideSource.Import,
             RoutePolyline = PolylineEncoder.Encode(Downsample(parsed.RoutePoints)),

@@ -24,6 +24,7 @@ describe('RideDetail', () => {
     maximumHeartRate: 178,
     elevationGainMeters: 460,
     averageCadence: 84,
+    calories: 620,
     routePolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
   };
 
@@ -59,6 +60,14 @@ describe('RideDetail', () => {
     const { mapState } = setup();
 
     expect(mapState.showRoute).toHaveBeenCalledWith('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+  });
+
+  it('shows calories and no longer shows cadence', () => {
+    const { el } = setup();
+
+    expect(el.textContent).toContain('620'); // calories value
+    expect(el.textContent).toContain('Calories');
+    expect(el.textContent).not.toContain('Cadence');
   });
 
   it('snaps the sheet to half so the route is visible', () => {

@@ -36,6 +36,33 @@ public sealed class ActivityImporterTests : IDisposable
         </gpx>
         """);
 
+    private static byte[] TcxWithSummary() => Encoding.UTF8.GetBytes("""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+          <Activities>
+            <Activity Sport="Biking">
+              <Id>2026-06-03T07:00:00Z</Id>
+              <Lap StartTime="2026-06-03T07:00:00Z">
+                <TotalTimeSeconds>3600</TotalTimeSeconds>
+                <DistanceMeters>30000</DistanceMeters>
+                <MaximumSpeed>16.5</MaximumSpeed>
+                <Calories>620</Calories>
+                <Track>
+                  <Trackpoint>
+                    <Time>2026-06-03T07:00:00Z</Time>
+                    <Position><LatitudeDegrees>47.5</LatitudeDegrees><LongitudeDegrees>19.0</LongitudeDegrees></Position>
+                  </Trackpoint>
+                  <Trackpoint>
+                    <Time>2026-06-03T08:00:00Z</Time>
+                    <Position><LatitudeDegrees>47.6</LatitudeDegrees><LongitudeDegrees>19.1</LongitudeDegrees></Position>
+                  </Trackpoint>
+                </Track>
+              </Lap>
+            </Activity>
+          </Activities>
+        </TrainingCenterDatabase>
+        """);
+
     private ActivityImporter NewImporter(RideLogDbContext context) =>
         new(context, [new GpxActivityParser(), new TcxActivityParser()]);
 
@@ -61,6 +88,22 @@ public sealed class ActivityImporterTests : IDisposable
             var raw = Assert.Single(ride.RawFiles);
             Assert.Equal(RawFileFormat.Gpx, raw.Format);
             Assert.Equal("ride.gpx", raw.FileName);
+        }
+    }
+
+    [Fact]
+    public async Task Persists_calories_and_max_speed_from_a_tcx_summary()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync([new ActivityFile("ride.tcx", TcxWithSummary())], "user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var ride = await verify.Rides.SingleAsync();
+            Assert.Equal(620, ride.Calories);
+            Assert.Equal(59.4, ride.MaximumSpeedKmh!.Value, 0.01); // 16.5 m/s × 3.6
         }
     }
 

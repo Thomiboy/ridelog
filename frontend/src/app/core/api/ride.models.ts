@@ -25,5 +25,6 @@ export interface RideDetail extends RideSummary {
   maximumSpeedKmh?: number;
   maximumHeartRate?: number;
   averageCadence?: number;
+  calories?: number;
   routePolyline?: string;
 }

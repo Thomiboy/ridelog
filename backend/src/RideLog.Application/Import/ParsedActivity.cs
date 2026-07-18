@@ -17,6 +17,7 @@ public sealed record ParsedActivity
     public int? MaximumHeartRate { get; init; }
     public double? ElevationGainMeters { get; init; }
     public int? AverageCadence { get; init; }
+    public int? Calories { get; init; }
 
     public required IReadOnlyList<GeoPoint> RoutePoints { get; init; }
 }
