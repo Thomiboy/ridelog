@@ -1,5 +1,11 @@
+.bg-map {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
 .app-main {
-  padding: 1.25rem;
+  padding-top: 0.5rem;
 }
 
 .page h1 {

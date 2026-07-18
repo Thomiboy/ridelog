@@ -1,5 +1,10 @@
-.route-map {
-  height: 400px;
+:host {
+  display: block;
+  height: 100%;
   width: 100%;
-  border-radius: 6px;
+}
+
+.route-map {
+  height: 100%;
+  width: 100%;
 }
