@@ -44,7 +44,8 @@
     "avgHr": "Avg HR",
     "maxHr": "Max HR",
     "elevation": "Elevation",
-    "cadence": "Cadence"
+    "cadence": "Cadence",
+    "back": "Rides"
   },
   "admin": {
     "title": "Admin",

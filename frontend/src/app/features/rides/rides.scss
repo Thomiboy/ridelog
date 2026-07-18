@@ -12,6 +12,14 @@
   th {
     font-weight: 600;
   }
+
+  tbody tr {
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(27, 58, 107, 0.06);
+    }
+  }
 }
 
 .empty {

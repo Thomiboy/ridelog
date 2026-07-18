@@ -1,9 +1,10 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { RidesService } from '../../core/api/rides.service';
+import { MapState } from '../../core/map/map-state';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
 @Component({
@@ -14,6 +15,8 @@ import type { Paged, RideSummary } from '../../core/api/ride.models';
 })
 export class Rides {
   private readonly ridesService = inject(RidesService);
+  private readonly mapState = inject(MapState);
+  private readonly router = inject(Router);
 
   readonly result = signal<Paged<RideSummary> | null>(null);
 
@@ -24,7 +27,13 @@ export class Rides {
   });
 
   constructor() {
+    // Returning to the list swaps the background map back to the latest ride.
+    this.mapState.reset();
     this.load();
+  }
+
+  open(ride: RideSummary): void {
+    this.router.navigateByUrl(`/rides/${ride.id}`);
   }
 
   load(page = 1): void {

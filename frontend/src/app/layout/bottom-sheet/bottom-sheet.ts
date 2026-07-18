@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { SNAP_HEIGHTS, SnapState, chooseSnap } from './snap';
+import { SheetState } from './sheet-state';
 
 /**
  * The draggable content sheet at the bottom of the shell: rounded top corners, three snap
@@ -12,12 +13,25 @@ import { SNAP_HEIGHTS, SnapState, chooseSnap } from './snap';
   styleUrl: './bottom-sheet.scss',
 })
 export class BottomSheet {
+  private readonly sheetState = inject(SheetState);
+
   readonly state = signal<SnapState>('half');
 
   /** Transient height (viewport fraction) while dragging; null when settled on a snap point. */
   readonly dragHeight = signal<number | null>(null);
 
   private dragging = false;
+
+  constructor() {
+    // Pages can request a snap (e.g. ride selection → half); apply and consume it.
+    effect(() => {
+      const requested = this.sheetState.requested();
+      if (requested !== null) {
+        this.snapTo(requested);
+        this.sheetState.clear();
+      }
+    });
+  }
 
   snapTo(state: SnapState): void {
     this.dragHeight.set(null);

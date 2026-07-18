@@ -1,22 +1,29 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { Rides } from './rides';
 import { RidesService } from '../../core/api/rides.service';
+import { MapState } from '../../core/map/map-state';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Rides', () => {
   function setup(paged: Paged<RideSummary>) {
     const ridesService = { getRides: vi.fn().mockReturnValue(of(paged)) };
+    const mapState = { reset: vi.fn() };
     TestBed.configureTestingModule({
       imports: [Rides, translocoTesting()],
-      providers: [provideRouter([]), { provide: RidesService, useValue: ridesService }],
+      providers: [
+        provideRouter([]),
+        { provide: RidesService, useValue: ridesService },
+        { provide: MapState, useValue: mapState },
+      ],
     });
+    const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(Rides);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, router };
   }
 
   const ride = (id: string): RideSummary => ({
@@ -40,6 +47,21 @@ describe('Rides', () => {
     const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
 
     expect(el.querySelector('a[href="/rides/r1"]')).toBeTruthy();
+  });
+
+  it('restores the latest-ride background map on entry', () => {
+    const { mapState } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    expect(mapState.reset).toHaveBeenCalled();
+  });
+
+  it('navigates to the ride when its row is clicked', () => {
+    const { el, router } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+    const navigate = vi.spyOn(router, 'navigateByUrl');
+
+    (el.querySelector('[data-ride]') as HTMLTableRowElement).click();
+
+    expect(navigate).toHaveBeenCalledWith('/rides/r1');
   });
 
   it('shows an empty state when there are no rides', () => {

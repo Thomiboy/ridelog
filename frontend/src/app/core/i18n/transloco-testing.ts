@@ -28,6 +28,7 @@ const en = {
     columns: { date: 'Date', distance: 'Distance', duration: 'Duration', avgSpeed: 'Avg speed', elevation: 'Elevation' },
   },
   rideDetail: {
+    back: 'Rides',
     distance: 'Distance',
     duration: 'Duration',
     avgSpeed: 'Avg speed',
