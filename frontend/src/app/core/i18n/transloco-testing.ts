@@ -9,7 +9,17 @@ const en = {
     login: 'Log in',
     logout: 'Log out',
   },
-  dashboard: { title: 'Dashboard', placeholder: 'Your cycling stats will appear here.' },
+  dashboard: {
+    title: 'Dashboard',
+    tiles: {
+      monthDistance: 'This month',
+      monthRides: 'Rides this month',
+      yearDistance: 'This year',
+      yearRides: 'Rides this year',
+      yearElevation: 'Climbing this year',
+    },
+    charts: { monthlyDistance: 'Monthly distance', speedTrend: 'Average speed trend' },
+  },
   rides: {
     title: 'Rides',
     empty: 'No rides yet. Sign in as admin to import history or sync from Polar.',

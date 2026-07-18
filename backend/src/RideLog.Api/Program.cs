@@ -16,6 +16,7 @@ using RideLog.Infrastructure.Polar;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton(TimeProvider.System);
 // Scan both Application and Infrastructure: query handlers that project via EF live in Infrastructure.
 builder.Services.AddCqrs(typeof(GetRidesQuery).Assembly, typeof(RideLogDbContext).Assembly);
 builder.Services.AddRideLogPersistence(
@@ -82,6 +83,9 @@ app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
     await dispatcher.QueryAsync(new GetRideQuery(id)) is { } ride
         ? Results.Ok(ride)
         : Results.NotFound());
+
+app.MapGet("/dashboard", async (IDispatcher dispatcher) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery())));
 
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {
