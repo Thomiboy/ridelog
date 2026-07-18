@@ -1,0 +1,35 @@
+name: Polar Sync Cron
+
+on:
+  schedule:
+    # Hourly. Doubles as the wake-up ping for the sleeping F1 instance (see CLAUDE.md).
+    - cron: "0 * * * *"
+  # Manual trigger for testing the cron path without waiting for the hour.
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The first request may hit a cold F1 instance and a paused Azure SQL, so allow a long
+      # per-request timeout and retry: the call itself is what wakes the stack up.
+      - name: Call /sync
+        run: |
+          url="https://ridelog-api-bbg9cqdhcxhfazfv.polandcentral-01.azurewebsites.net/sync"
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt..."
+            status=$(curl -s -o /tmp/sync-response.txt -w "%{http_code}" --max-time 240 \
+              -X POST "$url" \
+              -H "X-Sync-Secret: ${{ secrets.SYNC_SHARED_SECRET }}") || status="000"
+            echo "HTTP $status"
+            cat /tmp/sync-response.txt || true
+            echo
+            if [ "$status" = "200" ]; then
+              echo "Sync succeeded."
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::Sync failed after 3 attempts (last status: $status)."
+          exit 1
