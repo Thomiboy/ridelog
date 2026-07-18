@@ -27,3 +27,9 @@ export interface ImportSummary {
   skipped: number;
   failed: number;
 }
+
+/** Result of reprocessing stored rides from their raw files. */
+export interface ReprocessSummary {
+  processed: number;
+  failed: number;
+}

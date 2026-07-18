@@ -16,6 +16,8 @@ describe('Admin', () => {
       getPolarAuthorizeUrl: vi.fn().mockReturnValue(of({ authorizeUrl: 'https://flow.polar.com/x' })),
       sync: vi.fn().mockReturnValue(of({ imported: 3, skipped: 1, failed: 0 })),
       importRides: vi.fn().mockReturnValue(of({ files: [], imported: 2, skipped: 0, failed: 0 })),
+      reprocess: vi.fn().mockReturnValue(of({ processed: 5, failed: 0 })),
+      deleteAllRides: vi.fn().mockReturnValue(of({ deleted: 7 })),
       ...overrides,
     };
     const navigator = { navigate: vi.fn() };
@@ -112,5 +114,37 @@ describe('Admin', () => {
 
     expect(adminService.importRides).toHaveBeenCalledWith([file]);
     expect(el.textContent).toContain('2');
+  });
+
+  it('reprocesses stored rides and shows the counts', () => {
+    const { fixture, el, adminService } = setup();
+
+    (el.querySelector('[data-reprocess]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(adminService.reprocess).toHaveBeenCalled();
+    expect(el.textContent).toContain('5'); // processed count
+  });
+
+  it('deletes all rides after a double confirmation', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { fixture, el, adminService } = setup();
+
+    (el.querySelector('[data-delete-all]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(confirm).toHaveBeenCalledTimes(2); // double confirmation for a destructive action
+    expect(adminService.deleteAllRides).toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it('does not delete when the confirmation is declined', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { el, adminService } = setup();
+
+    (el.querySelector('[data-delete-all]') as HTMLButtonElement).click();
+
+    expect(adminService.deleteAllRides).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 });

@@ -76,4 +76,30 @@
       <button mat-flat-button data-sync [disabled]="busy()" (click)="syncNow()">{{ 'admin.sync.button' | transloco }}</button>
     </mat-card-actions>
   </mat-card>
+
+  <mat-card appearance="outlined" class="card">
+    <mat-card-header>
+      <mat-card-title>{{ 'admin.maintenance.title' | transloco }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p>{{ 'admin.maintenance.reprocessHint' | transloco }}</p>
+      @if (reprocessResult(); as result) {
+        <p class="result">
+          {{ 'admin.maintenance.reprocessResult' | transloco: { processed: result.processed, failed: result.failed } }}
+        </p>
+      }
+      <p class="danger-hint">{{ 'admin.maintenance.deleteHint' | transloco }}</p>
+      @if (deletedCount(); as deleted) {
+        <p class="result">{{ 'admin.maintenance.deleteResult' | transloco: { deleted } }}</p>
+      }
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-flat-button data-reprocess [disabled]="busy()" (click)="reprocess()">
+        {{ 'admin.maintenance.reprocessButton' | transloco }}
+      </button>
+      <button mat-stroked-button color="warn" data-delete-all [disabled]="busy()" (click)="deleteAllRides()">
+        {{ 'admin.maintenance.deleteButton' | transloco }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
 </section>
