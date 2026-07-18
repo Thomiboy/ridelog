@@ -1,0 +1,42 @@
+<section class="page">
+  <h1>{{ 'dashboard.title' | transloco }}</h1>
+
+  @if (stats(); as stats) {
+    <div class="tiles">
+      <div class="tile" data-tile="month-distance">
+        <span class="label">{{ 'dashboard.tiles.monthDistance' | transloco }}</span>
+        <span class="value">{{ stats.thisMonth.distanceKm | number: '1.0-1' }} km</span>
+      </div>
+      <div class="tile" data-tile="month-rides">
+        <span class="label">{{ 'dashboard.tiles.monthRides' | transloco }}</span>
+        <span class="value">{{ stats.thisMonth.rideCount }}</span>
+      </div>
+      <div class="tile" data-tile="year-distance">
+        <span class="label">{{ 'dashboard.tiles.yearDistance' | transloco }}</span>
+        <span class="value">{{ stats.thisYear.distanceKm | number: '1.0-1' }} km</span>
+      </div>
+      <div class="tile" data-tile="year-rides">
+        <span class="label">{{ 'dashboard.tiles.yearRides' | transloco }}</span>
+        <span class="value">{{ stats.thisYear.rideCount }}</span>
+      </div>
+      <div class="tile" data-tile="year-elevation">
+        <span class="label">{{ 'dashboard.tiles.yearElevation' | transloco }}</span>
+        <span class="value">{{ stats.thisYear.elevationGainMeters | number: '1.0-0' }} m</span>
+      </div>
+    </div>
+
+    @if (distanceChart(); as distance) {
+      <section class="chart-card">
+        <h2>{{ 'dashboard.charts.monthlyDistance' | transloco }}</h2>
+        <div class="chart-host"><app-chart type="bar" [data]="distance" /></div>
+      </section>
+    }
+
+    @if (speedChart(); as speed) {
+      <section class="chart-card">
+        <h2>{{ 'dashboard.charts.speedTrend' | transloco }}</h2>
+        <div class="chart-host"><app-chart type="line" [data]="speed" /></div>
+      </section>
+    }
+  }
+</section>
