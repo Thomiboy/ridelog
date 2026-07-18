@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BottomSheet } from './bottom-sheet';
+import { SheetState } from './sheet-state';
 
 @Component({
   imports: [BottomSheet],
@@ -40,6 +41,17 @@ describe('BottomSheet', () => {
 
     sheet.snapTo('collapsed');
     fixture.detectChanges();
+    expect(el.querySelector('.sheet')?.classList).toContain('collapsed');
+  });
+
+  it('applies snap requests coming from pages via SheetState', async () => {
+    const { fixture, el } = setup();
+    const sheetState = TestBed.inject(SheetState);
+
+    sheetState.request('collapsed');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     expect(el.querySelector('.sheet')?.classList).toContain('collapsed');
   });
 });

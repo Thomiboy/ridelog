@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { RideDetail } from './ride-detail';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
@@ -29,17 +30,20 @@ describe('RideDetail', () => {
   function setup() {
     const ridesService = { getRide: vi.fn().mockReturnValue(of(detail)) };
     const mapState = { showRoute: vi.fn() };
+    const sheetState = { request: vi.fn() };
     TestBed.configureTestingModule({
       imports: [RideDetail, translocoTesting()],
       providers: [
+        provideRouter([]),
         { provide: RidesService, useValue: ridesService },
         { provide: MapState, useValue: mapState },
+        { provide: SheetState, useValue: sheetState },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: 'r1' }) } } },
       ],
     });
     const fixture = TestBed.createComponent(RideDetail);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, sheetState };
   }
 
   it('loads the ride by route id and shows its metrics', () => {
@@ -55,5 +59,17 @@ describe('RideDetail', () => {
     const { mapState } = setup();
 
     expect(mapState.showRoute).toHaveBeenCalledWith('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+  });
+
+  it('snaps the sheet to half so the route is visible', () => {
+    const { sheetState } = setup();
+
+    expect(sheetState.request).toHaveBeenCalledWith('half');
+  });
+
+  it('offers a way back to the ride list', () => {
+    const { el } = setup();
+
+    expect(el.querySelector('a[href="/rides"]')).toBeTruthy();
   });
 });

@@ -53,4 +53,36 @@ describe('MapState', () => {
 
     expect(state.polyline()).toBe('abc123');
   });
+
+  it('reset restores the latest route from cache without refetching', () => {
+    state.loadLatest();
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=1`).flush({
+      items: [{ id: 'r9', startTime: '2026-07-17T08:00:00Z', distanceKm: 42, durationMinutes: 90, sport: 'ROAD_BIKING' }],
+      page: 1,
+      pageSize: 1,
+      total: 5,
+    });
+    http.expectOne(`${environment.apiBaseUrl}/rides/r9`).flush({ id: 'r9', routePolyline: 'latest-route' });
+
+    state.showRoute('selected-route');
+    expect(state.polyline()).toBe('selected-route');
+
+    state.reset();
+
+    expect(state.polyline()).toBe('latest-route');
+    http.verify(); // no new requests
+  });
+
+  it('reset loads the latest route when nothing is cached yet', () => {
+    state.reset();
+
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=1`).flush({
+      items: [],
+      page: 1,
+      pageSize: 1,
+      total: 0,
+    });
+
+    expect(state.polyline()).toBeNull();
+  });
 });
