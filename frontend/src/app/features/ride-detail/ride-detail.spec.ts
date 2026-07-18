@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { vi } from 'vitest';
 import { RideDetail } from './ride-detail';
 import { RidesService } from '../../core/api/rides.service';
@@ -30,10 +30,13 @@ describe('RideDetail', () => {
     routePolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
   };
 
-  function setup(ride: RideDetailDto = detail) {
-    const ridesService = { getRide: vi.fn().mockReturnValue(of(ride)) };
+  function setup(ride: RideDetailDto = detail, getRideImpl?: (id: string) => Observable<RideDetailDto>) {
+    const ridesService = {
+      getRide: getRideImpl ? vi.fn().mockImplementation(getRideImpl) : vi.fn().mockReturnValue(of(ride)),
+    };
     const mapState = { showRoute: vi.fn() };
     const sheetState = { request: vi.fn() };
+    const paramMap$ = new BehaviorSubject(convertToParamMap({ id: 'r1' }));
     TestBed.configureTestingModule({
       imports: [RideDetail, translocoTesting()],
       providers: [
@@ -41,13 +44,13 @@ describe('RideDetail', () => {
         { provide: RidesService, useValue: ridesService },
         { provide: MapState, useValue: mapState },
         { provide: SheetState, useValue: sheetState },
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: 'r1' }) } } },
+        { provide: ActivatedRoute, useValue: { paramMap: paramMap$.asObservable() } },
       ],
     });
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(RideDetail);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, sheetState, router };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, sheetState, router, paramMap$ };
   }
 
   it('loads the ride by route id and shows its metrics', () => {
@@ -94,6 +97,17 @@ describe('RideDetail', () => {
 
     (el.querySelector('[data-next-ride]') as HTMLButtonElement).click();
     expect(navigate).toHaveBeenCalledWith('/rides/r2');
+  });
+
+  it('reloads the ride and route when the route id changes', () => {
+    const { ridesService, mapState, paramMap$ } = setup(detail, (id) =>
+      of({ ...detail, id, routePolyline: `route-${id}` }),
+    );
+
+    paramMap$.next(convertToParamMap({ id: 'r2' }));
+
+    expect(ridesService.getRide).toHaveBeenCalledWith('r2');
+    expect(mapState.showRoute).toHaveBeenCalledWith('route-r2');
   });
 
   it('disables the stepper buttons at the ends of the list', () => {

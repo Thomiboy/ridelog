@@ -134,10 +134,10 @@ describe('Rides', () => {
     expect(ridesService.getRides).toHaveBeenCalledWith(1, 18);
   });
 
-  it('requests a half sheet page size of 9 rides', () => {
-    const { ridesService } = setup({ items: [], page: 1, pageSize: 9, total: 0 }, false, {}, 'half');
+  it('requests a half sheet page size of 8 rides', () => {
+    const { ridesService } = setup({ items: [], page: 1, pageSize: 8, total: 0 }, false, {}, 'half');
 
-    expect(ridesService.getRides).toHaveBeenCalledWith(1, 9);
+    expect(ridesService.getRides).toHaveBeenCalledWith(1, 8);
   });
 
   it('reloads with the new page size when the sheet snap changes', () => {
@@ -180,7 +180,7 @@ describe('Rides', () => {
     expect(next.disabled).toBe(false);
 
     next.click();
-    expect(ridesService.getRides).toHaveBeenCalledWith(2, 9); // half sheet → 9 per page
+    expect(ridesService.getRides).toHaveBeenCalledWith(2, 8); // half sheet → 8 per page
   });
 
   it('has no next page on the last page', () => {
