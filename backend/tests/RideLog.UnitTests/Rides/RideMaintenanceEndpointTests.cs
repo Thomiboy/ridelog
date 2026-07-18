@@ -26,7 +26,7 @@ public class RideMaintenanceEndpointTests(RideLogApiFactory factory) : IClassFix
         return client;
     }
 
-    private async Task SeedRideAsync()
+    private async Task<Guid> SeedRideAsync()
     {
         using var scope = factory.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
@@ -49,6 +49,7 @@ public class RideMaintenanceEndpointTests(RideLogApiFactory factory) : IClassFix
         context.Rides.RemoveRange(context.Rides);
         context.Rides.Add(ride);
         await context.SaveChangesAsync();
+        return ride.Id;
     }
 
     [Fact]
@@ -80,6 +81,40 @@ public class RideMaintenanceEndpointTests(RideLogApiFactory factory) : IClassFix
         // The seeded ride has no raw file to parse, so it is neither processed nor failed.
         Assert.Equal(0, summary!.Processed);
         Assert.Equal(0, summary.Failed);
+    }
+
+    [Fact]
+    public async Task Anonymous_delete_one_is_rejected()
+    {
+        var id = await SeedRideAsync();
+
+        var response = await factory.CreateClient().DeleteAsync($"/rides/{id}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_deletes_a_single_ride()
+    {
+        var id = await SeedRideAsync();
+        var client = await AdminClientAsync();
+
+        var response = await client.DeleteAsync($"/rides/{id}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var list = await client.GetFromJsonAsync<PagedDto>("/rides");
+        Assert.Equal(0, list!.Total);
+    }
+
+    [Fact]
+    public async Task Admin_deleting_an_unknown_ride_is_404()
+    {
+        await SeedRideAsync();
+        var client = await AdminClientAsync();
+
+        var response = await client.DeleteAsync($"/rides/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

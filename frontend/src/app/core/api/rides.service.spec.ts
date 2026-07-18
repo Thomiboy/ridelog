@@ -46,4 +46,12 @@ describe('RidesService', () => {
     expect(request.request.method).toBe('GET');
     request.flush({});
   });
+
+  it('deletes a ride by id', () => {
+    service.deleteRide('r1').subscribe();
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/rides/r1`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+  });
 });

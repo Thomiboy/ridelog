@@ -17,4 +17,8 @@ export class RidesService {
   getRide(id: string): Observable<RideDetail> {
     return this.http.get<RideDetail>(`${this.baseUrl}/rides/${id}`);
   }
+
+  deleteRide(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/rides/${id}`);
+  }
 }

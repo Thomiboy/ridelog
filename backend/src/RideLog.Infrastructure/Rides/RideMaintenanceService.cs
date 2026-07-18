@@ -62,6 +62,22 @@ internal sealed class RideMaintenanceService(
         return rides.Count;
     }
 
+    public async Task<bool> DeleteAsync(string userId, Guid rideId, CancellationToken cancellationToken = default)
+    {
+        var ride = await context.Rides
+            .Where(r => r.UserId == userId && r.Id == rideId)
+            .Include(r => r.RawFiles)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (ride is null)
+        {
+            return false;
+        }
+
+        context.Rides.Remove(ride);
+        await context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     /// <summary>Re-derives metrics from the stored files, mirroring the Polar sync precedence
     /// (TCX metrics, GPX route). Returns false when a ride has no parseable raw file.</summary>
     private bool Reprocess(Ride ride)

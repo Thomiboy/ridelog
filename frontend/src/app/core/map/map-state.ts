@@ -21,6 +21,12 @@ export class MapState {
     this.polyline.set(polyline ?? null);
   }
 
+  /** Drops the cached latest route so the next reset refetches — call after a ride is deleted. */
+  invalidate(): void {
+    this.latest = null;
+    this.latestLoaded = false;
+  }
+
   /** Restores the default (latest ride) route, from cache when already loaded. */
   reset(): void {
     if (this.latestLoaded) {

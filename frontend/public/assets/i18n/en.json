@@ -28,6 +28,8 @@
     "empty": "No rides yet. Sign in as admin to import history or sync from Polar.",
     "next": "Next",
     "prev": "Previous",
+    "delete": "Delete ride",
+    "deleteConfirm": "Delete this ride and its stored files? This cannot be undone.",
     "columns": {
       "date": "Date",
       "distance": "Distance",
