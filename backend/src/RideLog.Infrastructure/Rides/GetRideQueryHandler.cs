@@ -27,6 +27,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
                 r.MaximumHeartRate,
                 r.ElevationGainMeters,
                 r.AverageCadence,
+                r.Calories,
                 r.RoutePolyline,
             })
             .SingleOrDefaultAsync(cancellationToken);
@@ -51,6 +52,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             MaximumHeartRate = ride.MaximumHeartRate,
             ElevationGainMeters = ride.ElevationGainMeters,
             AverageCadence = ride.AverageCadence,
+            Calories = ride.Calories,
             RoutePolyline = ride.RoutePolyline,
         };
     }

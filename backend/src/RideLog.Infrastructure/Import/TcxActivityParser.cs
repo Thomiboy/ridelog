@@ -49,9 +49,26 @@ internal sealed class TcxActivityParser : IActivityFileParser
             .Select(c => int.Parse(c!, CultureInfo.InvariantCulture))
             .ToList();
 
-        var distance = doc.Descendants()
-            .Where(e => e.Name.LocalName == "Lap")
-            .Sum(lap => double.Parse(Child(lap, "DistanceMeters") ?? "0", CultureInfo.InvariantCulture));
+        var laps = doc.Descendants().Where(e => e.Name.LocalName == "Lap").ToList();
+
+        var distance = laps.Sum(lap => double.Parse(Child(lap, "DistanceMeters") ?? "0", CultureInfo.InvariantCulture));
+
+        // Lap MaximumSpeed is metres per second; take the fastest lap and convert to km/h.
+        var lapMaxSpeeds = laps
+            .Select(lap => Child(lap, "MaximumSpeed"))
+            .Where(s => s is not null)
+            .Select(s => double.Parse(s!, CultureInfo.InvariantCulture))
+            .ToList();
+        var maximumSpeedKmh = lapMaxSpeeds.Count > 0 ? lapMaxSpeeds.Max() * 3.6 : (double?)null;
+
+        var lapCalories = laps
+            .Select(lap => Child(lap, "Calories"))
+            .Where(c => c is not null)
+            .Select(c => int.Parse(c!, CultureInfo.InvariantCulture))
+            .ToList();
+        var calories = lapCalories.Count > 0 ? lapCalories.Sum() : (int?)null;
+
+        var averageSpeedKmh = AverageSpeedKmh(laps, distance, end - start);
 
         var elevationGain = 0.0;
         var hasElevation = points.Any(p => p.ElevationMeters.HasValue);
@@ -76,9 +93,45 @@ internal sealed class TcxActivityParser : IActivityFileParser
             MaximumHeartRate = heartRates.Count > 0 ? heartRates.Max() : null,
             AverageCadence = cadences.Count > 0 ? (int)Math.Round(cadences.Average()) : null,
             ElevationGainMeters = hasElevation ? elevationGain : null,
-            AverageSpeedKmh = duration > TimeSpan.Zero ? distance / 1000 / duration.TotalHours : null,
+            MaximumSpeedKmh = maximumSpeedKmh,
+            Calories = calories,
+            AverageSpeedKmh = averageSpeedKmh,
             RoutePoints = points,
         };
+    }
+
+    /// <summary>
+    /// Average speed with source-first precedence: Polar records its own moving-time average in the
+    /// Lap LX extension (m/s), so prefer that (distance-weighted across laps). Failing that, derive
+    /// from distance and the summed Lap moving time. Elapsed wall time is only the last resort — it
+    /// reads low whenever the rider stopped.
+    /// </summary>
+    private static double? AverageSpeedKmh(IReadOnlyList<XElement> laps, double distanceMeters, TimeSpan elapsed)
+    {
+        var weighted = laps
+            .Select(lap => new
+            {
+                Distance = double.Parse(Child(lap, "DistanceMeters") ?? "0", CultureInfo.InvariantCulture),
+                AvgSpeed = Descendant(lap, "AvgSpeed") is { } s ? double.Parse(s.Value, CultureInfo.InvariantCulture) : (double?)null,
+            })
+            .Where(l => l.AvgSpeed is not null && l.Distance > 0)
+            .ToList();
+        if (weighted.Count > 0)
+        {
+            var totalDistance = weighted.Sum(l => l.Distance);
+            return weighted.Sum(l => l.AvgSpeed!.Value * l.Distance) / totalDistance * 3.6;
+        }
+
+        var movingSeconds = laps
+            .Select(lap => Child(lap, "TotalTimeSeconds"))
+            .Where(t => t is not null)
+            .Sum(t => double.Parse(t!, CultureInfo.InvariantCulture));
+        if (movingSeconds > 0)
+        {
+            return distanceMeters / 1000 / (movingSeconds / 3600);
+        }
+
+        return elapsed > TimeSpan.Zero ? distanceMeters / 1000 / elapsed.TotalHours : null;
     }
 
     private static GeoPoint? ToGeoPoint(XElement trackpoint)

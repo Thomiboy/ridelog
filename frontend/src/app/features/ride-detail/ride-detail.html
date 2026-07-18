@@ -15,7 +15,7 @@
       <div><dt>{{ 'rideDetail.avgHr' | transloco }}</dt><dd>{{ ride.averageHeartRate ?? '—' }}</dd></div>
       <div><dt>{{ 'rideDetail.maxHr' | transloco }}</dt><dd>{{ ride.maximumHeartRate ?? '—' }}</dd></div>
       <div><dt>{{ 'rideDetail.elevation' | transloco }}</dt><dd>{{ ride.elevationGainMeters | number: '1.0-0' }} m</dd></div>
-      <div><dt>{{ 'rideDetail.cadence' | transloco }}</dt><dd>{{ ride.averageCadence ?? '—' }}</dd></div>
+      <div><dt>{{ 'rideDetail.calories' | transloco }}</dt><dd>{{ ride.calories ? (ride.calories | number: '1.0-0') + ' kcal' : '—' }}</dd></div>
     </dl>
   }
 </section>

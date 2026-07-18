@@ -4,9 +4,10 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { TranslocoService } from '@jsverse/transloco';
 import { AdminService } from '../../core/api/admin.service';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
-import type { ImportSummary, PolarStatus, SyncSummary } from '../../core/api/admin.models';
+import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary } from '../../core/api/admin.models';
 
 @Component({
   selector: 'app-admin',
@@ -18,11 +19,14 @@ export class Admin {
   private readonly adminService = inject(AdminService);
   private readonly navigator = inject(ExternalNavigator);
   private readonly route = inject(ActivatedRoute);
+  private readonly transloco = inject(TranslocoService);
 
   readonly status = signal<PolarStatus | null>(null);
   readonly selectedFiles = signal<File[]>([]);
   readonly importResult = signal<ImportSummary | null>(null);
   readonly syncResult = signal<SyncSummary | null>(null);
+  readonly reprocessResult = signal<ReprocessSummary | null>(null);
+  readonly deletedCount = signal<number | null>(null);
   readonly busy = signal(false);
   readonly failed = signal(false);
   readonly justLinked = signal(false);
@@ -72,6 +76,38 @@ export class Admin {
           this.syncResult.set(result);
           this.busy.set(false);
           this.loadStatus();
+        },
+        error: () => this.fail(),
+      }),
+    );
+  }
+
+  reprocess(): void {
+    this.run(() =>
+      this.adminService.reprocess().subscribe({
+        next: (result) => {
+          this.reprocessResult.set(result);
+          this.busy.set(false);
+        },
+        error: () => this.fail(),
+      }),
+    );
+  }
+
+  deleteAllRides(): void {
+    // Destructive and unrecoverable for Polar-synced rides (AccessLink never re-serves them),
+    // so require two explicit confirmations before calling the API.
+    if (!confirm(this.transloco.translate('admin.maintenance.deleteConfirm1'))) {
+      return;
+    }
+    if (!confirm(this.transloco.translate('admin.maintenance.deleteConfirm2'))) {
+      return;
+    }
+    this.run(() =>
+      this.adminService.deleteAllRides().subscribe({
+        next: (result) => {
+          this.deletedCount.set(result.deleted);
+          this.busy.set(false);
         },
         error: () => this.fail(),
       }),

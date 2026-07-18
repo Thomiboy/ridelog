@@ -128,6 +128,17 @@ app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, C
     .RequireAuthorization(AdminSeedOptions.RoleName)
     .DisableAntiforgery();
 
+// Admin maintenance: re-parse every ride's stored raw files to refresh metrics in place. The only
+// way to fix Polar-synced rides, which AccessLink never re-serves.
+app.MapPost("/rides/reprocess", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
+    Results.Ok(await maintenance.ReprocessAsync(user.FindFirstValue("sub")!)))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
+// Admin danger action: delete every ride (and its raw files) for the user.
+app.MapDelete("/rides", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
+    Results.Ok(new { deleted = await maintenance.DeleteAllAsync(user.FindFirstValue("sub")!) }))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
 // Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
 const string OAuthStatePurpose = "Polar.OAuthState";
 

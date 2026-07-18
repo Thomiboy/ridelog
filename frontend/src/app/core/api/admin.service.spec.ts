@@ -51,6 +51,28 @@ describe('AdminService', () => {
     expect(summary!.imported).toBe(2);
   });
 
+  it('reprocesses stored rides', () => {
+    let summary: { processed: number } | undefined;
+    service.reprocess().subscribe((s) => (summary = s));
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/rides/reprocess`);
+    expect(request.request.method).toBe('POST');
+    request.flush({ processed: 5, failed: 1 });
+
+    expect(summary!.processed).toBe(5);
+  });
+
+  it('deletes all rides', () => {
+    let deleted: number | undefined;
+    service.deleteAllRides().subscribe((r) => (deleted = r.deleted));
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/rides`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush({ deleted: 7 });
+
+    expect(deleted).toBe(7);
+  });
+
   it('uploads ride files as multipart form data', () => {
     const file = new File(['<gpx/>'], 'ride.gpx', { type: 'application/gpx+xml' });
 

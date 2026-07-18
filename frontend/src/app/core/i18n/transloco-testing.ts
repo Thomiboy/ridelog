@@ -36,7 +36,7 @@ const en = {
     avgHr: 'Avg HR',
     maxHr: 'Max HR',
     elevation: 'Elevation',
-    cadence: 'Cadence',
+    calories: 'Calories',
   },
   admin: {
     title: 'Admin',
@@ -62,6 +62,17 @@ const en = {
       lastSync: 'Last sync:',
       never: 'never',
       result: 'Imported {{imported}}, skipped {{skipped}}, failed {{failed}}.',
+    },
+    maintenance: {
+      title: 'Maintenance',
+      reprocessHint: 'Recompute metrics for every ride from its stored files.',
+      reprocessButton: 'Reprocess all',
+      reprocessResult: 'Reprocessed {{processed}}, failed {{failed}}.',
+      deleteHint: 'Danger: delete every ride and its stored files.',
+      deleteButton: 'Delete all rides',
+      deleteConfirm1: 'Delete ALL rides and their stored files? This cannot be undone.',
+      deleteConfirm2: 'Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?',
+      deleteResult: 'Deleted {{deleted}} rides.',
     },
   },
   login: {

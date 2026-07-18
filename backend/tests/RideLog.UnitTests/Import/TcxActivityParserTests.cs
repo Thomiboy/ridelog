@@ -13,8 +13,15 @@ public class TcxActivityParserTests
             <Activity Sport="Biking">
               <Id>2026-06-02T07:00:00Z</Id>
               <Lap StartTime="2026-06-02T07:00:00Z">
-                <TotalTimeSeconds>3600</TotalTimeSeconds>
+                <TotalTimeSeconds>3000</TotalTimeSeconds>
                 <DistanceMeters>30000</DistanceMeters>
+                <MaximumSpeed>16.5</MaximumSpeed>
+                <Calories>620</Calories>
+                <Extensions>
+                  <LX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+                    <AvgSpeed>10.0</AvgSpeed>
+                  </LX>
+                </Extensions>
                 <Track>
                   <Trackpoint>
                     <Time>2026-06-02T07:00:00Z</Time>
@@ -84,6 +91,63 @@ public class TcxActivityParserTests
     public void Averages_cadence()
     {
         Assert.Equal(86, Parse().AverageCadence); // (80 + 90 + 88) / 3 → 86
+    }
+
+    [Fact]
+    public void Takes_maximum_speed_from_the_lap_in_kmh()
+    {
+        // Lap MaximumSpeed is metres per second; 16.5 m/s × 3.6 = 59.4 km/h.
+        Assert.Equal(59.4, Parse().MaximumSpeedKmh!.Value, 0.01);
+    }
+
+    [Fact]
+    public void Sums_calories_across_laps()
+    {
+        Assert.Equal(620, Parse().Calories);
+    }
+
+    [Fact]
+    public void Prefers_the_source_average_speed_over_elapsed_time()
+    {
+        // Lap LX AvgSpeed is 10.0 m/s → 36.0 km/h. The elapsed-time derivation would give
+        // 30 km / 1 h = 30.0 km/h, so the source value must win.
+        Assert.Equal(36.0, Parse().AverageSpeedKmh!.Value, 0.01);
+    }
+
+    [Fact]
+    public void Falls_back_to_moving_time_when_no_source_average_speed()
+    {
+        // No LX AvgSpeed: derive from distance and moving time (TotalTimeSeconds), not elapsed
+        // wall time. 20 km over 2400 s (40 min) = 30.0 km/h; elapsed wall time is 1 h → 20 km/h.
+        var tcx = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+              <Activities>
+                <Activity Sport="Biking">
+                  <Id>2026-06-02T07:00:00Z</Id>
+                  <Lap StartTime="2026-06-02T07:00:00Z">
+                    <TotalTimeSeconds>2400</TotalTimeSeconds>
+                    <DistanceMeters>20000</DistanceMeters>
+                    <Track>
+                      <Trackpoint>
+                        <Time>2026-06-02T07:00:00Z</Time>
+                        <Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.0</LongitudeDegrees></Position>
+                      </Trackpoint>
+                      <Trackpoint>
+                        <Time>2026-06-02T08:00:00Z</Time>
+                        <Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.02</LongitudeDegrees></Position>
+                      </Trackpoint>
+                    </Track>
+                  </Lap>
+                </Activity>
+              </Activities>
+            </TrainingCenterDatabase>
+            """;
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(tcx));
+
+        var activity = new TcxActivityParser().Parse(stream, "ride.tcx");
+
+        Assert.Equal(30.0, activity.AverageSpeedKmh!.Value, 0.01);
     }
 
     [Fact]

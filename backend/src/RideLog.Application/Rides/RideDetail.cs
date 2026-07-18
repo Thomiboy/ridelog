@@ -17,6 +17,7 @@ public sealed record RideDetail
     public int? MaximumHeartRate { get; init; }
     public double? ElevationGainMeters { get; init; }
     public int? AverageCadence { get; init; }
+    public int? Calories { get; init; }
 
     public string? RoutePolyline { get; init; }
 }

@@ -101,6 +101,7 @@ internal sealed class PolarSyncService(
             MaximumHeartRate = metrics.MaximumHeartRate,
             ElevationGainMeters = metrics.ElevationGainMeters,
             AverageCadence = metrics.AverageCadence,
+            Calories = metrics.Calories,
             Sport = exercise.Sport, // mapped from Polar metadata, not the TCX label
             Source = RideSource.Polar,
             RoutePolyline = PolylineEncoder.Encode(Downsample(route)),
