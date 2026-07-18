@@ -1,0 +1,14 @@
+<div class="sheet" [class]="'sheet ' + state()" [style.height]="heightStyle">
+  <div
+    class="handle"
+    (pointerdown)="onHandlePointerDown($event)"
+    (pointermove)="onHandlePointerMove($event)"
+    (pointerup)="onHandlePointerUp()"
+    (pointercancel)="onHandlePointerUp()"
+  >
+    <span class="grip"></span>
+  </div>
+  <div class="content">
+    <ng-content />
+  </div>
+</div>

@@ -1,5 +1,11 @@
+<div class="bg-map">
+  <app-route-map [polyline]="mapState.polyline()" />
+</div>
+
 <app-header />
 
-<main class="app-main">
-  <router-outlet />
-</main>
+<app-bottom-sheet>
+  <main class="app-main">
+    <router-outlet />
+  </main>
+</app-bottom-sheet>

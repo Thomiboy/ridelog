@@ -5,10 +5,6 @@
       <span class="badge">{{ ride.source }}</span>
     </header>
 
-    @if (ride.routePolyline) {
-      <app-route-map [polyline]="ride.routePolyline" />
-    }
-
     <dl class="metrics">
       <div><dt>{{ 'rideDetail.distance' | transloco }}</dt><dd>{{ ride.distanceKm | number: '1.1-1' }} km</dd></div>
       <div><dt>{{ 'rideDetail.duration' | transloco }}</dt><dd>{{ ride.durationMinutes | number: '1.0-0' }} min</dd></div>
