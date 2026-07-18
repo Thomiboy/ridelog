@@ -36,6 +36,8 @@ export class BottomSheet {
   snapTo(state: SnapState): void {
     this.dragHeight.set(null);
     this.state.set(state);
+    // Publish so pages (e.g. the rides list) can size themselves to the visible room.
+    this.sheetState.current.set(state);
   }
 
   get heightStyle(): string {

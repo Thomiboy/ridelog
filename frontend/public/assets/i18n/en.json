@@ -39,6 +39,8 @@
     }
   },
   "rideDetail": {
+    "previous": "Previous ride",
+    "next": "Next ride",
     "distance": "Distance",
     "duration": "Duration",
     "avgSpeed": "Avg speed",

@@ -6,6 +6,9 @@ import type { SnapState } from './snap';
 export class SheetState {
   readonly requested = signal<SnapState | null>(null);
 
+  /** The sheet's current snap, published by BottomSheet so pages can adapt to how much room they have. */
+  readonly current = signal<SnapState>('half');
+
   request(state: SnapState): void {
     this.requested.set(state);
   }

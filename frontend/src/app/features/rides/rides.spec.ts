@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
@@ -7,17 +7,26 @@ import { Rides } from './rides';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { AuthService } from '../../core/auth/auth.service';
+import { SheetState } from '../../layout/bottom-sheet/sheet-state';
+import type { SnapState } from '../../layout/bottom-sheet/snap';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Rides', () => {
-  function setup(paged: Paged<RideSummary>, loggedIn = false) {
+  function setup(
+    paged: Paged<RideSummary>,
+    loggedIn = false,
+    queryParams: Record<string, string> = {},
+    snap: SnapState = 'half',
+  ) {
     const ridesService = {
       getRides: vi.fn().mockReturnValue(of(paged)),
       deleteRide: vi.fn().mockReturnValue(of(void 0)),
     };
     const mapState = { reset: vi.fn(), invalidate: vi.fn() };
     const authService = { isLoggedIn: signal(loggedIn) };
+    const sheetState = { current: signal<SnapState>(snap) };
+    const route = { snapshot: { queryParamMap: convertToParamMap(queryParams) } };
     TestBed.configureTestingModule({
       imports: [Rides, translocoTesting()],
       providers: [
@@ -25,12 +34,14 @@ describe('Rides', () => {
         { provide: RidesService, useValue: ridesService },
         { provide: MapState, useValue: mapState },
         { provide: AuthService, useValue: authService },
+        { provide: SheetState, useValue: sheetState },
+        { provide: ActivatedRoute, useValue: route },
       ],
     });
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(Rides);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, router };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, sheetState, router };
   }
 
   const ride = (id: string): RideSummary => ({
@@ -117,6 +128,49 @@ describe('Rides', () => {
     expect(el.querySelector('.empty')?.textContent).toContain('No rides yet');
   });
 
+  it('requests a full sheet page size of 18 rides', () => {
+    const { ridesService } = setup({ items: [], page: 1, pageSize: 18, total: 0 }, false, {}, 'full');
+
+    expect(ridesService.getRides).toHaveBeenCalledWith(1, 18);
+  });
+
+  it('requests a half sheet page size of 9 rides', () => {
+    const { ridesService } = setup({ items: [], page: 1, pageSize: 9, total: 0 }, false, {}, 'half');
+
+    expect(ridesService.getRides).toHaveBeenCalledWith(1, 9);
+  });
+
+  it('reloads with the new page size when the sheet snap changes', () => {
+    const { fixture, ridesService, sheetState } = setup({ items: [], page: 1, pageSize: 9, total: 0 }, false, {}, 'half');
+
+    sheetState.current.set('full');
+    fixture.detectChanges();
+
+    expect(ridesService.getRides).toHaveBeenCalledWith(1, 18);
+  });
+
+  it('loads the page from the ?page query param on entry', () => {
+    const { ridesService } = setup({ items: [ride('r1')], page: 2, pageSize: 20, total: 40 }, false, { page: '2' });
+
+    expect(ridesService.getRides.mock.calls[0][0]).toBe(2);
+  });
+
+  it('shows the current page and total page count', () => {
+    const { el } = setup({ items: [ride('r1'), ride('r2')], page: 1, pageSize: 2, total: 3 });
+
+    // 3 rides at 2 per page → 2 pages.
+    expect(el.querySelector('[data-page-indicator]')?.textContent).toContain('1 / 2');
+  });
+
+  it('reflects the page in the URL when paging', () => {
+    const { el, router } = setup({ items: [ride('r1'), ride('r2')], page: 1, pageSize: 2, total: 3 });
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    (el.querySelector('[data-next]') as HTMLButtonElement).click();
+
+    expect(navigate).toHaveBeenCalledWith([], expect.objectContaining({ queryParams: { page: 2 } }));
+  });
+
   it('loads the next page when there is one', () => {
     const { el, ridesService } = setup({ items: [ride('r1'), ride('r2')], page: 1, pageSize: 2, total: 3 });
 
@@ -126,7 +180,7 @@ describe('Rides', () => {
     expect(next.disabled).toBe(false);
 
     next.click();
-    expect(ridesService.getRides).toHaveBeenCalledWith(2);
+    expect(ridesService.getRides).toHaveBeenCalledWith(2, 9); // half sheet → 9 per page
   });
 
   it('has no next page on the last page', () => {

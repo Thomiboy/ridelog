@@ -44,6 +44,18 @@ describe('BottomSheet', () => {
     expect(el.querySelector('.sheet')?.classList).toContain('collapsed');
   });
 
+  it('publishes its current snap to SheetState', () => {
+    const { fixture, sheet } = setup();
+    const sheetState = TestBed.inject(SheetState);
+
+    expect(sheetState.current()).toBe('half');
+
+    sheet.snapTo('full');
+    fixture.detectChanges();
+
+    expect(sheetState.current()).toBe('full');
+  });
+
   it('applies snap requests coming from pages via SheetState', async () => {
     const { fixture, el } = setup();
     const sheetState = TestBed.inject(SheetState);

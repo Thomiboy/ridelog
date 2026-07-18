@@ -45,6 +45,7 @@
         <button mat-stroked-button type="button" data-prev [disabled]="!hasPrev()" (click)="prev()">
           {{ 'rides.prev' | transloco }}
         </button>
+        <span class="page-indicator" data-page-indicator>{{ result()?.page }} / {{ totalPages() }}</span>
         <button mat-stroked-button type="button" data-next [disabled]="!hasNext()" (click)="next()">
           {{ 'rides.next' | transloco }}
         </button>

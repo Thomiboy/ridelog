@@ -19,5 +19,11 @@ public sealed record RideDetail
     public int? AverageCadence { get; init; }
     public int? Calories { get; init; }
 
+    /// <summary>The older neighbour in the cycling list (earlier in time); null at the oldest ride.</summary>
+    public Guid? PreviousId { get; init; }
+
+    /// <summary>The newer neighbour in the cycling list (later in time); null at the newest ride.</summary>
+    public Guid? NextId { get; init; }
+
     public string? RoutePolyline { get; init; }
 }

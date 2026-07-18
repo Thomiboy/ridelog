@@ -1,5 +1,29 @@
 <section class="page">
-  <a mat-button routerLink="/rides" class="back">← {{ 'rideDetail.back' | transloco }}</a>
+  <nav class="toolbar">
+    <a mat-button routerLink="/rides" class="back">← {{ 'rideDetail.back' | transloco }}</a>
+    <span class="stepper">
+      <button
+        mat-icon-button
+        type="button"
+        data-prev-ride
+        [attr.aria-label]="'rideDetail.previous' | transloco"
+        [disabled]="!ride()?.previousId"
+        (click)="goToPrevious()"
+      >
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        type="button"
+        data-next-ride
+        [attr.aria-label]="'rideDetail.next' | transloco"
+        [disabled]="!ride()?.nextId"
+        (click)="goToNext()"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </span>
+  </nav>
 
   @if (ride(); as ride) {
     <header class="detail-header">

@@ -31,6 +31,8 @@ const en = {
   },
   rideDetail: {
     back: 'Rides',
+    previous: 'Previous ride',
+    next: 'Next ride',
     distance: 'Distance',
     duration: 'Duration',
     avgSpeed: 'Avg speed',
