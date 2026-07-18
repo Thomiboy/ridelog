@@ -1,36 +1,27 @@
 .admin {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   max-width: 40rem;
 }
 
 .card {
-  border: 1px solid #e2e2e2;
-  border-radius: 6px;
-  padding: 1rem 1.25rem;
-
-  h2 {
-    margin-top: 0;
-    font-size: 1.1rem;
-  }
-
-  button {
-    margin-top: 0.5rem;
+  input[type='file'] {
+    margin: 0.5rem 0;
   }
 
   .result {
     margin-bottom: 0;
-    color: #333;
+    color: var(--mat-sys-on-surface-variant);
   }
 }
 
 .error {
-  color: #b00020;
+  color: var(--mat-sys-error);
 }
 
 .status {
-  color: #666;
+  color: var(--mat-sys-on-surface-variant);
   margin: 0.25rem 0;
 
   &.ok {

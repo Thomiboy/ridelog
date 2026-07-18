@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, TranslocoPipe],
+  imports: [RouterLink, RouterLinkActive, TranslocoPipe, MatButtonModule],
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })

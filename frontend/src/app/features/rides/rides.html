@@ -26,10 +26,10 @@
         </tbody>
       </table>
       <nav class="paging">
-        <button type="button" data-prev [disabled]="!hasPrev()" (click)="prev()">
+        <button mat-stroked-button type="button" data-prev [disabled]="!hasPrev()" (click)="prev()">
           {{ 'rides.prev' | transloco }}
         </button>
-        <button type="button" data-next [disabled]="!hasNext()" (click)="next()">
+        <button mat-stroked-button type="button" data-next [disabled]="!hasNext()" (click)="next()">
           {{ 'rides.next' | transloco }}
         </button>
       </nav>

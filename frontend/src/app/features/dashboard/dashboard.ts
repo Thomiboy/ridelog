@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { MatCardModule } from '@angular/material/card';
 import { DashboardService } from '../../core/api/dashboard.service';
 import type { DashboardStats } from '../../core/api/dashboard.models';
 import { Chart } from '../../shared/chart/chart';
@@ -8,7 +9,7 @@ import { buildMonthlyDistanceChart, buildSpeedTrendChart } from './dashboard-cha
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Chart, TranslocoPipe, DecimalPipe],
+  imports: [Chart, TranslocoPipe, DecimalPipe, MatCardModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
