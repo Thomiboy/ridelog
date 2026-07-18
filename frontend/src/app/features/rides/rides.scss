@@ -28,6 +28,21 @@
   }
 }
 
+.paging {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.page-indicator {
+  min-width: 3.5rem;
+  text-align: center;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+
 .empty {
   color: #666;
 }
