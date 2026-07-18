@@ -139,6 +139,13 @@ app.MapDelete("/rides", async (IRideMaintenanceService maintenance, ClaimsPrinci
     Results.Ok(new { deleted = await maintenance.DeleteAllAsync(user.FindFirstValue("sub")!) }))
     .RequireAuthorization(AdminSeedOptions.RoleName);
 
+// Admin deletes a single ride (and its raw files); 404 when the user has no such ride.
+app.MapDelete("/rides/{id:guid}", async (Guid id, IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
+    await maintenance.DeleteAsync(user.FindFirstValue("sub")!, id)
+        ? Results.Ok()
+        : Results.NotFound())
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
 // Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
 const string OAuthStatePurpose = "Polar.OAuthState";
 

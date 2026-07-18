@@ -85,4 +85,29 @@ describe('MapState', () => {
 
     expect(state.polyline()).toBeNull();
   });
+
+  it('invalidate forces reset to refetch the latest route', () => {
+    state.loadLatest();
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=1`).flush({
+      items: [{ id: 'r9', startTime: '2026-07-17T08:00:00Z', distanceKm: 42, durationMinutes: 90, sport: 'ROAD_BIKING' }],
+      page: 1,
+      pageSize: 1,
+      total: 5,
+    });
+    http.expectOne(`${environment.apiBaseUrl}/rides/r9`).flush({ id: 'r9', routePolyline: 'old-latest' });
+
+    // The cached latest ride was deleted, so the cache must not be trusted any more.
+    state.invalidate();
+    state.reset();
+
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=1`).flush({
+      items: [{ id: 'r8', startTime: '2026-07-16T08:00:00Z', distanceKm: 30, durationMinutes: 70, sport: 'ROAD_BIKING' }],
+      page: 1,
+      pageSize: 1,
+      total: 4,
+    });
+    http.expectOne(`${environment.apiBaseUrl}/rides/r8`).flush({ id: 'r8', routePolyline: 'new-latest' });
+
+    expect(state.polyline()).toBe('new-latest');
+  });
 });

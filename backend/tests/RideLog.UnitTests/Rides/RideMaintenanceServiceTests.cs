@@ -199,4 +199,48 @@ public sealed class RideMaintenanceServiceTests : IDisposable
             Assert.Equal(1, await verify.Set<RawFile>().CountAsync());
         }
     }
+
+    [Fact]
+    public async Task Delete_removes_one_ride_and_its_raw_files_leaving_the_rest()
+    {
+        var target = StaleRide(start: new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        var keep = StaleRide(start: new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero));
+        Guid targetId = target.Id;
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.AddRange(target, keep);
+            await context.SaveChangesAsync();
+        }
+
+        bool deleted;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            deleted = await NewService(context).DeleteAsync("user-1", targetId);
+        }
+
+        Assert.True(deleted);
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Equal(0, await verify.Rides.CountAsync(r => r.Id == targetId));
+            Assert.Equal(1, await verify.Rides.CountAsync()); // the other ride stays
+            Assert.Equal(1, await verify.Set<RawFile>().CountAsync()); // only the target's raw file went
+        }
+    }
+
+    [Fact]
+    public async Task Delete_returns_false_for_an_unknown_ride()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(StaleRide());
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            Assert.False(await NewService(context).DeleteAsync("user-1", Guid.NewGuid()));
+        }
+    }
 }
