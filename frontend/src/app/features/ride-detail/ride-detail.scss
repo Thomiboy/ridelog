@@ -1,16 +1,18 @@
+// The date comes first so it's the top-most thing in the sheet — readable even when collapsed,
+// with the back link and stepper on the row below rather than pushing it down.
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 0.25rem;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-}
-
-.detail-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  // Clear of the toolbar so the date is never tucked under the back link when the sheet is low.
-  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
 
   .badge {
     font-size: 0.8rem;

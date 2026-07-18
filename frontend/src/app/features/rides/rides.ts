@@ -11,7 +11,7 @@ import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
 // How many rides fit without scrolling at each sheet height (collapsed isn't for browsing).
-const PAGE_SIZE: Record<string, number> = { full: 18, half: 9, collapsed: 9 };
+const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
 
 @Component({
   selector: 'app-rides',

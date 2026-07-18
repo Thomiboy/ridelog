@@ -1,5 +1,6 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,8 +40,13 @@ export class RideDetail {
   }
 
   constructor() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
+    // React to every id change (the stepper navigates between /rides/:id without recreating this
+    // component, so reading the snapshot once would leave the page and map on the old ride).
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const id = params.get('id');
+      if (!id) {
+        return;
+      }
       // Snap to half so the selected ride's route stays visible on the background map.
       this.sheetState.request('half');
       this.ridesService.getRide(id).subscribe((ride) => {
@@ -48,6 +54,6 @@ export class RideDetail {
         // The route draws on the global background map instead of an embedded one.
         this.mapState.showRoute(ride.routePolyline);
       });
-    }
+    });
   }
 }

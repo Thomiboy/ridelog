@@ -1,4 +1,11 @@
 <section class="page">
+  @if (ride(); as ride) {
+    <header class="detail-header">
+      <h1>{{ ride.startTime | date: 'fullDate' }}</h1>
+      <span class="badge">{{ ride.source }}</span>
+    </header>
+  }
+
   <nav class="toolbar">
     <a mat-button routerLink="/rides" class="back">← {{ 'rideDetail.back' | transloco }}</a>
     <span class="stepper">
@@ -26,11 +33,6 @@
   </nav>
 
   @if (ride(); as ride) {
-    <header class="detail-header">
-      <h1>{{ ride.startTime | date: 'fullDate' }}</h1>
-      <span class="badge">{{ ride.source }}</span>
-    </header>
-
     <dl class="metrics">
       <div><dt>{{ 'rideDetail.distance' | transloco }}</dt><dd>{{ ride.distanceKm | number: '1.1-1' }} km</dd></div>
       <div><dt>{{ 'rideDetail.duration' | transloco }}</dt><dd>{{ ride.durationMinutes | number: '1.0-0' }} min</dd></div>
