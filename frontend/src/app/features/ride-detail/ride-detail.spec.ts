@@ -62,6 +62,20 @@ describe('RideDetail', () => {
     expect(el.textContent).toContain('Polar'); // source badge
   });
 
+  it('shows the start time alongside the date', () => {
+    const { el } = setup();
+
+    // A HH:mm time is rendered next to the date (timezone-independent check).
+    expect(el.querySelector('.detail-header')?.textContent).toMatch(/\d{1,2}:\d{2}/);
+  });
+
+  it('shows the duration as hours and minutes', () => {
+    const { el } = setup();
+
+    expect(el.textContent).toContain('1h 58m'); // 118 minutes
+    expect(el.textContent).not.toContain('118 min');
+  });
+
   it('publishes the route to the global background map', () => {
     const { mapState } = setup();
 
@@ -108,6 +122,21 @@ describe('RideDetail', () => {
 
     expect(ridesService.getRide).toHaveBeenCalledWith('r2');
     expect(mapState.showRoute).toHaveBeenCalledWith('route-r2');
+  });
+
+  it('groups the metrics into four icon-led cards', () => {
+    const { el } = setup();
+
+    expect(el.querySelectorAll('[data-card]').length).toBe(4);
+    // Per-metric Material Icon ligatures are wired (e.g. the calories fire icon).
+    expect(el.textContent).toContain('local_fire_department');
+    expect(el.textContent).toContain('favorite');
+  });
+
+  it('shows a dash for missing metrics', () => {
+    const { el } = setup({ ...detail, maximumSpeedKmh: undefined, averageHeartRate: undefined });
+
+    expect(el.textContent).toContain('—');
   });
 
   it('disables the stepper buttons at the ends of the list', () => {

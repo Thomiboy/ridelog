@@ -2,9 +2,26 @@
 // with the back link and stepper on the row below rather than pushing it down.
 .detail-header {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
   margin: 0 0 0.25rem;
+
+  h1 {
+    margin: 0;
+    font-size: 1.3rem;
+  }
+
+  // Emphasised source chip (navy-tinted fill + border), not a plain white pill.
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(27, 58, 107, 0.12);
+    color: #1b3a6b;
+    border: 1px solid rgba(27, 58, 107, 0.4);
+  }
 }
 
 .toolbar {
@@ -13,35 +30,50 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.25rem;
-
-  .badge {
-    font-size: 0.8rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    background: #eef;
-    color: #335;
-  }
 }
 
-.metrics {
+// Four grouped cards in a row (like the dashboard tiles), wrapping responsively.
+.cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: 0.75rem 1.5rem;
-  margin-top: 1.25rem;
+  gap: 0.75rem;
+  margin-top: 1rem;
 
-  div {
+  .metric-card {
+    padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
+    gap: 0.5rem;
   }
 
-  dt {
+  .card-title {
     font-size: 0.8rem;
-    color: #666;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
   }
 
-  dd {
-    margin: 0;
-    font-size: 1.15rem;
-    font-weight: 600;
+  .metric {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    mat-icon {
+      color: var(--mat-sys-primary);
+      font-size: 1.2rem;
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+
+    .metric-label {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .metric-value {
+      font-weight: 700;
+      color: var(--mat-sys-primary);
+      white-space: nowrap;
+    }
   }
 }

@@ -5,14 +5,16 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
+import { formatDuration } from './duration';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 
 @Component({
   selector: 'app-ride-detail',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule],
+  imports: [TranslocoPipe, DatePipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule, MatCardModule],
   templateUrl: './ride-detail.html',
   styleUrl: './ride-detail.scss',
 })
@@ -24,6 +26,9 @@ export class RideDetail {
   private readonly sheetState = inject(SheetState);
 
   readonly ride = signal<RideDetailDto | null>(null);
+
+  /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
+  readonly formatDuration = formatDuration;
 
   goToPrevious(): void {
     this.step(this.ride()?.previousId);

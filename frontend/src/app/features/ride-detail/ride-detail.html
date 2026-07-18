@@ -1,7 +1,7 @@
 <section class="page">
   @if (ride(); as ride) {
     <header class="detail-header">
-      <h1>{{ ride.startTime | date: 'fullDate' }}</h1>
+      <h1>{{ ride.startTime | date: 'fullDate' }} · {{ ride.startTime | date: 'HH:mm' }}</h1>
       <span class="badge">{{ ride.source }}</span>
     </header>
   }
@@ -33,15 +33,68 @@
   </nav>
 
   @if (ride(); as ride) {
-    <dl class="metrics">
-      <div><dt>{{ 'rideDetail.distance' | transloco }}</dt><dd>{{ ride.distanceKm | number: '1.1-1' }} km</dd></div>
-      <div><dt>{{ 'rideDetail.duration' | transloco }}</dt><dd>{{ ride.durationMinutes | number: '1.0-0' }} min</dd></div>
-      <div><dt>{{ 'rideDetail.avgSpeed' | transloco }}</dt><dd>{{ ride.averageSpeedKmh | number: '1.1-1' }} km/h</dd></div>
-      <div><dt>{{ 'rideDetail.maxSpeed' | transloco }}</dt><dd>{{ ride.maximumSpeedKmh | number: '1.1-1' }} km/h</dd></div>
-      <div><dt>{{ 'rideDetail.avgHr' | transloco }}</dt><dd>{{ ride.averageHeartRate ?? '—' }}</dd></div>
-      <div><dt>{{ 'rideDetail.maxHr' | transloco }}</dt><dd>{{ ride.maximumHeartRate ?? '—' }}</dd></div>
-      <div><dt>{{ 'rideDetail.elevation' | transloco }}</dt><dd>{{ ride.elevationGainMeters | number: '1.0-0' }} m</dd></div>
-      <div><dt>{{ 'rideDetail.calories' | transloco }}</dt><dd>{{ ride.calories ? (ride.calories | number: '1.0-0') + ' kcal' : '—' }}</dd></div>
-    </dl>
+    <div class="cards">
+      <mat-card appearance="outlined" class="metric-card" data-card>
+        <span class="card-title">{{ 'rideDetail.card.distanceTime' | transloco }}</span>
+        <div class="metric">
+          <mat-icon>straighten</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.distance' | transloco }}</span>
+          <span class="metric-value">{{ ride.distanceKm | number: '1.1-1' }} km</span>
+        </div>
+        <div class="metric">
+          <mat-icon>timer</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.duration' | transloco }}</span>
+          <span class="metric-value">{{ formatDuration(ride.durationMinutes) }}</span>
+        </div>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="metric-card" data-card>
+        <span class="card-title">{{ 'rideDetail.card.speed' | transloco }}</span>
+        <div class="metric">
+          <mat-icon>speed</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
+          <span class="metric-value">
+            {{ ride.averageSpeedKmh != null ? (ride.averageSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}
+          </span>
+        </div>
+        <div class="metric">
+          <mat-icon>bolt</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.max' | transloco }}</span>
+          <span class="metric-value">
+            {{ ride.maximumSpeedKmh != null ? (ride.maximumSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}
+          </span>
+        </div>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="metric-card" data-card>
+        <span class="card-title">{{ 'rideDetail.card.heartRate' | transloco }}</span>
+        <div class="metric">
+          <mat-icon>favorite</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
+          <span class="metric-value">{{ ride.averageHeartRate != null ? ride.averageHeartRate + ' bpm' : '—' }}</span>
+        </div>
+        <div class="metric">
+          <mat-icon>monitor_heart</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.max' | transloco }}</span>
+          <span class="metric-value">{{ ride.maximumHeartRate != null ? ride.maximumHeartRate + ' bpm' : '—' }}</span>
+        </div>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="metric-card" data-card>
+        <span class="card-title">{{ 'rideDetail.card.climbingEnergy' | transloco }}</span>
+        <div class="metric">
+          <mat-icon>terrain</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.elevation' | transloco }}</span>
+          <span class="metric-value">
+            {{ ride.elevationGainMeters != null ? (ride.elevationGainMeters | number: '1.0-0') + ' m' : '—' }}
+          </span>
+        </div>
+        <div class="metric">
+          <mat-icon>local_fire_department</mat-icon>
+          <span class="metric-label">{{ 'rideDetail.calories' | transloco }}</span>
+          <span class="metric-value">{{ ride.calories ? (ride.calories | number: '1.0-0') + ' kcal' : '—' }}</span>
+        </div>
+      </mat-card>
+    </div>
   }
 </section>
