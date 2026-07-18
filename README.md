@@ -79,6 +79,11 @@ Pushing to `main` runs the CI workflows, which deploy on green:
   `AZURE_WEBAPP_PUBLISH_PROFILE` secret, then polls `/health`. EF migrations run at startup
   (`RideLogInitializer` calls `Database.Migrate()`), so there is no separate migration step.
 
+- **Sync cron** (`sync-cron.yml`) calls `/sync` hourly with the `X-Sync-Secret` header from the
+  `SYNC_SHARED_SECRET` repo secret — one mechanism that both wakes the sleeping F1 instance and
+  pulls new Polar rides. It can also be run manually from the Actions tab (workflow_dispatch).
+  The secret's value must equal the `Polar__SyncSharedSecret` App Service setting.
+
 Configure these **App Service application settings** in the Azure portal (double underscore maps
 to the config hierarchy) — they are secrets and are never committed:
 
