@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using RideLog.Application.Import;
 using RideLog.Application.Polar;
 using RideLog.Application.Routes;
@@ -14,7 +15,8 @@ namespace RideLog.Infrastructure.Polar;
 internal sealed class PolarSyncService(
     IPolarClient client,
     RideLogDbContext context,
-    IEnumerable<IActivityFileParser> parsers) : IPolarSyncService
+    IEnumerable<IActivityFileParser> parsers,
+    ILogger<PolarSyncService> logger) : IPolarSyncService
 {
     private const int MaxRoutePoints = 1000;
 
@@ -41,28 +43,35 @@ internal sealed class PolarSyncService(
                     default: failed++; break;
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Resilience: a single failed exercise must not block the rest or the commit.
+                // Log loudly — the transaction is still acknowledged, so a lost exercise must be
+                // diagnosable (and recovered via a manual Polar Flow export) instead of vanishing.
                 failed++;
+                logger.LogError(ex, "Failed to import Polar exercise {ExerciseUrl}.", exerciseUrl);
             }
         }
 
         // Acknowledge only after processing, so a crash mid-run re-serves the exercises next time.
         await client.CommitTransactionAsync(transaction, cancellationToken);
 
-        await StampLastSyncAsync(userId, cancellationToken);
+        var summary = new SyncSummary(imported, skipped, failed);
+        await StampLastSyncAsync(userId, summary, cancellationToken);
 
-        return new SyncSummary(imported, skipped, failed);
+        return summary;
     }
 
-    private async Task StampLastSyncAsync(string userId, CancellationToken cancellationToken)
+    private async Task StampLastSyncAsync(string userId, SyncSummary summary, CancellationToken cancellationToken)
     {
         var connection = await context.PolarConnections
             .SingleOrDefaultAsync(c => c.UserId == userId, cancellationToken);
         if (connection is not null)
         {
             connection.LastSyncAt = DateTimeOffset.UtcNow;
+            connection.LastSyncImported = summary.Imported;
+            connection.LastSyncSkipped = summary.Skipped;
+            connection.LastSyncFailed = summary.Failed;
             await context.SaveChangesAsync(cancellationToken);
         }
     }

@@ -15,5 +15,9 @@ public sealed record PolarConnectionInfo(string AppUserId, PolarToken Token);
 /// <summary>Outcome of a sync run.</summary>
 public sealed record SyncSummary(int Imported, int Skipped, int Failed);
 
-/// <summary>Whether a Polar account is linked, since when, and when the last sync ran.</summary>
-public sealed record PolarStatus(bool Linked, DateTimeOffset? ConnectedAt, DateTimeOffset? LastSyncAt);
+/// <summary>
+/// Whether a Polar account is linked, since when, when the last sync ran, and its outcome
+/// (imported/skipped/failed) — null until the first sync — so the UI can surface silent failures.
+/// </summary>
+public sealed record PolarStatus(
+    bool Linked, DateTimeOffset? ConnectedAt, DateTimeOffset? LastSyncAt, SyncSummary? LastSyncResult);

@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RideLog.Application.Polar;
 using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Import;
@@ -63,8 +65,25 @@ public sealed class PolarSyncServiceTests : IDisposable
         return client;
     }
 
-    private PolarSyncService NewService(IPolarClient client, RideLogDbContext context) =>
-        new(client, context, [new GpxActivityParser(), new TcxActivityParser()]);
+    private PolarSyncService NewService(
+        IPolarClient client, RideLogDbContext context, ILogger<PolarSyncService>? logger = null) =>
+        new(client, context, [new GpxActivityParser(), new TcxActivityParser()], logger ?? NullLogger<PolarSyncService>.Instance);
+
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) =>
+            Entries.Add((logLevel, formatter(state, exception), exception));
+
+        private sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+            public void Dispose() { }
+        }
+    }
 
     [Fact]
     public async Task Syncs_an_exercise_into_a_ride_and_commits_the_transaction()
@@ -178,6 +197,56 @@ public sealed class PolarSyncServiceTests : IDisposable
             var connection = await verify.PolarConnections.SingleAsync();
             Assert.NotNull(connection.LastSyncAt);
             Assert.True(connection.LastSyncAt >= before);
+        }
+    }
+
+    [Fact]
+    public async Task A_failing_exercise_is_logged_as_an_error_with_its_url()
+    {
+        var client = new FakePolarClient
+        {
+            Transaction = new PolarTransaction("txn-1", ["https://polar/ex/bad"]),
+        };
+        client.ExerciseFactory = url => new PolarExercise(url,
+            new DateTimeOffset(2026, 6, 10, 6, 0, 0, TimeSpan.Zero), "ROAD_BIKING");
+        // No GPX or TCX for the bad exercise → import throws.
+
+        var logger = new CapturingLogger<PolarSyncService>();
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(client, context, logger).SyncAsync("admin-1");
+        }
+
+        Assert.Contains(logger.Entries, e => e.Level == LogLevel.Error && e.Message.Contains("https://polar/ex/bad"));
+    }
+
+    [Fact]
+    public async Task Sync_records_the_last_summary_on_the_connection()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.PolarConnections.Add(new RideLog.Infrastructure.Persistence.PolarConnection
+            {
+                Id = Guid.NewGuid(),
+                UserId = "admin-1",
+                PolarUserId = "pu-1",
+                AccessTokenProtected = "protected",
+                ConnectedAt = DateTimeOffset.UtcNow.AddDays(-3),
+            });
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(ClientWithOneExercise(), context).SyncAsync("admin-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var connection = await verify.PolarConnections.SingleAsync();
+            Assert.Equal(1, connection.LastSyncImported);
+            Assert.Equal(0, connection.LastSyncSkipped);
+            Assert.Equal(0, connection.LastSyncFailed);
         }
     }
 

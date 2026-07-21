@@ -19,7 +19,7 @@ public class PolarApiClientTests
             Task.FromResult<PolarConnectionInfo?>(new PolarConnectionInfo("admin-1", new PolarToken("access-tok", "pu-1")));
 
         public Task<PolarStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new PolarStatus(true, DateTimeOffset.UtcNow, null));
+            Task.FromResult(new PolarStatus(true, DateTimeOffset.UtcNow, null, null));
     }
 
     private static PolarApiClient NewClient(MockHttpMessageHandler handler)

@@ -93,6 +93,45 @@ public sealed class PolarTokenStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Status_includes_the_last_sync_result()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewStore(context).SaveAsync("admin-1", new PolarToken("tok", "polar-user-9"));
+            var connection = await context.Set<PolarConnection>().SingleAsync();
+            connection.LastSyncAt = DateTimeOffset.UtcNow;
+            connection.LastSyncImported = 2;
+            connection.LastSyncSkipped = 1;
+            connection.LastSyncFailed = 3;
+            await context.SaveChangesAsync();
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var status = await NewStore(verify).GetStatusAsync();
+
+            Assert.NotNull(status.LastSyncResult);
+            Assert.Equal(2, status.LastSyncResult!.Imported);
+            Assert.Equal(1, status.LastSyncResult.Skipped);
+            Assert.Equal(3, status.LastSyncResult.Failed);
+        }
+    }
+
+    [Fact]
+    public async Task Status_has_no_last_sync_result_before_the_first_sync()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewStore(context).SaveAsync("admin-1", new PolarToken("tok", "polar-user-9"));
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Null((await NewStore(verify).GetStatusAsync()).LastSyncResult);
+        }
+    }
+
+    [Fact]
     public async Task Re_linking_replaces_the_existing_connection()
     {
         await using (var context = new RideLogDbContext(_options))

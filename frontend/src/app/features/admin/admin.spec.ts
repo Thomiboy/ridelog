@@ -48,6 +48,24 @@ describe('Admin', () => {
     expect(navigator.navigate).toHaveBeenCalledWith('https://flow.polar.com/x');
   });
 
+  it('shows the last (automatic) sync result from the status', () => {
+    const { el } = setup({
+      getPolarStatus: vi.fn().mockReturnValue(
+        of({
+          linked: true,
+          connectedAt: '2026-07-17T10:00:00Z',
+          lastSyncAt: '2026-07-17T11:30:00Z',
+          lastSyncResult: { imported: 2, skipped: 1, failed: 3 },
+        }),
+      ),
+    });
+
+    const text = el.querySelector('[data-last-sync-result]')?.textContent ?? '';
+    expect(text).toContain('2'); // imported
+    expect(text).toContain('1'); // skipped
+    expect(text).toContain('3'); // failed
+  });
+
   it('triggers a sync and shows the summary', () => {
     const { fixture, el, adminService } = setup();
 
