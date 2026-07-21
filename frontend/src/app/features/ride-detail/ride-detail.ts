@@ -9,7 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
-import { formatDuration } from './duration';
+import { formatDuration } from '../../core/format/duration';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 
 @Component({

@@ -19,9 +19,9 @@
         <tbody>
           @for (ride of page.items; track ride.id) {
             <tr data-ride (click)="open(ride)">
-              <td><a [routerLink]="['/rides', ride.id]">{{ ride.startTime | date: 'mediumDate' }}</a></td>
+              <td>{{ ride.startTime | date: 'mediumDate' }}</td>
               <td>{{ ride.distanceKm | number: '1.1-1' }} km</td>
-              <td>{{ ride.durationMinutes | number: '1.0-0' }} min</td>
+              <td>{{ formatDuration(ride.durationMinutes) }}</td>
               <td>{{ ride.averageSpeedKmh ? (ride.averageSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}</td>
               <td>{{ ride.elevationGainMeters ? (ride.elevationGainMeters | number: '1.0-0') + ' m' : '—' }}</td>
               @if (isLoggedIn()) {
