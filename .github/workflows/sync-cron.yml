@@ -2,8 +2,11 @@ name: Polar Sync Cron
 
 on:
   schedule:
-    # Hourly. Doubles as the wake-up ping for the sleeping F1 instance (see CLAUDE.md).
-    - cron: "0 * * * *"
+    # Once a day at 07:00 UTC ≈ 09:00 Europe/Budapest (CEST; 08:00 in winter — cron is UTC-only).
+    # Once a day keeps the Azure SQL serverless active time within the free monthly grant:
+    # each run wakes the DB for ~1h (auto-pause delay), so ~30 active hours/month vs the ~55h the
+    # free offer covers. The admin page's manual sync (and workflow_dispatch) cover on-demand pulls.
+    - cron: "0 7 * * *"
   # Manual trigger for testing the cron path without waiting for the hour.
   workflow_dispatch:
 
