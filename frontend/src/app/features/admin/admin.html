@@ -66,6 +66,11 @@
           {{ 'admin.sync.never' | transloco }}
         }
       </p>
+      @if (status()?.lastSyncResult; as last) {
+        <p class="result" data-last-sync-result [class.has-failures]="last.failed > 0">
+          {{ 'admin.sync.result' | transloco: { imported: last.imported, skipped: last.skipped, failed: last.failed } }}
+        </p>
+      }
       @if (syncResult(); as result) {
         <p class="result">
           {{ 'admin.sync.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}

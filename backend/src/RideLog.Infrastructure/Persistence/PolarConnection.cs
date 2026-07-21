@@ -20,4 +20,9 @@ public class PolarConnection
 
     /// <summary>When the last sync run completed; null until the first sync.</summary>
     public DateTimeOffset? LastSyncAt { get; set; }
+
+    /// <summary>Outcome of the most recent sync (automatic or manual); null until the first sync.</summary>
+    public int? LastSyncImported { get; set; }
+    public int? LastSyncSkipped { get; set; }
+    public int? LastSyncFailed { get; set; }
 }

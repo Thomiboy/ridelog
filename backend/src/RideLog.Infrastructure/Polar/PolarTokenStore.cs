@@ -63,8 +63,14 @@ internal sealed class PolarTokenStore : IPolarTokenStore
     public async Task<PolarStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
         var connection = await _context.PolarConnections.FirstOrDefaultAsync(cancellationToken);
-        return connection is null
-            ? new PolarStatus(false, null, null)
-            : new PolarStatus(true, connection.ConnectedAt, connection.LastSyncAt);
+        if (connection is null)
+        {
+            return new PolarStatus(false, null, null, null);
+        }
+
+        var lastResult = connection.LastSyncImported is { } imported
+            ? new SyncSummary(imported, connection.LastSyncSkipped ?? 0, connection.LastSyncFailed ?? 0)
+            : null;
+        return new PolarStatus(true, connection.ConnectedAt, connection.LastSyncAt, lastResult);
     }
 }

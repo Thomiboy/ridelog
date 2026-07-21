@@ -13,6 +13,12 @@
   .result {
     margin-bottom: 0;
     color: var(--mat-sys-on-surface-variant);
+
+    // Draw the eye when the last sync dropped a ride, so silent failures don't hide.
+    &.has-failures {
+      color: var(--mat-sys-error);
+      font-weight: 600;
+    }
   }
 }
 
