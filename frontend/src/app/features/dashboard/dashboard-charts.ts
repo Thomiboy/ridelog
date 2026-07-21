@@ -1,7 +1,7 @@
 import type { ChartData } from 'chart.js';
 import type { MonthlyDistance, MonthlySpeed } from '../../core/api/dashboard.models';
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** Monthly distance as a two-series bar chart: current year vs previous year, Jan–Dec. */
 export function buildMonthlyDistanceChart(monthly: MonthlyDistance[]): ChartData<'bar'> {

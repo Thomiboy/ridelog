@@ -31,8 +31,9 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
     private sealed record PeriodDto(double DistanceKm, int RideCount, double ElevationGainMeters);
     private sealed record MonthDto(int Year, int Month, double DistanceKm);
     private sealed record SpeedDto(int Year, int Month, double? AverageSpeedKmh);
+    private sealed record BestMonthDto(int Month, double DistanceKm, int RideCount);
     private sealed record DashboardDto(
-        PeriodDto ThisMonth, PeriodDto ThisYear,
+        PeriodDto ThisMonth, PeriodDto ThisYear, PeriodDto LastYear, BestMonthDto? LastYearBestMonth,
         IReadOnlyList<MonthDto> MonthlyDistance, IReadOnlyList<SpeedDto> AverageSpeedTrend);
 
     private static Ride Ride(DateTimeOffset start, double km, double elevation, double avgSpeed, string sport = "ROAD_BIKING") => new()
@@ -96,5 +97,42 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
         Assert.Equal(31, dashboard.AverageSpeedTrend.Single(s => s.Year == 2026 && s.Month == 7).AverageSpeedKmh!.Value, 0.01);
         Assert.Equal(28, dashboard.AverageSpeedTrend.Single(s => s.Year == 2026 && s.Month == 3).AverageSpeedKmh!.Value, 0.01);
         Assert.Null(dashboard.AverageSpeedTrend.Single(s => s.Year == 2026 && s.Month == 1).AverageSpeedKmh);
+    }
+
+    [Fact]
+    public async Task Last_year_totals_and_best_month_come_from_the_previous_year()
+    {
+        await SeedAsync();
+
+        var dashboard = await factory.CreateClient().GetFromJsonAsync<DashboardDto>("/dashboard");
+
+        // The only 2025 cycling ride: 2025-07-20, 80 km, 300 m, 1 ride.
+        Assert.Equal(80, dashboard!.LastYear.DistanceKm, 0.01);
+        Assert.Equal(1, dashboard.LastYear.RideCount);
+        Assert.Equal(300, dashboard.LastYear.ElevationGainMeters, 0.01);
+
+        Assert.NotNull(dashboard.LastYearBestMonth);
+        Assert.Equal(7, dashboard.LastYearBestMonth!.Month); // July
+        Assert.Equal(80, dashboard.LastYearBestMonth.DistanceKm, 0.01);
+        Assert.Equal(1, dashboard.LastYearBestMonth.RideCount);
+    }
+
+    [Fact]
+    public async Task Last_year_is_empty_when_the_previous_year_had_no_rides()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            // Current-year rides only — nothing in 2025.
+            context.Rides.Add(Ride(new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero), km: 60, elevation: 400, avgSpeed: 30));
+            await context.SaveChangesAsync();
+        }
+
+        var dashboard = await factory.CreateClient().GetFromJsonAsync<DashboardDto>("/dashboard");
+
+        Assert.Equal(0, dashboard!.LastYear.DistanceKm, 0.01);
+        Assert.Equal(0, dashboard.LastYear.RideCount);
+        Assert.Null(dashboard.LastYearBestMonth);
     }
 }

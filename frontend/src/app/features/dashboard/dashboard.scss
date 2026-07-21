@@ -21,6 +21,11 @@
       color: var(--mat-sys-primary);
     }
   }
+
+  // Previous-year group: values in the chart's previous-year colour to tie them together.
+  &.last-year .tile .value {
+    color: #ff6384;
+  }
 }
 
 .chart-card {

@@ -25,6 +25,33 @@
       </mat-card>
     </div>
 
+    @if (stats.lastYear.rideCount > 0) {
+      <div class="tiles last-year">
+        @if (stats.lastYearBestMonth; as best) {
+          <mat-card appearance="outlined" class="tile" data-tile="best-month-distance">
+            <span class="label">{{ 'dashboard.tiles.bestMonthDistance' | transloco: { month: monthLabel(best.month) } }}</span>
+            <span class="value">{{ best.distanceKm | number: '1.0-1' }} km</span>
+          </mat-card>
+          <mat-card appearance="outlined" class="tile" data-tile="best-month-rides">
+            <span class="label">{{ 'dashboard.tiles.bestMonthRides' | transloco: { month: monthLabel(best.month) } }}</span>
+            <span class="value">{{ best.rideCount }}</span>
+          </mat-card>
+        }
+        <mat-card appearance="outlined" class="tile" data-tile="last-year-distance">
+          <span class="label">{{ 'dashboard.tiles.lastYearDistance' | transloco }}</span>
+          <span class="value">{{ stats.lastYear.distanceKm | number: '1.0-1' }} km</span>
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-tile="last-year-rides">
+          <span class="label">{{ 'dashboard.tiles.lastYearRides' | transloco }}</span>
+          <span class="value">{{ stats.lastYear.rideCount }}</span>
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-tile="last-year-elevation">
+          <span class="label">{{ 'dashboard.tiles.lastYearElevation' | transloco }}</span>
+          <span class="value">{{ stats.lastYear.elevationGainMeters | number: '1.0-0' }} m</span>
+        </mat-card>
+      </div>
+    }
+
     @if (distanceChart(); as distance) {
       <mat-card appearance="outlined" class="chart-card">
         <mat-card-header>

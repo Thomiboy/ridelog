@@ -1,7 +1,10 @@
 namespace RideLog.Application.Rides;
 
-/// <summary>Aggregate totals for one period (this month / this year).</summary>
+/// <summary>Aggregate totals for one period (this month / this year / last year).</summary>
 public sealed record PeriodStats(double DistanceKm, int RideCount, double ElevationGainMeters);
+
+/// <summary>The best (highest-distance) month of a year: its month number, distance and ride count.</summary>
+public sealed record BestMonth(int Month, double DistanceKm, int RideCount);
 
 /// <summary>Distance ridden in one calendar month.</summary>
 public sealed record MonthlyDistance(int Year, int Month, double DistanceKm);
@@ -17,5 +20,7 @@ public sealed record MonthlySpeed(int Year, int Month, double? AverageSpeedKmh);
 public sealed record DashboardStats(
     PeriodStats ThisMonth,
     PeriodStats ThisYear,
+    PeriodStats LastYear,
+    BestMonth? LastYearBestMonth,
     IReadOnlyList<MonthlyDistance> MonthlyDistance,
     IReadOnlyList<MonthlySpeed> AverageSpeedTrend);

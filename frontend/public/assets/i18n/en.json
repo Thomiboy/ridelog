@@ -16,7 +16,12 @@
       "monthRides": "Rides this month",
       "yearDistance": "This year",
       "yearRides": "Rides this year",
-      "yearElevation": "Climbing this year"
+      "yearElevation": "Climbing this year",
+      "bestMonthDistance": "Best month ({{month}})",
+      "bestMonthRides": "Best month rides ({{month}})",
+      "lastYearDistance": "Last year",
+      "lastYearRides": "Rides last year",
+      "lastYearElevation": "Climbing last year"
     },
     "charts": {
       "monthlyDistance": "Monthly distance",
