@@ -28,7 +28,8 @@ export interface BestMonth {
 export interface DashboardStats {
   thisMonth: PeriodStats;
   thisYear: PeriodStats;
-  lastYear: PeriodStats;
+  // Optional so the dashboard survives talking to an older backend that doesn't send these yet.
+  lastYear?: PeriodStats;
   lastYearBestMonth?: BestMonth | null;
   monthlyDistance: MonthlyDistance[];
   averageSpeedTrend: MonthlySpeed[];

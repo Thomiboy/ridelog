@@ -72,6 +72,15 @@ describe('Dashboard', () => {
     expect(el.querySelector('[data-tile="best-month-distance"]')).toBeNull();
   });
 
+  it('renders without crashing when the API omits last-year data (older backend)', () => {
+    const { el } = setup({ lastYear: undefined, lastYearBestMonth: undefined });
+
+    // The current-period tiles still render; the previous-year group is simply absent.
+    expect(el.querySelector('[data-tile="year-distance"]')?.textContent).toContain('200.5');
+    expect(el.querySelector('[data-tile="last-year-distance"]')).toBeNull();
+    expect(el.querySelector('[data-tile="best-month-distance"]')).toBeNull();
+  });
+
   it('feeds both charts from the aggregates', () => {
     const { fixture } = setup();
 
