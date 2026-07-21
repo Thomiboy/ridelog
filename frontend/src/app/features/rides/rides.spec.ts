@@ -61,10 +61,19 @@ describe('Rides', () => {
     expect(el.textContent).toContain('61.5');
   });
 
-  it('links each ride to its detail page', () => {
+  it('shows the duration as hours and minutes', () => {
     const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
 
-    expect(el.querySelector('a[href="/rides/r1"]')).toBeTruthy();
+    expect(el.textContent).toContain('1h 58m'); // 118 minutes
+    expect(el.textContent).not.toContain('118 min');
+  });
+
+  it('opens the ride from the row, without a separate date link', () => {
+    const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    // The whole row navigates now, so the date is plain text — no anchor.
+    expect(el.querySelector('a[href="/rides/r1"]')).toBeNull();
+    expect(el.querySelector('[data-ride]')?.textContent).toContain('Jun 1, 2026');
   });
 
   it('restores the latest-ride background map on entry', () => {

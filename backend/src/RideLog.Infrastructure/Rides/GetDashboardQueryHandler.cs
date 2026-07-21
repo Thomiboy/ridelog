@@ -32,6 +32,15 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
         var thisMonth = Period(relevant.Where(r => r.StartTime.Year == now.Year && r.StartTime.Month == now.Month));
         var thisYear = Period(relevant.Where(r => r.StartTime.Year == now.Year));
 
+        var lastYearRides = relevant.Where(r => r.StartTime.Year == currentYear - 1).ToList();
+        var lastYear = Period(lastYearRides);
+        var lastYearBestMonth = lastYearRides
+            .GroupBy(r => r.StartTime.Month)
+            .Select(g => new BestMonth(g.Key, Math.Round(g.Sum(r => r.DistanceMeters) / 1000.0, 1), g.Count()))
+            // Highest distance wins; ties resolve to the earlier month.
+            .OrderByDescending(m => m.DistanceKm).ThenBy(m => m.Month)
+            .FirstOrDefault();
+
         var monthlyDistance = new List<MonthlyDistance>(24);
         foreach (var year in new[] { currentYear - 1, currentYear })
         {
@@ -55,7 +64,7 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
             speedTrend.Add(new MonthlySpeed(month.Year, month.Month, speeds.Count > 0 ? Math.Round(speeds.Average(), 1) : null));
         }
 
-        return new DashboardStats(thisMonth, thisYear, monthlyDistance, speedTrend);
+        return new DashboardStats(thisMonth, thisYear, lastYear, lastYearBestMonth, monthlyDistance, speedTrend);
     }
 
     private static PeriodStats Period(IEnumerable<Row> rides)

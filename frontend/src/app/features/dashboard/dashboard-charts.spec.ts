@@ -5,6 +5,7 @@ describe('dashboard chart builders', () => {
   const stats: DashboardStats = {
     thisMonth: { distanceKm: 100, rideCount: 2, elevationGainMeters: 600 },
     thisYear: { distanceKm: 200, rideCount: 3, elevationGainMeters: 1100 },
+    lastYear: { distanceKm: 80, rideCount: 1, elevationGainMeters: 300 },
     monthlyDistance: [
       // previous year: only July has distance
       ...Array.from({ length: 12 }, (_, i) => ({ year: 2025, month: i + 1, distanceKm: i + 1 === 7 ? 80 : 0 })),

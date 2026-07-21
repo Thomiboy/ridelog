@@ -1,6 +1,6 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
+import { formatDuration } from '../../core/format/duration';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
 // How many rides fit without scrolling at each sheet height (collapsed isn't for browsing).
@@ -15,7 +16,7 @@ const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
 
 @Component({
   selector: 'app-rides',
-  imports: [RouterLink, TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule],
+  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',
 })
@@ -30,6 +31,9 @@ export class Rides {
 
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly pageSize = computed(() => PAGE_SIZE[this.sheetState.current()] ?? 9);
+
+  /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
+  readonly formatDuration = formatDuration;
 
   readonly result = signal<Paged<RideSummary> | null>(null);
 

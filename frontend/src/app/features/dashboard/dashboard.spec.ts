@@ -21,6 +21,8 @@ describe('Dashboard', () => {
   const stats: DashboardStats = {
     thisMonth: { distanceKm: 100, rideCount: 2, elevationGainMeters: 600 },
     thisYear: { distanceKm: 200.5, rideCount: 3, elevationGainMeters: 1100 },
+    lastYear: { distanceKm: 80, rideCount: 1, elevationGainMeters: 300 },
+    lastYearBestMonth: { month: 7, distanceKm: 80, rideCount: 1 },
     monthlyDistance: [
       { year: 2025, month: 7, distanceKm: 80 },
       { year: 2026, month: 7, distanceKm: 100 },
@@ -28,8 +30,8 @@ describe('Dashboard', () => {
     averageSpeedTrend: [{ year: 2026, month: 7, averageSpeedKmh: 31 }],
   };
 
-  function setup() {
-    const dashboardService = { getDashboard: vi.fn().mockReturnValue(of(stats)) };
+  function setup(override: Partial<DashboardStats> = {}) {
+    const dashboardService = { getDashboard: vi.fn().mockReturnValue(of({ ...stats, ...override })) };
     TestBed.configureTestingModule({
       imports: [Dashboard, translocoTesting()],
       providers: [{ provide: DashboardService, useValue: dashboardService }],
@@ -49,6 +51,25 @@ describe('Dashboard', () => {
     expect(el.querySelector('[data-tile="year-distance"]')?.textContent).toContain('200.5');
     expect(el.querySelector('[data-tile="year-rides"]')?.textContent).toContain('3');
     expect(el.querySelector('[data-tile="year-elevation"]')?.textContent).toContain('1,100');
+  });
+
+  it('renders the previous-year tiles with the best month named', () => {
+    const { el } = setup();
+
+    expect(el.querySelector('[data-tile="last-year-distance"]')?.textContent).toContain('80');
+    expect(el.querySelector('[data-tile="last-year-rides"]')?.textContent).toContain('1');
+    expect(el.querySelector('[data-tile="last-year-elevation"]')?.textContent).toContain('300');
+    // The best-month tiles name the month (July → "Jul").
+    expect(el.querySelector('[data-tile="best-month-distance"]')?.textContent).toContain('Jul');
+    expect(el.querySelector('[data-tile="best-month-distance"]')?.textContent).toContain('80');
+    expect(el.querySelector('[data-tile="best-month-rides"]')?.textContent).toContain('Jul');
+  });
+
+  it('hides the previous-year tiles when there were no rides last year', () => {
+    const { el } = setup({ lastYear: { distanceKm: 0, rideCount: 0, elevationGainMeters: 0 }, lastYearBestMonth: null });
+
+    expect(el.querySelector('[data-tile="last-year-distance"]')).toBeNull();
+    expect(el.querySelector('[data-tile="best-month-distance"]')).toBeNull();
   });
 
   it('feeds both charts from the aggregates', () => {
