@@ -59,7 +59,7 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 - **GPX/TCX downloads need the file media type in `Accept`** — `application/gpx+xml` / `application/vnd.garmin.tcx+xml`. Sending `application/json` (the default for the JSON endpoints) → **HTTP 406** on the file sub-resources, so every GPS-ride sync failed at download. This was the real reason "sync ran but no ride appeared" (the visible rides had all come from manual import).
 - A failed exercise is **logged at error level** (`PolarSyncService`) and the last sync's imported/skipped/failed counts show on the admin Sync card. The transaction is **committed even on failure**, so a lost exercise is **not re-served** — recover it via Polar Flow export → admin Import.
 
-### Current status (2026-07-23) — pending follow-ups
-- PR #75 (Polar 406 `Accept`-header fix) is **merged to `main`**, but the **backend deploy failed** (App Service unhealthy under the F1/SQL quota). **TODO: re-run the backend deploy** (`rerun_failed_jobs` on the latest `backend-ci` run, or push a backend change) once the F1 CPU quota has reset (~00:00 UTC) and the DB is confirmed staying online. Until then the live backend is older code.
-- **Manually import** the lost Polar exercise `498528704` (2026-07-23) via Polar Flow export → admin Import.
-- Phase 1 is otherwise complete. Phase 2 backlog lives in the **"Phase 2 - Enrichment"** milestone: #44 (dashboard: 3 longest routes), #60 (elevation/HR graph — needs a stored per-point series, currently only the encoded lat/lng polyline is kept), #61 (compare with an earlier ride), #63 (dark mode).
+### Current status (2026-07-23)
+- PR #75 (Polar 406 `Accept`-header fix) is **merged and deployed live** (the backend deploy was re-run successfully after the F1 quota reset). The full stack now runs the latest code, so the daily/manual Polar sync should import GPS rides.
+- Still to do manually: **import the lost Polar exercise `498528704`** (2026-07-23) via Polar Flow export → admin Import (Polar won't re-serve a committed exercise).
+- Phase 1 is complete. Phase 2 backlog lives in the **"Phase 2 - Enrichment"** milestone: #44 (dashboard: 3 longest routes), #60 (elevation/HR graph — needs a stored per-point series, currently only the encoded lat/lng polyline is kept), #61 (compare with an earlier ride), #63 (dark mode).
