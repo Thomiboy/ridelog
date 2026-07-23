@@ -65,11 +65,12 @@ internal sealed class PolarApiClient(
         return new PolarExercise(exerciseUrl, startTime, sport);
     }
 
+    // The GPX/TCX sub-resources are XML files, not JSON — asking for application/json returns 406.
     public Task<byte[]?> DownloadGpxAsync(string exerciseUrl, CancellationToken cancellationToken = default) =>
-        DownloadAsync($"{exerciseUrl}/gpx", cancellationToken);
+        DownloadAsync($"{exerciseUrl}/gpx", "application/gpx+xml", cancellationToken);
 
     public Task<byte[]?> DownloadTcxAsync(string exerciseUrl, CancellationToken cancellationToken = default) =>
-        DownloadAsync($"{exerciseUrl}/tcx", cancellationToken);
+        DownloadAsync($"{exerciseUrl}/tcx", "application/vnd.garmin.tcx+xml", cancellationToken);
 
     public async Task CommitTransactionAsync(PolarTransaction transaction, CancellationToken cancellationToken = default)
     {
@@ -81,9 +82,9 @@ internal sealed class PolarApiClient(
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<byte[]?> DownloadAsync(string url, CancellationToken cancellationToken)
+    private async Task<byte[]?> DownloadAsync(string url, string accept, CancellationToken cancellationToken)
     {
-        using var request = await AuthorizedAsync(HttpMethod.Get, url, cancellationToken);
+        using var request = await AuthorizedAsync(HttpMethod.Get, url, cancellationToken, accept);
         using var response = await http.SendAsync(request, cancellationToken);
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NoContent)
         {
@@ -100,12 +101,13 @@ internal sealed class PolarApiClient(
         return (connection.Token.PolarUserId, connection.Token.AccessToken);
     }
 
-    private async Task<HttpRequestMessage> AuthorizedAsync(HttpMethod method, string url, CancellationToken cancellationToken)
+    private async Task<HttpRequestMessage> AuthorizedAsync(
+        HttpMethod method, string url, CancellationToken cancellationToken, string accept = "application/json")
     {
         var (_, accessToken) = await AuthContextAsync(cancellationToken);
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(accept));
         return request;
     }
 
