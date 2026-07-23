@@ -28,6 +28,13 @@ describe('Header', () => {
     expect(text()).not.toContain('Log out');
   });
 
+  it('always links to Statistics', () => {
+    const { fixture, text } = setup({ loggedIn: false, admin: false });
+    expect(text()).toContain('Statistics');
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href="/statistics"]');
+    expect(link).not.toBeNull();
+  });
+
   it('shows logout and the admin link for a logged-in admin', () => {
     const { text } = setup({ loggedIn: true, admin: true });
     expect(text()).toContain('Log out');

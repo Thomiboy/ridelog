@@ -5,9 +5,29 @@ const en = {
   nav: {
     dashboard: 'Dashboard',
     rides: 'Rides',
+    statistics: 'Statistics',
     admin: 'Admin',
     login: 'Log in',
     logout: 'Log out',
+  },
+  statistics: {
+    title: 'Statistics',
+    records: {
+      title: 'Records',
+      longestRide: 'Longest ride',
+      fastestAverage: 'Fastest average (≥ 30 km)',
+      longestStreak: 'Longest streak',
+      days: '{{count}} days',
+    },
+    trends: {
+      title: 'Trends',
+      year: 'Year',
+      distance: 'Distance',
+      elevation: 'Climbing',
+      rides: 'Rides',
+      calories: 'Calories',
+      yearTotals: 'Distance by year',
+    },
   },
   dashboard: {
     title: 'Dashboard',
