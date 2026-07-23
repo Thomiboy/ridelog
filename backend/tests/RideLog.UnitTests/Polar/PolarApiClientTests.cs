@@ -83,6 +83,31 @@ public class PolarApiClientTests
     }
 
     [Fact]
+    public async Task Download_gpx_accepts_the_gpx_media_type_not_json()
+    {
+        var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Bytes(Encoding.UTF8.GetBytes("<gpx/>")));
+
+        await NewClient(handler).DownloadGpxAsync($"{BaseUrl}/ex/1");
+
+        // Polar returns 406 Not Acceptable if we ask for application/json on the GPX sub-resource.
+        var accept = handler.Requests[0].Headers.Accept.ToString();
+        Assert.DoesNotContain("application/json", accept);
+        Assert.Contains("application/gpx+xml", accept);
+    }
+
+    [Fact]
+    public async Task Download_tcx_accepts_the_tcx_media_type_not_json()
+    {
+        var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Bytes(Encoding.UTF8.GetBytes("<tcx/>")));
+
+        await NewClient(handler).DownloadTcxAsync($"{BaseUrl}/ex/1");
+
+        var accept = handler.Requests[0].Headers.Accept.ToString();
+        Assert.DoesNotContain("application/json", accept);
+        Assert.Contains("application/vnd.garmin.tcx+xml", accept);
+    }
+
+    [Fact]
     public async Task Download_tcx_returns_null_when_absent()
     {
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Status(HttpStatusCode.NotFound));
