@@ -10,6 +10,9 @@ import type { ChartData, ChartOptions, ChartType } from 'chart.js';
   selector: 'app-chart',
   imports: [BaseChartDirective],
   template: `<canvas baseChart [type]="type()" [data]="data()" [options]="options()"></canvas>`,
+  // Fill the fixed-height chart host. Without this the element stays inline (auto height), so
+  // Chart.js falls back to its default canvas height and leaves empty space below the chart.
+  styles: `:host { display: block; height: 100%; }`,
 })
 export class Chart {
   readonly type = input.required<ChartType>();
