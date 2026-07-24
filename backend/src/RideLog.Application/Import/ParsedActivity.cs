@@ -19,5 +19,10 @@ public sealed record ParsedActivity
     public int? AverageCadence { get; init; }
     public int? Calories { get; init; }
 
+    /// <summary>Ambient temperature from the device's series (Bryton FIT); null when not recorded.</summary>
+    public double? AverageTemperatureCelsius { get; init; }
+    public double? MinTemperatureCelsius { get; init; }
+    public double? MaxTemperatureCelsius { get; init; }
+
     public required IReadOnlyList<GeoPoint> RoutePoints { get; init; }
 }

@@ -41,7 +41,13 @@
       "distance": "Distance",
       "duration": "Duration",
       "avgSpeed": "Avg speed",
-      "elevation": "Elevation"
+      "elevation": "Elevation",
+      "source": "Source"
+    },
+    "source": {
+      "polarAutoSync": "Polar · Auto-sync",
+      "polarImport": "Polar · Import",
+      "bryton": "Bryton"
     }
   },
   "rideDetail": {
@@ -74,7 +80,7 @@
     },
     "import": {
       "title": "Import history",
-      "hint": "Upload GPX/TCX files exported from Polar Flow.",
+      "hint": "Upload GPX/TCX files, or a Bryton FIT to add temperature.",
       "button": "Import",
       "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
     },

@@ -38,7 +38,7 @@
     </mat-card-header>
     <mat-card-content>
       <p>{{ 'admin.import.hint' | transloco }}</p>
-      <input type="file" multiple accept=".gpx,.tcx" (change)="onFilesSelected($event)" />
+      <input type="file" multiple accept=".gpx,.tcx,.fit" (change)="onFilesSelected($event)" />
       @if (importResult(); as result) {
         <p class="result">
           {{ 'admin.import.result' | transloco: { imported: result.imported, skipped: result.skipped, failed: result.failed } }}

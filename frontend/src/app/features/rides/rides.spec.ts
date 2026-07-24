@@ -44,7 +44,7 @@ describe('Rides', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, sheetState, router };
   }
 
-  const ride = (id: string): RideSummary => ({
+  const ride = (id: string, sources: string[] = ['PolarAutoSync']): RideSummary => ({
     id,
     startTime: '2026-06-01T08:00:00Z',
     distanceKm: 61.5,
@@ -52,6 +52,7 @@ describe('Rides', () => {
     sport: 'ROAD_BIKING',
     averageSpeedKmh: 31.3,
     elevationGainMeters: 460,
+    sources,
   });
 
   it('renders a row per ride', () => {
@@ -59,6 +60,13 @@ describe('Rides', () => {
 
     expect(el.querySelectorAll('[data-ride]').length).toBe(2);
     expect(el.textContent).toContain('61.5');
+  });
+
+  it('shows a source chip per token in the row', () => {
+    const { el } = setup({ items: [ride('r1', ['PolarAutoSync', 'Bryton'])], page: 1, pageSize: 20, total: 1 });
+
+    const chips = [...el.querySelectorAll('[data-ride] [data-source-chip]')].map((c) => c.textContent?.trim());
+    expect(chips).toEqual(['Polar · Auto-sync', 'Bryton']);
   });
 
   it('shows the duration as hours and minutes', () => {

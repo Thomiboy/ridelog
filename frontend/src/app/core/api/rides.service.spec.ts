@@ -22,7 +22,14 @@ describe('RidesService', () => {
   it('requests a page of rides from the API', () => {
     const paged: Paged<RideSummary> = {
       items: [
-        { id: 'r1', startTime: '2026-06-01T08:00:00Z', distanceKm: 61.5, durationMinutes: 118, sport: 'ROAD_BIKING' },
+        {
+          id: 'r1',
+          startTime: '2026-06-01T08:00:00Z',
+          distanceKm: 61.5,
+          durationMinutes: 118,
+          sport: 'ROAD_BIKING',
+          sources: ['PolarAutoSync'],
+        },
       ],
       page: 1,
       pageSize: 20,

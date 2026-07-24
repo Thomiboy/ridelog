@@ -98,6 +98,29 @@ public sealed class RidePersistenceTests : IDisposable
     }
 
     [Fact]
+    public async Task Ride_temperature_summary_round_trips()
+    {
+        var ride = NewRide();
+        ride.AverageTemperatureCelsius = 15.5;
+        ride.MinTemperatureCelsius = 9;
+        ride.MaxTemperatureCelsius = 22;
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            var loaded = await context.Rides.SingleAsync(r => r.Id == ride.Id);
+            Assert.Equal(15.5, loaded.AverageTemperatureCelsius);
+            Assert.Equal(9, loaded.MinTemperatureCelsius);
+            Assert.Equal(22, loaded.MaxTemperatureCelsius);
+        }
+    }
+
+    [Fact]
     public async Task Same_user_cannot_store_two_rides_with_the_same_start_time()
     {
         var start = new DateTimeOffset(2026, 7, 12, 8, 30, 0, TimeSpan.FromHours(2));

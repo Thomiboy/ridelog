@@ -11,6 +11,7 @@
             <th>{{ 'rides.columns.duration' | transloco }}</th>
             <th>{{ 'rides.columns.avgSpeed' | transloco }}</th>
             <th>{{ 'rides.columns.elevation' | transloco }}</th>
+            <th>{{ 'rides.columns.source' | transloco }}</th>
             @if (isLoggedIn()) {
               <th class="actions"></th>
             }
@@ -24,6 +25,7 @@
               <td>{{ formatDuration(ride.durationMinutes) }}</td>
               <td>{{ ride.averageSpeedKmh ? (ride.averageSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}</td>
               <td>{{ ride.elevationGainMeters ? (ride.elevationGainMeters | number: '1.0-0') + ' m' : '—' }}</td>
+              <td><app-source-chips [sources]="ride.sources" /></td>
               @if (isLoggedIn()) {
                 <td class="actions">
                   <button

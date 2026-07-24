@@ -52,7 +52,15 @@ const en = {
     prev: 'Previous',
     delete: 'Delete ride',
     deleteConfirm: 'Delete this ride and its stored files? This cannot be undone.',
-    columns: { date: 'Date', distance: 'Distance', duration: 'Duration', avgSpeed: 'Avg speed', elevation: 'Elevation' },
+    columns: {
+      date: 'Date',
+      distance: 'Distance',
+      duration: 'Duration',
+      avgSpeed: 'Avg speed',
+      elevation: 'Elevation',
+      source: 'Source',
+    },
+    source: { polarAutoSync: 'Polar · Auto-sync', polarImport: 'Polar · Import', bryton: 'Bryton' },
   },
   rideDetail: {
     back: 'Rides',
@@ -84,7 +92,7 @@ const en = {
     },
     import: {
       title: 'Import history',
-      hint: 'Upload GPX/TCX files.',
+      hint: 'Upload GPX/TCX files, or a Bryton FIT to add temperature.',
       button: 'Import',
       result: 'Imported {{imported}}, skipped {{skipped}}, failed {{failed}}.',
     },

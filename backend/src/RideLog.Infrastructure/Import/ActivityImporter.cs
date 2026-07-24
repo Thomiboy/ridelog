@@ -50,17 +50,23 @@ internal sealed class ActivityImporter(
             parsed = parser.Parse(stream, file.FileName);
         }
 
-        // Dedup by the same time-overlap contract the Bryton merge uses: a ride whose window
-        // intersects this file's window (for this user) is the same ride from another source.
-        // Windows are checked in memory so the rule works identically on SQL Server and SQLite;
-        // at single-user scale the set of a user's rides is small.
+        var format = FormatFor(file.FileName);
+
+        // Match by the time-overlap contract: a ride whose window intersects this file's window
+        // (for this user) is the same ride. Windows are checked in memory so the rule works
+        // identically on SQL Server and SQLite; at single-user scale the row set is small.
         var windows = await context.Rides
             .Where(r => r.UserId == userId)
-            .Select(r => new { r.StartTime, r.EndTime })
+            .Select(r => new { r.Id, r.StartTime, r.EndTime })
             .ToListAsync(cancellationToken);
-        if (windows.Any(w => RideOverlap.Intersects(w.StartTime, w.EndTime, parsed.StartTime, parsed.EndTime)))
+        var match = windows.FirstOrDefault(w => RideOverlap.Intersects(w.StartTime, w.EndTime, parsed.StartTime, parsed.EndTime));
+        if (match is not null)
         {
-            return new FileImportResult(file.FileName, ImportOutcome.Skipped);
+            // A Bryton FIT enriches the matched Polar ride with its temperature series; a GPX/TCX
+            // covering the same window is just a duplicate of an existing ride, so it is skipped.
+            return format == RawFileFormat.Fit
+                ? await EnrichWithFitAsync(match.Id, parsed, file, userId, cancellationToken)
+                : new FileImportResult(file.FileName, ImportOutcome.Skipped);
         }
 
         var ride = new Ride
@@ -78,6 +84,9 @@ internal sealed class ActivityImporter(
             ElevationGainMeters = parsed.ElevationGainMeters,
             AverageCadence = parsed.AverageCadence,
             Calories = parsed.Calories,
+            AverageTemperatureCelsius = parsed.AverageTemperatureCelsius,
+            MinTemperatureCelsius = parsed.MinTemperatureCelsius,
+            MaxTemperatureCelsius = parsed.MaxTemperatureCelsius,
             Sport = parsed.Sport,
             Source = RideSource.Import,
             RoutePolyline = PolylineEncoder.Encode(Downsample(parsed.RoutePoints)),
@@ -96,6 +105,39 @@ internal sealed class ActivityImporter(
         context.Rides.Add(ride);
         await context.SaveChangesAsync(cancellationToken);
 
+        return new FileImportResult(file.FileName, ImportOutcome.Imported, RideId: ride.Id);
+    }
+
+    private async Task<FileImportResult> EnrichWithFitAsync(
+        Guid rideId, ParsedActivity parsed, ActivityFile file, string userId, CancellationToken cancellationToken)
+    {
+        var ride = await context.Rides
+            .Include(r => r.RawFiles)
+            .SingleAsync(r => r.Id == rideId, cancellationToken);
+
+        // Idempotent: a ride that already carries a FIT has been enriched — don't duplicate it.
+        if (ride.RawFiles.Any(f => f.Format == RawFileFormat.Fit))
+        {
+            return new FileImportResult(file.FileName, ImportOutcome.Skipped);
+        }
+
+        // Temperature-only enrichment: never overwrite the ride's own metrics, source or route.
+        ride.AverageTemperatureCelsius = parsed.AverageTemperatureCelsius;
+        ride.MinTemperatureCelsius = parsed.MinTemperatureCelsius;
+        ride.MaxTemperatureCelsius = parsed.MaxTemperatureCelsius;
+
+        context.RawFiles.Add(new RawFile
+        {
+            Id = Guid.NewGuid(),
+            RideId = ride.Id,
+            UserId = userId,
+            Format = RawFileFormat.Fit,
+            FileName = file.FileName,
+            Content = file.Content,
+            UploadedAt = DateTimeOffset.UtcNow,
+        });
+
+        await context.SaveChangesAsync(cancellationToken);
         return new FileImportResult(file.FileName, ImportOutcome.Imported, RideId: ride.Id);
     }
 
@@ -123,5 +165,7 @@ internal sealed class ActivityImporter(
     }
 
     private static RawFileFormat FormatFor(string fileName) =>
-        fileName.EndsWith(".tcx", StringComparison.OrdinalIgnoreCase) ? RawFileFormat.Tcx : RawFileFormat.Gpx;
+        fileName.EndsWith(".tcx", StringComparison.OrdinalIgnoreCase) ? RawFileFormat.Tcx
+        : fileName.EndsWith(".fit", StringComparison.OrdinalIgnoreCase) ? RawFileFormat.Fit
+        : RawFileFormat.Gpx;
 }

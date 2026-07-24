@@ -53,6 +53,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.AddScoped<IActivityFileParser, GpxActivityParser>();
         services.AddScoped<IActivityFileParser, TcxActivityParser>();
+        services.AddScoped<IActivityFileParser, FitActivityParser>();
         services.AddScoped<IActivityImporter, ActivityImporter>();
         services.AddScoped<IRideMaintenanceService, RideMaintenanceService>();
 
