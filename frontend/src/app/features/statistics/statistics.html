@@ -86,5 +86,49 @@
         </div>
       </section>
     }
+
+    @if (temperature(); as temp) {
+      <section data-section="temperature">
+        <h2>{{ 'statistics.temperature.title' | transloco }}</h2>
+        <div class="tiles">
+          @if (temp.coldest; as cold) {
+            <mat-card appearance="outlined" class="tile" data-record="coldest">
+              <span class="label">{{ 'statistics.temperature.coldest' | transloco }}</span>
+              <span class="value">{{ cold.averageTemperatureCelsius | number: '1.0-1' }} °C</span>
+              <a [routerLink]="['/rides', cold.id]">{{ cold.date | date: 'mediumDate' }}</a>
+            </mat-card>
+          }
+          @if (temp.warmest; as warm) {
+            <mat-card appearance="outlined" class="tile" data-record="warmest">
+              <span class="label">{{ 'statistics.temperature.warmest' | transloco }}</span>
+              <span class="value">{{ warm.averageTemperatureCelsius | number: '1.0-1' }} °C</span>
+              <a [routerLink]="['/rides', warm.id]">{{ warm.date | date: 'mediumDate' }}</a>
+            </mat-card>
+          }
+          @if (temp.seasonMinCelsius != null && temp.seasonMaxCelsius != null) {
+            <mat-card appearance="outlined" class="tile" data-record="season-range">
+              <span class="label">{{ 'statistics.temperature.seasonRange' | transloco }}</span>
+              <span class="value">
+                {{ temp.seasonMinCelsius | number: '1.0-1' }} – {{ temp.seasonMaxCelsius | number: '1.0-1' }} °C
+              </span>
+            </mat-card>
+          }
+        </div>
+        <div class="charts">
+          @if (temperatureDistributionChart(); as chart) {
+            <mat-card appearance="outlined" class="chart-card" data-chart="temperature-distribution">
+              <mat-card-header><mat-card-title>{{ 'statistics.temperature.distribution' | transloco }}</mat-card-title></mat-card-header>
+              <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+            </mat-card>
+          }
+          @if (temperatureTrendChart(); as chart) {
+            <mat-card appearance="outlined" class="chart-card" data-chart="temperature-trend">
+              <mat-card-header><mat-card-title>{{ 'statistics.temperature.trend' | transloco }}</mat-card-title></mat-card-header>
+              <mat-card-content><div class="chart-host"><app-chart type="line" [data]="chart" /></div></mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </section>
+    }
   }
 </section>

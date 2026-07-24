@@ -220,6 +220,38 @@ public sealed class ActivityImporterTests : IDisposable
     }
 
     [Fact]
+    public async Task A_fit_enrich_fills_the_temperature_channel_of_the_existing_series()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            var ride = SeedRide(); // Polar ride 08:00–09:00
+            // Series from the Polar source: elevation/HR at 0/30/60 min, no temperature yet.
+            ride.MetricSeries =
+            [
+                new MetricSample(0, 0, 100, 120),
+                new MetricSample(1, 30, 110, 130),
+                new MetricSample(2, 60, 120, 140),
+            ];
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync([new ActivityFile("bryton.fit", OverlappingFit())], "user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var ride = await verify.Rides.SingleAsync();
+            // FIT temperatures 10/20/15 at 0/50/100% align onto the 0/30/60-min samples.
+            Assert.Equal([10.0, 20.0, 15.0], ride.MetricSeries!.Select(s => s.TemperatureCelsius));
+            // The other channels are untouched.
+            Assert.Equal([100.0, 110.0, 120.0], ride.MetricSeries.Select(s => s.ElevationMeters));
+        }
+    }
+
+    [Fact]
     public async Task Re_uploading_the_same_fit_is_an_idempotent_skip()
     {
         await using (var context = new RideLogDbContext(_options))

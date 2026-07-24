@@ -127,6 +127,12 @@ internal sealed class ActivityImporter(
         ride.MinTemperatureCelsius = parsed.MinTemperatureCelsius;
         ride.MaxTemperatureCelsius = parsed.MaxTemperatureCelsius;
 
+        // Fill the graph's temperature channel from the FIT, aligned to the existing series.
+        if (ride.MetricSeries is { Count: > 0 } series)
+        {
+            ride.MetricSeries = MetricSeriesBuilder.MergeTemperature(series, parsed.RoutePoints);
+        }
+
         context.RawFiles.Add(new RawFile
         {
             Id = Guid.NewGuid(),

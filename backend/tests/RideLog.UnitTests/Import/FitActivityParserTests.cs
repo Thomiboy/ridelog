@@ -97,4 +97,18 @@ public sealed class FitActivityParserTests
 
         Assert.Equal([120, 145], parsed.RoutePoints.Select(p => p.HeartRate));
     }
+
+    [Fact]
+    public void Keeps_per_point_temperature_on_the_route()
+    {
+        var bytes = BuildFit(
+        [
+            (T0, 47.50, 19.00, 100f, (sbyte)8, (byte)120),
+            (T0.AddMinutes(30), 47.55, 19.05, 150f, (sbyte)17, (byte)145),
+        ]);
+
+        var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
+
+        Assert.Equal([8.0, 17.0], parsed.RoutePoints.Select(p => p.TemperatureCelsius));
+    }
 }

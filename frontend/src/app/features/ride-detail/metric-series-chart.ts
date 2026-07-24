@@ -3,9 +3,9 @@ import type { MetricSample } from '../../core/api/ride.models';
 
 export type MetricAxis = 'distance' | 'time';
 
-/** Whether a series carries anything to plot (elevation or heart rate). */
+/** Whether a series carries anything to plot (elevation, heart rate or temperature). */
 export function hasGraphableSeries(series: MetricSample[]): boolean {
-  return series.some((s) => s.elevationMeters != null || s.heartRate != null);
+  return series.some((s) => s.elevationMeters != null || s.heartRate != null || s.temperatureCelsius != null);
 }
 
 /**
@@ -31,6 +31,15 @@ export function buildMetricSeriesChart(series: MetricSample[], axis: MetricAxis)
       label: 'HR',
       yAxisID: 'hr',
       data: series.map((s) => s.heartRate ?? null),
+      spanGaps: true,
+    });
+  }
+
+  if (series.some((s) => s.temperatureCelsius != null)) {
+    datasets.push({
+      label: 'Temperature',
+      yAxisID: 'temperature',
+      data: series.map((s) => s.temperatureCelsius ?? null),
       spanGaps: true,
     });
   }

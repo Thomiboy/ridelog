@@ -1,4 +1,5 @@
 using RideLog.Application.Routes;
+using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Import;
 
 namespace RideLog.UnitTests.Import;
@@ -57,6 +58,60 @@ public sealed class MetricSeriesBuilderTests
     public void Returns_empty_for_no_points()
     {
         Assert.Empty(MetricSeriesBuilder.Build([]));
+    }
+
+    [Fact]
+    public void Passes_temperature_through_to_the_samples()
+    {
+        var points = new List<GeoPoint>
+        {
+            new(47.50, 19.0, Time: T0, TemperatureCelsius: 8),
+            new(47.51, 19.0, Time: T0.AddMinutes(30), TemperatureCelsius: 17),
+        };
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Equal([8.0, 17.0], series.Select(s => s.TemperatureCelsius));
+    }
+
+    [Fact]
+    public void Storable_series_is_kept_when_only_temperature_is_present()
+    {
+        var points = new List<GeoPoint>
+        {
+            new(47.50, 19.0, Time: T0, TemperatureCelsius: 8),
+            new(47.51, 19.0, Time: T0.AddMinutes(30), TemperatureCelsius: 17),
+        };
+
+        Assert.NotNull(MetricSeriesBuilder.BuildStorable(points));
+    }
+
+    [Fact]
+    public void Merges_temperature_into_a_series_by_elapsed_time_fraction()
+    {
+        // Existing series (from a Polar GPX/TCX): no temperature, elapsed 0/5/10 min.
+        var series = new List<MetricSample>
+        {
+            new(0, 0, 100, 120),
+            new(1, 5, 110, 130),
+            new(2, 10, 120, 140),
+        };
+
+        // Bryton FIT temperature points at 0/50%/100% of its own timeline: 10/15/20 °C.
+        var fitPoints = new List<GeoPoint>
+        {
+            new(47.5, 19.0, Time: T0, TemperatureCelsius: 10),
+            new(47.5, 19.0, Time: T0.AddMinutes(30), TemperatureCelsius: 15),
+            new(47.5, 19.0, Time: T0.AddMinutes(60), TemperatureCelsius: 20),
+        };
+
+        var merged = MetricSeriesBuilder.MergeTemperature(series, fitPoints);
+
+        // Fractions 0 / 0.5 / 1.0 line up: temperatures 10 / 15 / 20.
+        Assert.Equal([10.0, 15.0, 20.0], merged.Select(s => s.TemperatureCelsius));
+        // Other channels are untouched.
+        Assert.Equal([100.0, 110.0, 120.0], merged.Select(s => s.ElevationMeters));
+        Assert.Equal([120, 130, 140], merged.Select(s => s.HeartRate));
     }
 
     [Fact]

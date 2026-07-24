@@ -63,6 +63,8 @@ export class RideDetail {
     scales: {
       elevation: { type: 'linear', position: 'left' },
       hr: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
+      // Scales the temperature line without adding a third visible axis.
+      temperature: { type: 'linear', position: 'right', display: false },
     },
   };
 

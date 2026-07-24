@@ -1,5 +1,5 @@
 import type { ChartData } from 'chart.js';
-import type { MonthlyAggregate } from '../../core/api/statistics.models';
+import type { MonthlyAggregate, MonthlyTemperature, TemperatureBandSlice } from '../../core/api/statistics.models';
 
 export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -41,5 +41,32 @@ export function buildYearTotalsChart(monthly: MonthlyAggregate[]): ChartData<'ba
         ),
       },
     ],
+  };
+}
+
+/** Human label for a temperature band: "<0°", "5–10°", "25°+". */
+export function bandLabel(band: TemperatureBandSlice): string {
+  if (band.fromCelsius == null) {
+    return `<${band.toCelsius}°`;
+  }
+  if (band.toCelsius == null) {
+    return `${band.fromCelsius}°+`;
+  }
+  return `${band.fromCelsius}–${band.toCelsius}°`;
+}
+
+/** Distance per 5°C temperature band as a bar chart. */
+export function buildTemperatureDistributionChart(bands: TemperatureBandSlice[]): ChartData<'bar'> {
+  return {
+    labels: bands.map(bandLabel),
+    datasets: [{ label: 'km', data: bands.map((b) => b.km) }],
+  };
+}
+
+/** Average ridden temperature per month as a line chart. */
+export function buildTemperatureTrendChart(monthly: MonthlyTemperature[]): ChartData<'line'> {
+  return {
+    labels: monthly.map((m) => `${m.year}-${String(m.month).padStart(2, '0')}`),
+    datasets: [{ label: '°C', data: monthly.map((m) => m.averageTemperatureCelsius) }],
   };
 }

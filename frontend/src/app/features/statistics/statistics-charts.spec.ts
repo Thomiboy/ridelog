@@ -1,5 +1,12 @@
-import { buildMonthlyMetricChart, buildYearTotalsChart, statisticsYears } from './statistics-charts';
-import type { MonthlyAggregate } from '../../core/api/statistics.models';
+import {
+  bandLabel,
+  buildMonthlyMetricChart,
+  buildTemperatureDistributionChart,
+  buildTemperatureTrendChart,
+  buildYearTotalsChart,
+  statisticsYears,
+} from './statistics-charts';
+import type { MonthlyAggregate, TemperatureBandSlice, MonthlyTemperature } from '../../core/api/statistics.models';
 
 const aggregate = (year: number, month: number, distanceKm: number): MonthlyAggregate => ({
   year,
@@ -48,5 +55,36 @@ describe('statistics chart builders', () => {
     expect(chart.labels).toEqual(['2024', '2026']);
     expect(chart.datasets).toHaveLength(1);
     expect(chart.datasets[0].data).toEqual([50, 140]);
+  });
+
+  it('labels open-ended and inner temperature bands', () => {
+    expect(bandLabel({ fromCelsius: null, toCelsius: 0, km: 0 })).toBe('<0°');
+    expect(bandLabel({ fromCelsius: 25, toCelsius: null, km: 0 })).toBe('25°+');
+    expect(bandLabel({ fromCelsius: 5, toCelsius: 10, km: 0 })).toBe('5–10°');
+  });
+
+  it('builds a temperature distribution bar chart labelled by band', () => {
+    const bands: TemperatureBandSlice[] = [
+      { fromCelsius: null, toCelsius: 0, km: 3 },
+      { fromCelsius: 0, toCelsius: 5, km: 12 },
+      { fromCelsius: 5, toCelsius: 10, km: 40 },
+    ];
+
+    const chart = buildTemperatureDistributionChart(bands);
+
+    expect(chart.labels).toEqual(['<0°', '0–5°', '5–10°']);
+    expect(chart.datasets[0].data).toEqual([3, 12, 40]);
+  });
+
+  it('builds a monthly average-temperature line chart', () => {
+    const monthly: MonthlyTemperature[] = [
+      { year: 2026, month: 3, averageTemperatureCelsius: 8 },
+      { year: 2026, month: 7, averageTemperatureCelsius: 21 },
+    ];
+
+    const chart = buildTemperatureTrendChart(monthly);
+
+    expect(chart.labels).toEqual(['2026-03', '2026-07']);
+    expect(chart.datasets[0].data).toEqual([8, 21]);
   });
 });
