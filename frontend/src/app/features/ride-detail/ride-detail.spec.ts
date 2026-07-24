@@ -160,6 +160,26 @@ describe('RideDetail', () => {
     expect(el.querySelector('[data-graph]')).toBeNull();
   });
 
+  it('shows a temperature card with average, min and max when recorded', () => {
+    const { el } = setup({
+      ...detail,
+      averageTemperatureCelsius: 12.5,
+      minTemperatureCelsius: 8,
+      maxTemperatureCelsius: 18,
+    });
+
+    const card = el.querySelector('[data-card="temperature"]')!;
+    expect(card).not.toBeNull();
+    expect(card.textContent).toContain('12.5');
+    expect(card.textContent).toContain('8');
+    expect(card.textContent).toContain('18');
+  });
+
+  it('hides the temperature card when no temperature was recorded', () => {
+    const { el } = setup({ ...detail, averageTemperatureCelsius: null });
+    expect(el.querySelector('[data-card="temperature"]')).toBeNull();
+  });
+
   it('shows the source chips in the header', () => {
     const { el } = setup({ ...detail, sources: ['PolarAutoSync', 'Bryton'] });
 

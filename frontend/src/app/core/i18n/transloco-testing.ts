@@ -79,6 +79,7 @@ const en = {
     duration: 'Duration',
     avg: 'Avg',
     max: 'Max',
+    min: 'Min',
     elevation: 'Elevation',
     calories: 'Calories',
     card: {
@@ -86,6 +87,7 @@ const en = {
       speed: 'Speed',
       heartRate: 'Heart rate',
       climbingEnergy: 'Climbing & energy',
+      temperature: 'Temperature',
     },
     graph: { title: 'Elevation & heart rate', byDistance: 'Distance', byTime: 'Time' },
     hrZones: { title: 'Time in HR zones' },

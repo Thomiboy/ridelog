@@ -21,6 +21,11 @@ public sealed record RideDetail
     public int? AverageCadence { get; init; }
     public int? Calories { get; init; }
 
+    /// <summary>Ambient temperature summary from a merged Bryton FIT; null when none was recorded.</summary>
+    public double? AverageTemperatureCelsius { get; init; }
+    public double? MinTemperatureCelsius { get; init; }
+    public double? MaxTemperatureCelsius { get; init; }
+
     /// <summary>The older neighbour in the cycling list (earlier in time); null at the oldest ride.</summary>
     public Guid? PreviousId { get; init; }
 

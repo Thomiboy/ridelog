@@ -6,6 +6,7 @@ using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Rides;
+using RideLog.UnitTests.Import;
 
 namespace RideLog.UnitTests.Rides;
 
@@ -93,7 +94,41 @@ public sealed class RideMaintenanceServiceTests : IDisposable
     }
 
     private RideMaintenanceService NewService(RideLogDbContext context) =>
-        new(context, [new GpxActivityParser(), new TcxActivityParser()]);
+        new(context, [new GpxActivityParser(), new TcxActivityParser(), new FitActivityParser()]);
+
+    [Fact]
+    public async Task Reprocess_re_merges_the_bryton_fit_temperature_into_the_series()
+    {
+        var t0 = new System.DateTime(2026, 6, 1, 8, 0, 0, System.DateTimeKind.Utc);
+        var ride = StaleRide(); // TCX raw file, trackpoints at 08:00 and 09:00
+        ride.RawFiles.Add(new RawFile
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Format = RawFileFormat.Fit,
+            FileName = "bryton.fit",
+            // Temperatures 10/20/15 at 0/50/100% of the 08:00–09:00 window.
+            Content = TestFit.Build([(t0, (sbyte)10), (t0.AddMinutes(30), (sbyte)20), (t0.AddMinutes(60), (sbyte)15)]),
+            UploadedAt = DateTimeOffset.UtcNow,
+        });
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(context).ReprocessAsync("user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloaded = await verify.Rides.SingleAsync();
+            // The TCX samples at 0 and 60 min align onto FIT fractions 0 and 1.0 → 10 and 15 °C.
+            Assert.Equal([10.0, 15.0], reloaded.MetricSeries!.Select(s => s.TemperatureCelsius));
+        }
+    }
 
     [Fact]
     public async Task Reprocess_updates_metrics_in_place_without_touching_identity()
