@@ -160,6 +160,25 @@ public sealed class ActivityImporterTests : IDisposable
     }
 
     [Fact]
+    public async Task Builds_a_metric_series_from_the_route_on_import()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync([new ActivityFile("ride.gpx", Gpx())], "user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var ride = await verify.Rides.SingleAsync();
+            Assert.NotNull(ride.MetricSeries);
+            // The GPX has two points at 100 m and 150 m elevation.
+            Assert.Equal([100.0, 150.0], ride.MetricSeries!.Select(s => s.ElevationMeters));
+            Assert.Equal(0, ride.MetricSeries[0].DistanceKm, 0.01);
+            Assert.True(ride.MetricSeries[1].DistanceKm > 0);
+        }
+    }
+
+    [Fact]
     public async Task Persists_calories_and_max_speed_from_a_tcx_summary()
     {
         await using (var context = new RideLogDbContext(_options))

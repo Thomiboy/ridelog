@@ -131,6 +131,31 @@ public sealed class RideMaintenanceServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Reprocess_backfills_the_metric_series_from_the_stored_file()
+    {
+        var ride = StaleRide(); // MetricSeries starts null
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(context).ReprocessAsync("user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloaded = await verify.Rides.SingleAsync();
+            Assert.NotNull(reloaded.MetricSeries);
+            // From the TCX trackpoints: elevation 100/140, HR 120/160.
+            Assert.Equal([100.0, 140.0], reloaded.MetricSeries!.Select(s => s.ElevationMeters));
+            Assert.Equal([120, 160], reloaded.MetricSeries.Select(s => s.HeartRate));
+        }
+    }
+
+    [Fact]
     public async Task Reprocess_counts_processed_and_failed_and_survives_a_bad_file()
     {
         var good = StaleRide(start: new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));

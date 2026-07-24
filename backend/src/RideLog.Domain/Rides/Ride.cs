@@ -40,6 +40,12 @@ public class Ride
     /// <summary>Downsampled route as an encoded polyline; null for rides without GPS data.</summary>
     public string? RoutePolyline { get; set; }
 
+    /// <summary>
+    /// Downsampled per-point metric series (distance/time + elevation/HR) for the detail graph;
+    /// null when the ride recorded neither elevation nor heart rate.
+    /// </summary>
+    public IReadOnlyList<MetricSample>? MetricSeries { get; set; }
+
     /// <summary>Original payloads behind this ride — e.g. a Polar export plus a merged Bryton FIT.</summary>
     public ICollection<RawFile> RawFiles { get; } = [];
 

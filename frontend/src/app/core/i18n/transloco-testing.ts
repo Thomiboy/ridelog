@@ -78,6 +78,7 @@ const en = {
       heartRate: 'Heart rate',
       climbingEnergy: 'Climbing & energy',
     },
+    graph: { title: 'Elevation & heart rate', byDistance: 'Distance', byTime: 'Time' },
   },
   admin: {
     title: 'Admin',

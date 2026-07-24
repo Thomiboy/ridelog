@@ -3,6 +3,7 @@ using RideLog.Application.Import;
 using RideLog.Application.Rides;
 using RideLog.Application.Routes;
 using RideLog.Domain.Rides;
+using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Rides;
@@ -102,6 +103,7 @@ internal sealed class RideMaintenanceService(
         ride.AverageCadence = metrics.AverageCadence;
         ride.Calories = metrics.Calories;
         ride.RoutePolyline = PolylineEncoder.Encode(Downsample(route));
+        ride.MetricSeries = MetricSeriesBuilder.BuildStorable(route);
         // Sport, Source, StartTime, EndTime and the raw files are intentionally left untouched.
         return true;
     }

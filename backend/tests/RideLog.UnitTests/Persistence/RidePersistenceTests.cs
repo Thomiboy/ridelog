@@ -121,6 +121,34 @@ public sealed class RidePersistenceTests : IDisposable
     }
 
     [Fact]
+    public async Task Ride_metric_series_round_trips()
+    {
+        var ride = NewRide();
+        ride.MetricSeries =
+        [
+            new MetricSample(0, 0, 100, 120),
+            new MetricSample(1.5, 10, 150, null),
+            new MetricSample(3.0, 20, null, 145),
+        ];
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            var loaded = await context.Rides.SingleAsync(r => r.Id == ride.Id);
+            Assert.NotNull(loaded.MetricSeries);
+            Assert.Equal(3, loaded.MetricSeries!.Count);
+            Assert.Equal(new MetricSample(0, 0, 100, 120), loaded.MetricSeries[0]);
+            Assert.Equal(new MetricSample(1.5, 10, 150, null), loaded.MetricSeries[1]);
+            Assert.Equal(new MetricSample(3.0, 20, null, 145), loaded.MetricSeries[2]);
+        }
+    }
+
+    [Fact]
     public async Task Same_user_cannot_store_two_rides_with_the_same_start_time()
     {
         var start = new DateTimeOffset(2026, 7, 12, 8, 30, 0, TimeSpan.FromHours(2));

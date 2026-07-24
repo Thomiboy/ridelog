@@ -107,7 +107,8 @@ internal sealed class FitActivityParser : IActivityFileParser
             lat.Value * SemicircleToDegrees,
             lon.Value * SemicircleToDegrees,
             record.GetAltitude(),
-            time is null ? null : ToDateTimeOffset(time));
+            time is null ? null : ToDateTimeOffset(time),
+            record.GetHeartRate());
     }
 
     private static DateTimeOffset ToDateTimeOffset(Dynastream.Fit.DateTime time) =>
