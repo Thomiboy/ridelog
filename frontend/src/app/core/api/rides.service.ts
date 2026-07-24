@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { Paged, RideDetail, RideSummary } from './ride.models';
+import type { LongestRideRoute, Paged, RideDetail, RideSummary } from './ride.models';
 
 /** Typed client for the public ride read endpoints. */
 @Injectable({ providedIn: 'root' })
@@ -16,6 +16,11 @@ export class RidesService {
 
   getRide(id: string): Observable<RideDetail> {
     return this.http.get<RideDetail>(`${this.baseUrl}/rides/${id}`);
+  }
+
+  /** The longest cycling routes for the background map, longest first (routes only). */
+  getLongestRides(take = 3): Observable<LongestRideRoute[]> {
+    return this.http.get<LongestRideRoute[]>(`${this.baseUrl}/rides/longest?take=${take}`);
   }
 
   deleteRide(id: string): Observable<void> {

@@ -7,7 +7,10 @@ import { vi } from 'vitest';
 import type { ChartData, ChartOptions, ChartType } from 'chart.js';
 import { Statistics } from './statistics';
 import { StatisticsService } from '../../core/api/statistics.service';
+import { RidesService } from '../../core/api/rides.service';
+import { MapState } from '../../core/map/map-state';
 import type { StatisticsResult } from '../../core/api/statistics.models';
+import type { LongestRideRoute } from '../../core/api/ride.models';
 import { Chart } from '../../shared/chart/chart';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
@@ -33,13 +36,23 @@ describe('Statistics', () => {
     },
   };
 
-  function setup(override: Partial<StatisticsResult> = {}) {
+  const longestRoutes: LongestRideRoute[] = [
+    { id: 'ride-a', date: '2026-06-01T08:00:00+00:00', distanceKm: 120, routePolyline: 'poly-a' },
+    { id: 'ride-b', date: '2026-05-01T08:00:00+00:00', distanceKm: 90, routePolyline: 'poly-b' },
+    { id: 'ride-c', date: '2026-04-01T08:00:00+00:00', distanceKm: 60, routePolyline: 'poly-c' },
+  ];
+
+  function setup(override: Partial<StatisticsResult> = {}, routes: LongestRideRoute[] = longestRoutes) {
     const statisticsService = { getStatistics: vi.fn().mockReturnValue(of({ ...stats, ...override })) };
+    const ridesService = { getLongestRides: vi.fn().mockReturnValue(of(routes)) };
+    const mapState = { showRoutes: vi.fn(), reset: vi.fn() };
     TestBed.configureTestingModule({
       imports: [Statistics, translocoTesting()],
       providers: [
         provideRouter([]),
         { provide: StatisticsService, useValue: statisticsService },
+        { provide: RidesService, useValue: ridesService },
+        { provide: MapState, useValue: mapState },
       ],
     }).overrideComponent(Statistics, {
       remove: { imports: [Chart] },
@@ -47,7 +60,7 @@ describe('Statistics', () => {
     });
     const fixture = TestBed.createComponent(Statistics);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState };
   }
 
   function chartData(fixture: ReturnType<typeof setup>['fixture'], name: string): ChartData {
@@ -156,5 +169,20 @@ describe('Statistics', () => {
     for (const name of ['distance', 'elevation', 'rides', 'calories', 'year-totals']) {
       expect(fixture.debugElement.query(By.css(`[data-chart="${name}"] app-chart`))).not.toBeNull();
     }
+  });
+
+  it('paints the three longest routes on the background map when it opens', () => {
+    const { ridesService, mapState } = setup();
+
+    expect(ridesService.getLongestRides).toHaveBeenCalledWith(3);
+    expect(mapState.showRoutes).toHaveBeenCalledWith(['poly-a', 'poly-b', 'poly-c']);
+  });
+
+  it('restores the default background map when it closes', () => {
+    const { fixture, mapState } = setup();
+
+    fixture.destroy();
+
+    expect(mapState.reset).toHaveBeenCalled();
   });
 });

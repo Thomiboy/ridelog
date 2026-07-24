@@ -20,6 +20,14 @@ export interface RideSummary {
   sources: string[];
 }
 
+/** A long ride reduced to what the background map needs. Mirrors the backend LongestRideRoute DTO. */
+export interface LongestRideRoute {
+  id: string;
+  date: string;
+  distanceKm: number;
+  routePolyline: string;
+}
+
 /** One downsampled point of a ride's metric series, mirroring the backend MetricSample. */
 export interface MetricSample {
   distanceKm: number;

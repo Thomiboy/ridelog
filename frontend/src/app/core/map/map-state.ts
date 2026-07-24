@@ -4,21 +4,27 @@ import { EMPTY } from 'rxjs';
 import { RidesService } from '../api/rides.service';
 
 /**
- * What the global background map shows. Defaults to the latest ride's route;
- * pages (e.g. ride selection) override it via showRoute and return to the
- * default via reset.
+ * What the global background map shows. Defaults to the latest ride's route; pages override it via
+ * showRoute (one route) or showRoutes (several, e.g. the Statistics page's longest routes) and
+ * return to the default via reset. The map draws one coloured track per entry.
  */
 @Injectable({ providedIn: 'root' })
 export class MapState {
   private readonly ridesService = inject(RidesService);
 
-  readonly polyline = signal<string | null>(null);
+  readonly routes = signal<string[]>([]);
 
   private latest: string | null = null;
   private latestLoaded = false;
 
+  /** Shows a single route (or clears the map when there's none). */
   showRoute(polyline: string | null | undefined): void {
-    this.polyline.set(polyline ?? null);
+    this.routes.set(polyline ? [polyline] : []);
+  }
+
+  /** Shows several routes at once; empty entries are dropped so no blank track is drawn. */
+  showRoutes(polylines: string[]): void {
+    this.routes.set(polylines.filter((p) => p.length > 0));
   }
 
   /** Drops the cached latest route so the next reset refetches — call after a ride is deleted. */
@@ -30,7 +36,7 @@ export class MapState {
   /** Restores the default (latest ride) route, from cache when already loaded. */
   reset(): void {
     if (this.latestLoaded) {
-      this.polyline.set(this.latest);
+      this.showRoute(this.latest);
     } else {
       this.loadLatest();
     }

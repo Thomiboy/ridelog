@@ -11,7 +11,7 @@ import { translocoTesting } from './core/i18n/transloco-testing';
 // Leaflet needs a real canvas; stub the background map so the shell renders in jsdom.
 @Component({ selector: 'app-route-map', template: '' })
 class RouteMapStub {
-  readonly polyline = input<string | null | undefined>();
+  readonly routes = input<string[]>([]);
 }
 
 describe('App', () => {
