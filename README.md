@@ -2,7 +2,7 @@
 
 Personal road-cycling analytics: automatic ride ingestion from Polar, enriched with Bryton data, visualized with statistics, progress charts and route maps.
 
-> **Status:** early development — Phase 1 (MVP) in progress.
+> **Status:** live — Phase 1 (MVP) complete; Phase 2 (enrichment) in progress.
 
 ## What it does
 
@@ -106,6 +106,6 @@ Cors__AllowedOrigins__0        = <Static Web App origin, set once the frontend i
 
 ## Roadmap
 
-- **Phase 1 (MVP):** Polar sync, historical import, ride list + detail with map, basic dashboard, public read-only + admin login, CI/CD
-- **Phase 2:** Bryton FIT upload + merge, temperature stats, HR zones, personal records, all-routes map, Hungarian translation
+- **Phase 1 (MVP) ✅:** Polar sync, historical import, ride list + detail with map, basic dashboard, public read-only + admin login, CI/CD
+- **Phase 2 (in progress):** Bryton FIT upload + merge, temperature stats, HR zones, personal records, all-routes map, Hungarian translation
 - **Backlog:** multi-user mode, other sports, Google/Microsoft login, containerization (Container Apps), MapLibre, interactive analysis view (linked map + elevation + HR), Azure Blob Storage for raw files, weather enrichment
