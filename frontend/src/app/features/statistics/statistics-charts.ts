@@ -55,11 +55,25 @@ export function bandLabel(band: TemperatureBandSlice): string {
   return `${band.fromCelsius}–${band.toCelsius}°`;
 }
 
-/** Distance per 5°C temperature band as a bar chart. */
+/** Band colour by its temperature range: deep blue (cold) through green to red (hot). */
+const BAND_COLORS_BY_FLOOR: Record<number, string> = {
+  0: '#1e88e5', // 0–5 blue
+  5: '#4fc3f7', // 5–10 light blue
+  10: '#66bb6a', // 10–15 green
+  15: '#fdd835', // 15–20 yellow
+  20: '#fb8c00', // 20–25 orange
+  25: '#e53935', // 25+ red
+};
+
+function bandColor(band: TemperatureBandSlice): string {
+  return band.fromCelsius == null ? '#0d47a1' : (BAND_COLORS_BY_FLOOR[band.fromCelsius] ?? '#9e9e9e');
+}
+
+/** Distance per 5°C temperature band as a bar chart, colour-coded cold to hot. */
 export function buildTemperatureDistributionChart(bands: TemperatureBandSlice[]): ChartData<'bar'> {
   return {
     labels: bands.map(bandLabel),
-    datasets: [{ label: 'km', data: bands.map((b) => b.km) }],
+    datasets: [{ label: 'km', data: bands.map((b) => b.km), backgroundColor: bands.map(bandColor) }],
   };
 }
 
