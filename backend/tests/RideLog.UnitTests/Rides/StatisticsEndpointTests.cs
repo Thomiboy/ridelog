@@ -143,6 +143,37 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(new DateOnly(2026, 6, 3), stats.Records.LongestStreak.EndDate);
     }
 
+    private sealed record HrZoneSliceDto(int Zone, double Minutes);
+    private sealed record ZonesStatsDto(IReadOnlyList<HrZoneSliceDto>? HrZones);
+
+    [Fact]
+    public async Task Aggregates_time_in_hr_zones_across_rides()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            context.UserSettings.RemoveRange(context.UserSettings);
+            await context.SaveChangesAsync();
+
+            var rideA = Ride(new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero), km: 40, elevation: 100, avgSpeed: 30, calories: 500);
+            rideA.MetricSeries = [new MetricSample(0, 0, null, 130), new MetricSample(1, 10, null, 150)]; // Z2 owns 10 min
+            var rideB = Ride(new DateTimeOffset(2026, 7, 6, 8, 0, 0, TimeSpan.Zero), km: 40, elevation: 100, avgSpeed: 30, calories: 500);
+            rideB.MetricSeries = [new MetricSample(0, 0, null, 170), new MetricSample(1, 10, null, 190)]; // Z4 owns 10 min
+            context.Rides.AddRange(rideA, rideB);
+            context.UserSettings.Add(new RideLog.Domain.Users.UserSettings { UserId = "admin-1", MaxHeartRate = 200 });
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<ZonesStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.HrZones);
+        Assert.Equal(5, stats.HrZones!.Count);
+        Assert.Equal(10, stats.HrZones.Single(z => z.Zone == 2).Minutes, 0.01);
+        Assert.Equal(10, stats.HrZones.Single(z => z.Zone == 4).Minutes, 0.01);
+        Assert.Equal(0, stats.HrZones.Single(z => z.Zone == 3).Minutes, 0.01);
+    }
+
     [Fact]
     public async Task Monthly_aggregates_cover_every_year_with_data_and_are_public()
     {

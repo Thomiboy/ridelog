@@ -14,6 +14,7 @@ import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { Chart } from '../../shared/chart/chart';
 import { buildMetricSeriesChart, hasGraphableSeries, type MetricAxis } from './metric-series-chart';
+import { buildHrZoneChart } from './hr-zone-chart';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 
 @Component({
@@ -47,6 +48,11 @@ export class RideDetail {
   readonly metricChart = computed(() => {
     const series = this.ride()?.metricSeries;
     return series && hasGraphableSeries(series) ? buildMetricSeriesChart(series, this.metricAxis()) : null;
+  });
+
+  readonly hrZoneChart = computed(() => {
+    const zones = this.ride()?.hrZones;
+    return zones && zones.some((z) => z.minutes > 0) ? buildHrZoneChart(zones) : null;
   });
 
   // Elevation on the left axis, heart rate on the right, so the two share one plot.

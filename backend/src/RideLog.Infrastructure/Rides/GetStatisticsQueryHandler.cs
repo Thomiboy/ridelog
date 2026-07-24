@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RideLog.Application.Messaging;
 using RideLog.Application.Rides;
+using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Rides;
@@ -9,8 +10,9 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
     : IQueryHandler<GetStatisticsQuery, StatisticsResult>
 {
     private sealed record Row(
-        Guid Id, DateTimeOffset StartTime, double DistanceMeters,
-        double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh);
+        Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters,
+        double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh,
+        IReadOnlyList<MetricSample>? MetricSeries);
 
     public async Task<StatisticsResult> HandleAsync(GetStatisticsQuery query, CancellationToken cancellationToken = default)
     {
@@ -24,9 +26,12 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
         // and at single-user scale the whole history is a handful of summary rows).
         var rows = await cycling
             .Select(ride => new Row(
-                ride.Id, ride.StartTime, ride.DistanceMeters,
-                ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh))
+                ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters,
+                ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MetricSeries))
             .ToListAsync(cancellationToken);
+
+        var maxHeartRateByUser = await context.UserSettings
+            .ToDictionaryAsync(s => s.UserId, s => s.MaxHeartRate, cancellationToken);
 
         var monthlyAggregates = rows
             .GroupBy(r => (r.StartTime.Year, r.StartTime.Month))
@@ -40,7 +45,29 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .OrderBy(m => m.Year).ThenBy(m => m.Month)
             .ToList();
 
-        return new StatisticsResult(monthlyAggregates, BuildRecords(rows));
+        return new StatisticsResult(monthlyAggregates, BuildRecords(rows), AggregateHrZones(rows, maxHeartRateByUser));
+    }
+
+    private static IReadOnlyList<HrZoneSlice>? AggregateHrZones(
+        IReadOnlyList<Row> rows, IReadOnlyDictionary<string, int?> maxHeartRateByUser)
+    {
+        var totals = new double[HrZoneCalculator.ZoneCount];
+        foreach (var row in rows)
+        {
+            if (row.MetricSeries is { } series
+                && maxHeartRateByUser.TryGetValue(row.UserId, out var configured)
+                && configured is { } maxHeartRate)
+            {
+                foreach (var slice in HrZoneCalculator.TimeInZone(series, maxHeartRate))
+                {
+                    totals[slice.Zone - 1] += slice.Minutes;
+                }
+            }
+        }
+
+        return totals.Any(minutes => minutes > 0)
+            ? Enumerable.Range(1, HrZoneCalculator.ZoneCount).Select(zone => new HrZoneSlice(zone, totals[zone - 1])).ToList()
+            : null;
     }
 
     private static StatisticsRecords BuildRecords(IReadOnlyList<Row> rows)

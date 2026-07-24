@@ -1,3 +1,7 @@
+import type { HrZoneSlice } from './ride.models';
+
+export type { HrZoneSlice };
+
 /** Totals for one calendar month of cycling, mirroring the backend MonthlyAggregate. */
 export interface MonthlyAggregate {
   year: number;
@@ -40,4 +44,5 @@ export interface StatisticsRecords {
 export interface StatisticsResult {
   monthlyAggregates: MonthlyAggregate[];
   records: StatisticsRecords;
+  hrZones?: HrZoneSlice[] | null;
 }

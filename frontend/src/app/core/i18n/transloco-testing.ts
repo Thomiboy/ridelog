@@ -28,6 +28,7 @@ const en = {
       calories: 'Calories',
       yearTotals: 'Distance by year',
     },
+    hrZones: { title: 'HR zones' },
   },
   dashboard: {
     title: 'Dashboard',
@@ -79,6 +80,7 @@ const en = {
       climbingEnergy: 'Climbing & energy',
     },
     graph: { title: 'Elevation & heart rate', byDistance: 'Distance', byTime: 'Time' },
+    hrZones: { title: 'Time in HR zones' },
   },
   admin: {
     title: 'Admin',
@@ -104,6 +106,13 @@ const en = {
       lastSync: 'Last sync:',
       never: 'never',
       result: 'Imported {{imported}}, skipped {{skipped}}, failed {{failed}}.',
+    },
+    settings: {
+      title: 'HR zones',
+      hint: 'Set your maximum heart rate; the five zones are 50/60/70/80/90% of it.',
+      maxHr: 'Max heart rate (bpm)',
+      save: 'Save',
+      saved: 'Saved.',
     },
     maintenance: {
       title: 'Maintenance',

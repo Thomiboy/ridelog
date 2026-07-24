@@ -32,6 +32,51 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
     private sealed record MetricSampleDto(double DistanceKm, double ElapsedMinutes, double? ElevationMeters, int? HeartRate);
     private sealed record SeriesDetailDto(IReadOnlyList<MetricSampleDto>? MetricSeries);
 
+    private sealed record HrZoneSliceDto(int Zone, double Minutes);
+    private sealed record ZonesDetailDto(IReadOnlyList<HrZoneSliceDto>? HrZones);
+
+    private async Task SetMaxHeartRateAsync(string userId, int maxHeartRate)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+        context.UserSettings.Add(new RideLog.Domain.Users.UserSettings { UserId = userId, MaxHeartRate = maxHeartRate });
+        await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Computes_per_ride_hr_zones_from_the_series_and_the_max_heart_rate()
+    {
+        var ride = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero)); // UserId "admin-1"
+        ride.MetricSeries =
+        [
+            new MetricSample(0, 0, null, 130),   // Z2 owns 0→10
+            new MetricSample(1, 10, null, 150),  // Z3 owns 10→20
+            new MetricSample(2, 20, null, 170),  // Z4: last sample
+        ];
+        await SeedRidesAsync(ride);
+        await SetMaxHeartRateAsync("admin-1", 200); // floors at 100/120/140/160/180
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<ZonesDetailDto>($"/rides/{ride.Id}");
+
+        Assert.NotNull(detail!.HrZones);
+        Assert.Equal(5, detail.HrZones!.Count);
+        Assert.Equal(10, detail.HrZones.Single(z => z.Zone == 2).Minutes, 0.01);
+        Assert.Equal(10, detail.HrZones.Single(z => z.Zone == 3).Minutes, 0.01);
+        Assert.Equal(0, detail.HrZones.Single(z => z.Zone == 4).Minutes, 0.01);
+    }
+
+    [Fact]
+    public async Task Omits_hr_zones_when_no_max_heart_rate_is_configured()
+    {
+        var ride = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        ride.MetricSeries = [new MetricSample(0, 0, null, 130), new MetricSample(1, 10, null, 150)];
+        await SeedRidesAsync(ride); // no UserSettings seeded
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<ZonesDetailDto>($"/rides/{ride.Id}");
+
+        Assert.Null(detail!.HrZones);
+    }
+
     [Fact]
     public async Task Returns_the_metric_series_on_the_detail()
     {
@@ -110,6 +155,7 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
         context.Rides.RemoveRange(context.Rides);
+        context.UserSettings.RemoveRange(context.UserSettings); // isolate HR-zone settings between tests
         context.Rides.AddRange(rides);
         await context.SaveChangesAsync();
     }

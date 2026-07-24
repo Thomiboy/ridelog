@@ -28,6 +28,12 @@ export interface MetricSample {
   heartRate?: number | null;
 }
 
+/** Time spent in one HR zone (1–5), mirroring the backend HrZoneSlice. */
+export interface HrZoneSlice {
+  zone: number;
+  minutes: number;
+}
+
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
@@ -39,4 +45,5 @@ export interface RideDetail extends RideSummary {
   nextId?: string | null;
   routePolyline?: string;
   metricSeries?: MetricSample[] | null;
+  hrZones?: HrZoneSlice[] | null;
 }

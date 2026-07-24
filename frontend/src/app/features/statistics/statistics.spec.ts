@@ -55,6 +55,26 @@ describe('Statistics', () => {
     return (node.componentInstance as ChartStub).data();
   }
 
+  it('shows the HR-zones section when zone data is present', () => {
+    const { fixture, el } = setup({
+      hrZones: [
+        { zone: 1, minutes: 0 },
+        { zone: 2, minutes: 30 },
+        { zone: 3, minutes: 45 },
+        { zone: 4, minutes: 12 },
+        { zone: 5, minutes: 3 },
+      ],
+    });
+
+    expect(el.querySelector('[data-section="hr-zones"]')).not.toBeNull();
+    expect(chartData(fixture, 'hr-zones').datasets[0].data).toEqual([0, 30, 45, 12, 3]);
+  });
+
+  it('hides the HR-zones section when there is no zone data', () => {
+    const { el } = setup({ hrZones: null });
+    expect(el.querySelector('[data-section="hr-zones"]')).toBeNull();
+  });
+
   it('renders the three records, linking rides where relevant', () => {
     const { el } = setup();
 

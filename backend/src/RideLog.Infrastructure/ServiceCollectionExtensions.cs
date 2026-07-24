@@ -5,11 +5,13 @@ using RideLog.Application.Auth;
 using RideLog.Application.Import;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
+using RideLog.Application.Users;
 using RideLog.Infrastructure.Auth;
 using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
 using RideLog.Infrastructure.Rides;
+using RideLog.Infrastructure.Users;
 
 // Placed in the DI namespace so callers get the extensions without an extra using.
 namespace Microsoft.Extensions.DependencyInjection;
@@ -56,6 +58,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IActivityFileParser, FitActivityParser>();
         services.AddScoped<IActivityImporter, ActivityImporter>();
         services.AddScoped<IRideMaintenanceService, RideMaintenanceService>();
+        services.AddScoped<IUserSettingsService, UserSettingsService>();
 
         return services;
     }

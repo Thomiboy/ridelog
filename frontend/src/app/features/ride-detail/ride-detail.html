@@ -123,5 +123,14 @@
         <div class="graph-host"><app-chart type="line" [data]="chart" [options]="graphOptions" /></div>
       </mat-card>
     }
+
+    @if (hrZoneChart(); as chart) {
+      <mat-card appearance="outlined" class="graph-card" data-hr-zones>
+        <div class="graph-header">
+          <span class="card-title">{{ 'rideDetail.hrZones.title' | transloco }}</span>
+        </div>
+        <div class="graph-host"><app-chart type="bar" [data]="chart" /></div>
+      </mat-card>
+    }
   }
 </section>

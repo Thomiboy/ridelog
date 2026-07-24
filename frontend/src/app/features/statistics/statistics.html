@@ -75,5 +75,16 @@
         </mat-card>
       }
     </div>
+
+    @if (hrZoneChart(); as chart) {
+      <section data-section="hr-zones">
+        <h2>{{ 'statistics.hrZones.title' | transloco }}</h2>
+        <div class="charts">
+          <mat-card appearance="outlined" class="chart-card" data-chart="hr-zones">
+            <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+          </mat-card>
+        </div>
+      </section>
+    }
   }
 </section>

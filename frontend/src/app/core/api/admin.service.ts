@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary } from './admin.models';
+import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary, UserSettings } from './admin.models';
 
 /** Admin-only actions: link Polar, import files, trigger a sync. */
 @Injectable({ providedIn: 'root' })
@@ -36,5 +36,13 @@ export class AdminService {
 
   deleteAllRides(): Observable<{ deleted: number }> {
     return this.http.delete<{ deleted: number }>(`${this.baseUrl}/rides`);
+  }
+
+  getSettings(): Observable<UserSettings> {
+    return this.http.get<UserSettings>(`${this.baseUrl}/settings`);
+  }
+
+  updateSettings(settings: UserSettings): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/settings`, settings);
   }
 }

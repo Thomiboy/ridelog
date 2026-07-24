@@ -54,6 +54,27 @@
 
   <mat-card appearance="outlined" class="card">
     <mat-card-header>
+      <mat-card-title>{{ 'admin.settings.title' | transloco }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p>{{ 'admin.settings.hint' | transloco }}</p>
+      <label class="max-hr">
+        {{ 'admin.settings.maxHr' | transloco }}
+        <input type="number" min="0" data-max-hr [value]="maxHeartRate() ?? ''" (input)="onMaxHrInput($event)" />
+      </label>
+      @if (settingsSaved()) {
+        <p class="status ok" data-settings-saved>{{ 'admin.settings.saved' | transloco }}</p>
+      }
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-flat-button data-save-settings [disabled]="busy()" (click)="saveSettings()">
+        {{ 'admin.settings.save' | transloco }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-card appearance="outlined" class="card">
+    <mat-card-header>
       <mat-card-title>{{ 'admin.sync.title' | transloco }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>

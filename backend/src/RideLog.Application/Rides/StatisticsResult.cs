@@ -34,4 +34,5 @@ public sealed record StatisticsRecords(
 /// </summary>
 public sealed record StatisticsResult(
     IReadOnlyList<MonthlyAggregate> MonthlyAggregates,
-    StatisticsRecords Records);
+    StatisticsRecords Records,
+    IReadOnlyList<HrZoneSlice>? HrZones);
