@@ -17,4 +17,16 @@ describe('hr zone chart', () => {
     expect(chart.datasets).toHaveLength(1);
     expect(chart.datasets[0].data).toEqual([0, 10, 25, 8, 0]);
   });
+
+  it('colour-codes the bars from light blue (Z1) to red (Z5)', () => {
+    const chart = buildHrZoneChart(zones);
+
+    expect(chart.datasets[0].backgroundColor).toEqual([
+      '#4fc3f7', // Z1 light blue
+      '#1e88e5', // Z2 blue
+      '#43a047', // Z3 green
+      '#fbc02d', // Z4 yellow
+      '#e53935', // Z5 red
+    ]);
+  });
 });
