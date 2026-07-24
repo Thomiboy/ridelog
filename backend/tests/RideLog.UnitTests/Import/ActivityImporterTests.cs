@@ -244,10 +244,11 @@ public sealed class ActivityImporterTests : IDisposable
         await using (var verify = new RideLogDbContext(_options))
         {
             var ride = await verify.Rides.SingleAsync();
+            var series = ride.MetricSeries!;
             // FIT temperatures 10/20/15 at 0/50/100% align onto the 0/30/60-min samples.
-            Assert.Equal([10.0, 20.0, 15.0], ride.MetricSeries!.Select(s => s.TemperatureCelsius));
+            Assert.Equal([10.0, 20.0, 15.0], series.Select(s => s.TemperatureCelsius));
             // The other channels are untouched.
-            Assert.Equal([100.0, 110.0, 120.0], ride.MetricSeries.Select(s => s.ElevationMeters));
+            Assert.Equal([100.0, 110.0, 120.0], series.Select(s => s.ElevationMeters));
         }
     }
 
