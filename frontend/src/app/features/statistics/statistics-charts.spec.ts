@@ -76,6 +76,17 @@ describe('statistics chart builders', () => {
     expect(chart.datasets[0].data).toEqual([3, 12, 40]);
   });
 
+  it('colour-codes the temperature bands by their range, cold to hot', () => {
+    const bands: TemperatureBandSlice[] = [
+      { fromCelsius: null, toCelsius: 0, km: 0 }, // below 0 → deep blue
+      { fromCelsius: 20, toCelsius: 25, km: 0 }, // 20–25 → orange
+      { fromCelsius: 25, toCelsius: null, km: 0 }, // 25+ → red
+    ];
+
+    const colors = buildTemperatureDistributionChart(bands).datasets[0].backgroundColor;
+    expect(colors).toEqual(['#0d47a1', '#fb8c00', '#e53935']);
+  });
+
   it('builds a monthly average-temperature line chart', () => {
     const monthly: MonthlyTemperature[] = [
       { year: 2026, month: 3, averageTemperatureCelsius: 8 },

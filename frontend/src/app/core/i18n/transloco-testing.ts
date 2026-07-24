@@ -28,6 +28,7 @@ const en = {
       calories: 'Calories',
       yearTotals: 'Distance by year',
     },
+    allTime: '· all-time',
     hrZones: { title: 'HR zones' },
     temperature: {
       title: 'Temperature',
