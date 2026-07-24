@@ -11,6 +11,18 @@ export type LeafletApi = Pick<typeof Leaflet, 'map' | 'tileLayer' | 'polyline' |
  */
 export const ROUTE_COLORS = ['#1b3a6b', '#c2410c', '#0f766e'] as const;
 
+/** How the view is fitted to the routes. */
+export interface FitOptions {
+  /**
+   * Pixels at the bottom of the map that are covered by the content sheet. The view is fitted into
+   * the area above it, so the whole route stays visible on a half-open page.
+   */
+  bottomPaddingPx?: number;
+}
+
+/** Breathing room around the fitted routes so tracks aren't flush against the map edges. */
+const EDGE_PADDING_PX = 24;
+
 /** Creates a Leaflet map on the element with an OpenStreetMap tile layer. */
 export function createRouteMap(element: HTMLElement, api: LeafletApi = Leaflet): Leaflet.Map {
   const map = api.map(element);
@@ -31,6 +43,7 @@ export function drawRoutes(
   map: Leaflet.Map,
   encoded: readonly (string | null | undefined)[],
   api: LeafletApi = Leaflet,
+  fit: FitOptions = {},
 ): Leaflet.Polyline[] {
   const routes = encoded.map((e) => (e ? decodePolyline(e) : [])).filter((coords) => coords.length > 0);
   if (routes.length === 0) {
@@ -41,6 +54,9 @@ export function drawRoutes(
   const tracks = routes.map((coords, index) =>
     api.polyline(coords, { color: ROUTE_COLORS[index % ROUTE_COLORS.length], weight: 4 }).addTo(map),
   );
-  map.fitBounds(api.latLngBounds(routes.flat()));
+  map.fitBounds(api.latLngBounds(routes.flat()), {
+    paddingTopLeft: [EDGE_PADDING_PX, EDGE_PADDING_PX],
+    paddingBottomRight: [EDGE_PADDING_PX, EDGE_PADDING_PX + (fit.bottomPaddingPx ?? 0)],
+  });
   return tracks;
 }

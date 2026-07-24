@@ -36,8 +36,18 @@ describe('leaflet-map', () => {
     const coords = (api.polyline as unknown as Mock).mock.calls[0][0] as [number, number][];
     expect(coords[0][0]).toBeCloseTo(38.5, 4);
     expect(coords[0][1]).toBeCloseTo(-120.2, 4);
-    expect(map.fitBounds).toHaveBeenCalledWith('ALL_BOUNDS');
+    expect((map.fitBounds as unknown as Mock).mock.calls[0][0]).toBe('ALL_BOUNDS');
     expect(tracks).toHaveLength(1);
+  });
+
+  it('reserves space at the bottom so the route clears the content sheet', () => {
+    const { api, map } = fakeLeaflet();
+
+    drawRoutes(map as never, [ENCODED], api, { bottomPaddingPx: 320 });
+
+    const options = (map.fitBounds as unknown as Mock).mock.calls[0][1] as { paddingBottomRight: [number, number] };
+    // The route fits into the area above the sheet: bottom padding covers the obscured height.
+    expect(options.paddingBottomRight[1]).toBeGreaterThanOrEqual(320);
   });
 
   it('draws each route in a distinct colour, the first in the default navy', () => {
