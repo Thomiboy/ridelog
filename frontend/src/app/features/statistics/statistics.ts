@@ -1,9 +1,11 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatCardModule } from '@angular/material/card';
 import { StatisticsService } from '../../core/api/statistics.service';
+import { RidesService } from '../../core/api/rides.service';
+import { MapState } from '../../core/map/map-state';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
 import {
@@ -21,8 +23,13 @@ import { buildHrZoneChart } from '../ride-detail/hr-zone-chart';
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
 })
-export class Statistics {
+export class Statistics implements OnDestroy {
   private readonly statisticsService = inject(StatisticsService);
+  private readonly ridesService = inject(RidesService);
+  private readonly mapState = inject(MapState);
+
+  /** How many of the longest routes the background map paints behind the charts. */
+  private static readonly BackgroundRouteCount = 3;
 
   readonly stats = signal<StatisticsResult | null>(null);
 
@@ -72,6 +79,15 @@ export class Statistics {
 
   constructor() {
     this.statisticsService.getStatistics().subscribe((stats) => this.stats.set(stats));
+
+    // The Statistics page paints its longest routes behind the charts; leaving restores the default.
+    this.ridesService
+      .getLongestRides(Statistics.BackgroundRouteCount)
+      .subscribe((routes) => this.mapState.showRoutes(routes.map((route) => route.routePolyline)));
+  }
+
+  ngOnDestroy(): void {
+    this.mapState.reset();
   }
 
   selectYear(value: string): void {

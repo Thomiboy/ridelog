@@ -32,7 +32,7 @@ describe('MapState', () => {
       routePolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
     });
 
-    expect(state.polyline()).toBe('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+    expect(state.routes()).toEqual(['_p~iF~ps|U_ulLnnqC_mqNvxq`@']);
   });
 
   it('stays empty when there are no rides yet', () => {
@@ -45,13 +45,32 @@ describe('MapState', () => {
       total: 0,
     });
 
-    expect(state.polyline()).toBeNull();
+    expect(state.routes()).toEqual([]);
   });
 
-  it('showRoute overrides the background route', () => {
+  it('showRoute overrides the background with a single route', () => {
     state.showRoute('abc123');
 
-    expect(state.polyline()).toBe('abc123');
+    expect(state.routes()).toEqual(['abc123']);
+  });
+
+  it('showRoute with nothing clears the background', () => {
+    state.showRoute('abc123');
+    state.showRoute(null);
+
+    expect(state.routes()).toEqual([]);
+  });
+
+  it('showRoutes overrides the background with several routes', () => {
+    state.showRoutes(['a', 'b', 'c']);
+
+    expect(state.routes()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('showRoutes drops empty entries so the map never draws a blank track', () => {
+    state.showRoutes(['a', '', 'c']);
+
+    expect(state.routes()).toEqual(['a', 'c']);
   });
 
   it('reset restores the latest route from cache without refetching', () => {
@@ -64,12 +83,12 @@ describe('MapState', () => {
     });
     http.expectOne(`${environment.apiBaseUrl}/rides/r9`).flush({ id: 'r9', routePolyline: 'latest-route' });
 
-    state.showRoute('selected-route');
-    expect(state.polyline()).toBe('selected-route');
+    state.showRoutes(['selected-a', 'selected-b']);
+    expect(state.routes()).toEqual(['selected-a', 'selected-b']);
 
     state.reset();
 
-    expect(state.polyline()).toBe('latest-route');
+    expect(state.routes()).toEqual(['latest-route']);
     http.verify(); // no new requests
   });
 
@@ -83,7 +102,7 @@ describe('MapState', () => {
       total: 0,
     });
 
-    expect(state.polyline()).toBeNull();
+    expect(state.routes()).toEqual([]);
   });
 
   it('invalidate forces reset to refetch the latest route', () => {
@@ -108,6 +127,6 @@ describe('MapState', () => {
     });
     http.expectOne(`${environment.apiBaseUrl}/rides/r8`).flush({ id: 'r8', routePolyline: 'new-latest' });
 
-    expect(state.polyline()).toBe('new-latest');
+    expect(state.routes()).toEqual(['new-latest']);
   });
 });

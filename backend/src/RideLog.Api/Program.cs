@@ -80,6 +80,10 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
 app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
     Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
 
+// The longest cycling routes for the Statistics page's background map (longest first, routes only).
+app.MapGet("/rides/longest", async (IDispatcher dispatcher, int? take) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(take ?? 3))));
+
 app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
     await dispatcher.QueryAsync(new GetRideQuery(id)) is { } ride
         ? Results.Ok(ride)
