@@ -11,7 +11,7 @@ public class RideListEndpointTests(RideLogApiFactory factory) : IClassFixture<Ri
 {
     private sealed record RideListItemDto(
         Guid Id, DateTimeOffset StartTime, double DistanceKm, double DurationMinutes,
-        string Sport, double? AverageSpeedKmh, double? ElevationGainMeters);
+        string Sport, double? AverageSpeedKmh, double? ElevationGainMeters, IReadOnlyList<string> Sources);
 
     private sealed record PagedDto(IReadOnlyList<RideListItemDto> Items, int Page, int PageSize, int Total);
 
@@ -56,6 +56,27 @@ public class RideListEndpointTests(RideLogApiFactory factory) : IClassFixture<Ri
         Assert.Equal(older.Id, page.Items[1].Id);
         Assert.Equal(61.5, page.Items[0].DistanceKm, 0.01);
         Assert.Equal(118, page.Items[0].DurationMinutes, 0.5);
+    }
+
+    [Fact]
+    public async Task Each_ride_carries_its_source_chips()
+    {
+        var ride = Ride(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero)); // Source = Polar
+        ride.RawFiles.Add(new RawFile
+        {
+            Id = Guid.NewGuid(),
+            UserId = ride.UserId,
+            Format = RawFileFormat.Fit,
+            FileName = "bryton.fit",
+            Content = [1, 2, 3],
+            UploadedAt = DateTimeOffset.UtcNow,
+        });
+        await ResetAndSeedAsync(ride);
+
+        var page = await (await factory.CreateClient().GetAsync("/rides")).Content.ReadFromJsonAsync<PagedDto>();
+
+        // A Polar auto-synced ride enriched with a Bryton FIT shows both chips.
+        Assert.Equal(["PolarAutoSync", "Bryton"], Assert.Single(page!.Items).Sources);
     }
 
     [Fact]

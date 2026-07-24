@@ -27,6 +27,11 @@ public class Ride
     public int? AverageCadence { get; set; }
     public int? Calories { get; set; }
 
+    /// <summary>Ambient temperature summary, enriched from a merged Bryton FIT; null until one is uploaded.</summary>
+    public double? AverageTemperatureCelsius { get; set; }
+    public double? MinTemperatureCelsius { get; set; }
+    public double? MaxTemperatureCelsius { get; set; }
+
     /// <summary>Sport type exactly as the source reports it (e.g. Polar "ROAD_CYCLING").</summary>
     public required string Sport { get; set; }
 

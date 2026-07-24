@@ -10,11 +10,12 @@ import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
+import { SourceChips } from '../../shared/source-chips/source-chips';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 
 @Component({
   selector: 'app-ride-detail',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule, MatCardModule],
+  imports: [TranslocoPipe, DatePipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule, MatCardModule, SourceChips],
   templateUrl: './ride-detail.html',
   styleUrl: './ride-detail.scss',
 })

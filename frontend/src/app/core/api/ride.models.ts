@@ -16,12 +16,13 @@ export interface RideSummary {
   averageSpeedKmh?: number;
   averageHeartRate?: number;
   elevationGainMeters?: number;
+  /** Source chip tokens (PolarAutoSync / PolarImport / Bryton), localized in the UI. */
+  sources: string[];
 }
 
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
-  source: string;
   maximumSpeedKmh?: number;
   maximumHeartRate?: number;
   averageCadence?: number;

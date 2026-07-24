@@ -11,7 +11,7 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
 {
     private sealed record RideDetailDto(
         Guid Id, DateTimeOffset StartTime, DateTimeOffset EndTime, double DistanceKm, double DurationMinutes,
-        string Sport, string Source, double? AverageSpeedKmh, double? MaximumSpeedKmh,
+        string Sport, IReadOnlyList<string> Sources, double? AverageSpeedKmh, double? MaximumSpeedKmh,
         int? AverageHeartRate, int? MaximumHeartRate, double? ElevationGainMeters, int? AverageCadence,
         int? Calories, Guid? PreviousId, Guid? NextId, string? RoutePolyline);
 
@@ -26,6 +26,62 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Sport = "ROAD_BIKING",
         Source = RideSource.Polar,
     };
+
+    private sealed record SourcesDto(IReadOnlyList<string> Sources);
+
+    private static RawFile Raw(RawFileFormat format) => new()
+    {
+        Id = Guid.NewGuid(),
+        UserId = "admin-1",
+        Format = format,
+        FileName = $"file.{format}".ToLowerInvariant(),
+        Content = [1, 2, 3],
+        UploadedAt = DateTimeOffset.UtcNow,
+    };
+
+    private static Ride RideWith(DateTimeOffset start, RideSource source, params RawFileFormat[] formats)
+    {
+        var ride = new Ride
+        {
+            Id = Guid.NewGuid(),
+            UserId = "admin-1",
+            StartTime = start,
+            EndTime = start.AddHours(1),
+            Duration = TimeSpan.FromHours(1),
+            DistanceMeters = 30000,
+            Sport = "ROAD_BIKING",
+            Source = source,
+        };
+        foreach (var format in formats)
+        {
+            ride.RawFiles.Add(Raw(format));
+        }
+
+        return ride;
+    }
+
+    [Fact]
+    public async Task Derives_source_chips_from_the_ride_source_and_its_raw_files()
+    {
+        var polarWithFit = RideWith(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), RideSource.Polar, RawFileFormat.Fit);
+        var importGpx = RideWith(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero), RideSource.Import, RawFileFormat.Gpx);
+        var fitOnly = RideWith(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero), RideSource.Import, RawFileFormat.Fit);
+        await SeedRidesAsync(polarWithFit, importGpx, fitOnly);
+
+        var client = factory.CreateClient();
+
+        // A Polar auto-synced ride enriched with a Bryton FIT carries both chips.
+        var a = await client.GetFromJsonAsync<SourcesDto>($"/rides/{polarWithFit.Id}");
+        Assert.Equal(["PolarAutoSync", "Bryton"], a!.Sources);
+
+        // A historical GPX/TCX bulk import is a manual Polar import.
+        var b = await client.GetFromJsonAsync<SourcesDto>($"/rides/{importGpx.Id}");
+        Assert.Equal(["PolarImport"], b!.Sources);
+
+        // A FIT with no GPX/TCX beside it is Bryton only.
+        var c = await client.GetFromJsonAsync<SourcesDto>($"/rides/{fitOnly.Id}");
+        Assert.Equal(["Bryton"], c!.Sources);
+    }
 
     private async Task SeedRidesAsync(params Ride[] rides)
     {
@@ -83,7 +139,7 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Assert.Equal(84, detail.AverageCadence);
         Assert.Equal(620, detail.Calories);
         Assert.Equal("ROAD_BIKING", detail.Sport);
-        Assert.Equal("Polar", detail.Source);
+        Assert.Equal(["PolarAutoSync"], detail.Sources);
         Assert.Equal("_p~iF~ps|U_ulLnnqC_mqNvxq`@", detail.RoutePolyline);
     }
 

@@ -9,6 +9,7 @@ import { MapState } from '../../core/map/map-state';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
+import { SourceChips } from '../../shared/source-chips/source-chips';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
 // How many rides fit without scrolling at each sheet height (collapsed isn't for browsing).
@@ -16,7 +17,7 @@ const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
 
 @Component({
   selector: 'app-rides',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule],
+  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule, SourceChips],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',
 })

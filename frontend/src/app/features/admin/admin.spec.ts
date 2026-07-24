@@ -39,6 +39,15 @@ describe('Admin', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator };
   }
 
+  it('accepts .fit uploads alongside .gpx and .tcx', () => {
+    const { el } = setup();
+
+    const accept = (el.querySelector('input[type="file"]') as HTMLInputElement).accept;
+    expect(accept).toContain('.fit');
+    expect(accept).toContain('.gpx');
+    expect(accept).toContain('.tcx');
+  });
+
   it('starts the Polar connect flow and navigates to the returned url', () => {
     const { el, adminService, navigator } = setup();
 

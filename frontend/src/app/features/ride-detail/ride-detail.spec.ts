@@ -17,7 +17,7 @@ describe('RideDetail', () => {
     distanceKm: 61.5,
     durationMinutes: 118,
     sport: 'ROAD_BIKING',
-    source: 'Polar',
+    sources: ['PolarAutoSync'],
     averageSpeedKmh: 31.3,
     maximumSpeedKmh: 58.9,
     averageHeartRate: 142,
@@ -59,7 +59,13 @@ describe('RideDetail', () => {
     expect(ridesService.getRide).toHaveBeenCalledWith('r1');
     expect(el.textContent).toContain('61.5'); // distance
     expect(el.textContent).toContain('178'); // max HR
-    expect(el.textContent).toContain('Polar'); // source badge
+  });
+
+  it('shows the source chips in the header', () => {
+    const { el } = setup({ ...detail, sources: ['PolarAutoSync', 'Bryton'] });
+
+    const chips = [...el.querySelectorAll('.detail-header [data-source-chip]')].map((c) => c.textContent?.trim());
+    expect(chips).toEqual(['Polar · Auto-sync', 'Bryton']);
   });
 
   it('shows the start time alongside the date', () => {

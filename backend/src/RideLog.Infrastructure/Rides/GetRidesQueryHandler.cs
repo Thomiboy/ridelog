@@ -36,6 +36,8 @@ internal sealed class GetRidesQueryHandler(RideLogDbContext context)
                 ride.AverageSpeedKmh,
                 ride.ElevationGainMeters,
                 ride.Sport,
+                ride.Source,
+                Formats = ride.RawFiles.Select(f => f.Format).ToList(),
             })
             .ToListAsync(cancellationToken);
 
@@ -52,6 +54,7 @@ internal sealed class GetRidesQueryHandler(RideLogDbContext context)
             AverageSpeedKmh = row.AverageSpeedKmh,
             ElevationGainMeters = row.ElevationGainMeters,
             Sport = row.Sport,
+            Sources = RideSourceLabels.Derive(row.Source, row.Formats),
         }).ToList();
 
         return new PagedResult<RideListItem>(items, page, pageSize, total);
