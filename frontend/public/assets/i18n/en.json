@@ -70,6 +70,9 @@
       "title": "Elevation & heart rate",
       "byDistance": "Distance",
       "byTime": "Time"
+    },
+    "hrZones": {
+      "title": "Time in HR zones"
     }
   },
   "admin": {
@@ -107,6 +110,13 @@
       "deleteConfirm1": "Delete ALL rides and their stored files? This cannot be undone.",
       "deleteConfirm2": "Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?",
       "deleteResult": "Deleted {{deleted}} rides."
+    },
+    "settings": {
+      "title": "HR zones",
+      "hint": "Set your maximum heart rate; the five zones are 50/60/70/80/90% of it.",
+      "maxHr": "Max heart rate (bpm)",
+      "save": "Save",
+      "saved": "Saved."
     }
   },
   "login": {
@@ -133,6 +143,9 @@
       "rides": "Rides",
       "calories": "Calories",
       "yearTotals": "Distance by year"
+    },
+    "hrZones": {
+      "title": "HR zones"
     }
   }
 }

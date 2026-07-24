@@ -27,6 +27,8 @@ export class Admin {
   readonly syncResult = signal<SyncSummary | null>(null);
   readonly reprocessResult = signal<ReprocessSummary | null>(null);
   readonly deletedCount = signal<number | null>(null);
+  readonly maxHeartRate = signal<number | null>(null);
+  readonly settingsSaved = signal(false);
   readonly busy = signal(false);
   readonly failed = signal(false);
   readonly justLinked = signal(false);
@@ -38,6 +40,25 @@ export class Admin {
     this.failed.set(polar === 'error');
 
     this.loadStatus();
+    this.adminService.getSettings().subscribe((settings) => this.maxHeartRate.set(settings.maxHeartRate));
+  }
+
+  onMaxHrInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.maxHeartRate.set(value === '' ? null : Number(value));
+    this.settingsSaved.set(false);
+  }
+
+  saveSettings(): void {
+    this.run(() =>
+      this.adminService.updateSettings({ maxHeartRate: this.maxHeartRate() }).subscribe({
+        next: () => {
+          this.settingsSaved.set(true);
+          this.busy.set(false);
+        },
+        error: () => this.fail(),
+      }),
+    );
   }
 
   connectPolar(): void {

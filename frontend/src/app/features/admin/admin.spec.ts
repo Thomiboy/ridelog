@@ -18,6 +18,8 @@ describe('Admin', () => {
       importRides: vi.fn().mockReturnValue(of({ files: [], imported: 2, skipped: 0, failed: 0 })),
       reprocess: vi.fn().mockReturnValue(of({ processed: 5, failed: 0 })),
       deleteAllRides: vi.fn().mockReturnValue(of({ deleted: 7 })),
+      getSettings: vi.fn().mockReturnValue(of({ maxHeartRate: 190 })),
+      updateSettings: vi.fn().mockReturnValue(of(void 0)),
       ...overrides,
     };
     const navigator = { navigate: vi.fn() };
@@ -38,6 +40,19 @@ describe('Admin', () => {
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator };
   }
+
+  it('shows the configured max heart rate and saves an update', () => {
+    const { el, adminService } = setup();
+
+    const input = el.querySelector('[data-max-hr]') as HTMLInputElement;
+    expect(input.value).toBe('190');
+
+    input.value = '185';
+    input.dispatchEvent(new Event('input'));
+    (el.querySelector('[data-save-settings]') as HTMLButtonElement).click();
+
+    expect(adminService.updateSettings).toHaveBeenCalledWith({ maxHeartRate: 185 });
+  });
 
   it('accepts .fit uploads alongside .gpx and .tcx', () => {
     const { el } = setup();

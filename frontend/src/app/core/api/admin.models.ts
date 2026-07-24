@@ -34,3 +34,8 @@ export interface ReprocessSummary {
   processed: number;
   failed: number;
 }
+
+/** Editable user settings. Currently just the max heart rate anchoring the HR zones. */
+export interface UserSettings {
+  maxHeartRate: number | null;
+}

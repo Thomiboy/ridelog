@@ -9,6 +9,7 @@ using RideLog.Application.Import;
 using RideLog.Application.Messaging;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
+using RideLog.Application.Users;
 using RideLog.Infrastructure.Auth;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
@@ -130,6 +131,18 @@ app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, C
 })
     .RequireAuthorization(AdminSeedOptions.RoleName)
     .DisableAntiforgery();
+
+// Admin settings: the max heart rate that anchors the HR-zone boundaries.
+app.MapGet("/settings", async (IUserSettingsService settings, ClaimsPrincipal user) =>
+    Results.Ok(await settings.GetAsync(user.FindFirstValue("sub")!)))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
+app.MapPut("/settings", async (UserSettingsDto body, IUserSettingsService settings, ClaimsPrincipal user) =>
+{
+    await settings.SetMaxHeartRateAsync(user.FindFirstValue("sub")!, body.MaxHeartRate);
+    return Results.Ok();
+})
+    .RequireAuthorization(AdminSeedOptions.RoleName);
 
 // Admin maintenance: re-parse every ride's stored raw files to refresh metrics in place. The only
 // way to fix Polar-synced rides, which AccessLink never re-serves.

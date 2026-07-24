@@ -7,6 +7,7 @@ import { StatisticsService } from '../../core/api/statistics.service';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
 import { buildMonthlyMetricChart, buildYearTotalsChart, statisticsYears } from './statistics-charts';
+import { buildHrZoneChart } from '../ride-detail/hr-zone-chart';
 
 @Component({
   selector: 'app-statistics',
@@ -45,6 +46,11 @@ export class Statistics {
   });
 
   readonly records = computed(() => this.stats()?.records ?? null);
+
+  readonly hrZoneChart = computed(() => {
+    const zones = this.stats()?.hrZones;
+    return zones && zones.some((z) => z.minutes > 0) ? buildHrZoneChart(zones) : null;
+  });
 
   constructor() {
     this.statisticsService.getStatistics().subscribe((stats) => this.stats.set(stats));

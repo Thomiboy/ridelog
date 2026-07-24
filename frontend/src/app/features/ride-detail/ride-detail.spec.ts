@@ -106,6 +106,42 @@ describe('RideDetail', () => {
     expect(graphChart(fixture)!.data().labels).toEqual([0, 10]); // elapsed minutes
   });
 
+  it('shows the HR-zone chart when zones have time', () => {
+    const { fixture, el } = setup({
+      ...detail,
+      hrZones: [
+        { zone: 1, minutes: 0 },
+        { zone: 2, minutes: 10 },
+        { zone: 3, minutes: 25 },
+        { zone: 4, minutes: 0 },
+        { zone: 5, minutes: 0 },
+      ],
+    });
+
+    expect(el.querySelector('[data-hr-zones]')).not.toBeNull();
+    const node = fixture.debugElement.query(By.css('[data-hr-zones] app-chart'));
+    expect((node.componentInstance as ChartStub).data().datasets[0].data).toEqual([0, 10, 25, 0, 0]);
+  });
+
+  it('hides the HR-zone chart when there are no zones', () => {
+    const { el } = setup({ ...detail, hrZones: null });
+    expect(el.querySelector('[data-hr-zones]')).toBeNull();
+  });
+
+  it('hides the HR-zone chart when every zone is empty', () => {
+    const { el } = setup({
+      ...detail,
+      hrZones: [
+        { zone: 1, minutes: 0 },
+        { zone: 2, minutes: 0 },
+        { zone: 3, minutes: 0 },
+        { zone: 4, minutes: 0 },
+        { zone: 5, minutes: 0 },
+      ],
+    });
+    expect(el.querySelector('[data-hr-zones]')).toBeNull();
+  });
+
   it('hides the graph when the ride has no series', () => {
     const { el } = setup({ ...detail, metricSeries: null });
 

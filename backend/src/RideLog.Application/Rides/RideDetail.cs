@@ -31,4 +31,7 @@ public sealed record RideDetail
 
     /// <summary>Downsampled per-point series for the elevation/HR graph; null when neither was recorded.</summary>
     public IReadOnlyList<Domain.Rides.MetricSample>? MetricSeries { get; init; }
+
+    /// <summary>Time-in-zone (5 slices); null when no HR series or no configured max heart rate.</summary>
+    public IReadOnlyList<HrZoneSlice>? HrZones { get; init; }
 }

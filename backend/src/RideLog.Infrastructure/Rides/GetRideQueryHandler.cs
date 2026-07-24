@@ -15,6 +15,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             .Select(r => new
             {
                 r.Id,
+                r.UserId,
                 r.StartTime,
                 r.EndTime,
                 r.DistanceMeters,
@@ -38,6 +39,14 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
         {
             return null;
         }
+
+        // Time-in-zone is computed on read from the stored HR series against the user's max HR,
+        // so changing the max HR immediately reflects without reprocessing anything.
+        var maxHeartRate = (await context.UserSettings
+            .FirstOrDefaultAsync(s => s.UserId == ride.UserId, cancellationToken))?.MaxHeartRate;
+        var hrZones = ride.MetricSeries is { } series && maxHeartRate is { } max
+            ? HrZoneCalculator.TimeInZone(series, max)
+            : null;
 
         // Chronological neighbours within the cycling set the list shows. Ordered in memory because
         // SQLite can't ORDER BY DateTimeOffset; at single-user scale the row set is small.
@@ -74,6 +83,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             NextId = nextId,
             RoutePolyline = ride.RoutePolyline,
             MetricSeries = ride.MetricSeries,
+            HrZones = hrZones,
         };
     }
 }
