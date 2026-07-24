@@ -103,7 +103,15 @@ internal sealed class RideMaintenanceService(
         ride.AverageCadence = metrics.AverageCadence;
         ride.Calories = metrics.Calories;
         ride.RoutePolyline = PolylineEncoder.Encode(Downsample(route));
-        ride.MetricSeries = MetricSeriesBuilder.BuildStorable(route);
+
+        var series = MetricSeriesBuilder.BuildStorable(route);
+        // The GPX/TCX route carries no temperature; re-merge it from the stored Bryton FIT.
+        var fit = ParseFirst(ride, RawFileFormat.Fit);
+        if (series is not null && fit is not null)
+        {
+            series = MetricSeriesBuilder.MergeTemperature(series, fit.RoutePoints);
+        }
+        ride.MetricSeries = series;
         // Sport, Source, StartTime, EndTime and the raw files are intentionally left untouched.
         return true;
     }
@@ -116,8 +124,18 @@ internal sealed class RideMaintenanceService(
             return null;
         }
 
-        var fileName = format == RawFileFormat.Tcx ? "exercise.tcx" : "exercise.gpx";
-        var parser = parsers.First(p => p.CanParse(fileName));
+        var fileName = format switch
+        {
+            RawFileFormat.Tcx => "exercise.tcx",
+            RawFileFormat.Fit => "exercise.fit",
+            _ => "exercise.gpx",
+        };
+        var parser = parsers.FirstOrDefault(p => p.CanParse(fileName));
+        if (parser is null)
+        {
+            return null;
+        }
+
         using var stream = new MemoryStream(file.Content);
         return parser.Parse(stream, fileName);
     }

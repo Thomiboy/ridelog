@@ -29,6 +29,24 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
 
     private sealed record SourcesDto(IReadOnlyList<string> Sources);
 
+    private sealed record TempDetailDto(double? AverageTemperatureCelsius, double? MinTemperatureCelsius, double? MaxTemperatureCelsius);
+
+    [Fact]
+    public async Task Exposes_the_stored_temperature_summary()
+    {
+        var ride = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        ride.AverageTemperatureCelsius = 12.5;
+        ride.MinTemperatureCelsius = 8;
+        ride.MaxTemperatureCelsius = 18;
+        await SeedRidesAsync(ride);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<TempDetailDto>($"/rides/{ride.Id}");
+
+        Assert.Equal(12.5, detail!.AverageTemperatureCelsius);
+        Assert.Equal(8, detail.MinTemperatureCelsius);
+        Assert.Equal(18, detail.MaxTemperatureCelsius);
+    }
+
     private sealed record MetricSampleDto(double DistanceKm, double ElapsedMinutes, double? ElevationMeters, int? HeartRate);
     private sealed record SeriesDetailDto(IReadOnlyList<MetricSampleDto>? MetricSeries);
 

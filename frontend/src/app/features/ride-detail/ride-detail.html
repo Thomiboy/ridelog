@@ -95,6 +95,31 @@
           <span class="metric-value">{{ ride.calories ? (ride.calories | number: '1.0-0') + ' kcal' : '—' }}</span>
         </div>
       </mat-card>
+
+      @if (ride.averageTemperatureCelsius != null) {
+        <mat-card appearance="outlined" class="metric-card" data-card="temperature">
+          <span class="card-title">{{ 'rideDetail.card.temperature' | transloco }}</span>
+          <div class="metric">
+            <mat-icon>device_thermostat</mat-icon>
+            <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
+            <span class="metric-value">{{ ride.averageTemperatureCelsius | number: '1.0-1' }} °C</span>
+          </div>
+          <div class="metric">
+            <mat-icon>ac_unit</mat-icon>
+            <span class="metric-label">{{ 'rideDetail.min' | transloco }}</span>
+            <span class="metric-value">
+              {{ ride.minTemperatureCelsius != null ? (ride.minTemperatureCelsius | number: '1.0-1') + ' °C' : '—' }}
+            </span>
+          </div>
+          <div class="metric">
+            <mat-icon>local_fire_department</mat-icon>
+            <span class="metric-label">{{ 'rideDetail.max' | transloco }}</span>
+            <span class="metric-value">
+              {{ ride.maxTemperatureCelsius != null ? (ride.maxTemperatureCelsius | number: '1.0-1') + ' °C' : '—' }}
+            </span>
+          </div>
+        </mat-card>
+      }
     </div>
 
     @if (metricChart(); as chart) {

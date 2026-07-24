@@ -64,7 +64,8 @@
       "distanceTime": "Distance & time",
       "speed": "Speed",
       "heartRate": "Heart rate",
-      "climbingEnergy": "Climbing & energy"
+      "climbingEnergy": "Climbing & energy",
+      "temperature": "Temperature"
     },
     "graph": {
       "title": "Elevation & heart rate",
@@ -73,7 +74,8 @@
     },
     "hrZones": {
       "title": "Time in HR zones"
-    }
+    },
+    "min": "Min"
   },
   "admin": {
     "title": "Admin",

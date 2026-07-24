@@ -47,4 +47,7 @@ export interface RideDetail extends RideSummary {
   routePolyline?: string;
   metricSeries?: MetricSample[] | null;
   hrZones?: HrZoneSlice[] | null;
+  averageTemperatureCelsius?: number | null;
+  minTemperatureCelsius?: number | null;
+  maxTemperatureCelsius?: number | null;
 }
