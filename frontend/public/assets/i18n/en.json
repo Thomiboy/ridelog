@@ -7,7 +7,8 @@
     "rides": "Rides",
     "admin": "Admin",
     "login": "Log in",
-    "logout": "Log out"
+    "logout": "Log out",
+    "statistics": "Statistics"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -103,5 +104,24 @@
     "password": "Password",
     "submit": "Log in",
     "error": "Login failed. Check your credentials."
+  },
+  "statistics": {
+    "title": "Statistics",
+    "records": {
+      "title": "Records",
+      "longestRide": "Longest ride",
+      "fastestAverage": "Fastest average (≥ 30 km)",
+      "longestStreak": "Longest streak",
+      "days": "{{count}} days"
+    },
+    "trends": {
+      "title": "Trends",
+      "year": "Year",
+      "distance": "Distance",
+      "elevation": "Climbing",
+      "rides": "Rides",
+      "calories": "Calories",
+      "yearTotals": "Distance by year"
+    }
   }
 }

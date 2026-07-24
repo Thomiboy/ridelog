@@ -1,0 +1,79 @@
+<section class="page">
+  <h1>{{ 'statistics.title' | transloco }}</h1>
+
+  @if (stats(); as stats) {
+    <!-- Records -->
+    <h2>{{ 'statistics.records.title' | transloco }}</h2>
+    <div class="tiles">
+      @if (records()?.longestRide; as longest) {
+        <mat-card appearance="outlined" class="tile" data-record="longest-ride">
+          <span class="label">{{ 'statistics.records.longestRide' | transloco }}</span>
+          <span class="value">{{ longest.distanceKm | number: '1.0-1' }} km</span>
+          <a [routerLink]="['/rides', longest.id]">{{ longest.date | date: 'mediumDate' }}</a>
+        </mat-card>
+      }
+      @if (records()?.fastestAverage; as fastest) {
+        <mat-card appearance="outlined" class="tile" data-record="fastest-average">
+          <span class="label">{{ 'statistics.records.fastestAverage' | transloco }}</span>
+          <span class="value">{{ fastest.averageSpeedKmh | number: '1.0-1' }} km/h</span>
+          <a [routerLink]="['/rides', fastest.id]">{{ fastest.date | date: 'mediumDate' }}</a>
+        </mat-card>
+      }
+      @if (records()?.longestStreak; as streak) {
+        <mat-card appearance="outlined" class="tile" data-record="longest-streak">
+          <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>
+          <span class="value">{{ 'statistics.records.days' | transloco: { count: streak.days } }}</span>
+          <span class="range">{{ streak.startDate | date: 'mediumDate' }} – {{ streak.endDate | date: 'mediumDate' }}</span>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Trends -->
+    <div class="trends-header">
+      <h2>{{ 'statistics.trends.title' | transloco }}</h2>
+      @if (years().length > 0) {
+        <label class="year-select">
+          <span>{{ 'statistics.trends.year' | transloco }}</span>
+          <select data-testid="year-select" (change)="selectYear($any($event.target).value)">
+            @for (year of years(); track year) {
+              <option [value]="year" [selected]="year === activeYear()">{{ year }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+
+    <div class="charts">
+      @if (distanceChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="distance">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.distance' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+      @if (elevationChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="elevation">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.elevation' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+      @if (ridesChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="rides">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.rides' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+      @if (caloriesChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="calories">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.calories' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+      @if (yearTotalsChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="year-totals">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.yearTotals' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</section>

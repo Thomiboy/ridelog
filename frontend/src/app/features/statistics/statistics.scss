@@ -1,0 +1,64 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  .tile {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .label {
+      font-size: 0.8rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--mat-sys-primary);
+    }
+
+    .range,
+    a {
+      font-size: 0.8rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+}
+
+.trends-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .year-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    select {
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--mat-sys-outline);
+      background: var(--mat-sys-surface);
+      color: var(--mat-sys-on-surface);
+      font: inherit;
+    }
+  }
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+
+  .chart-card .chart-host {
+    height: 260px;
+    position: relative;
+  }
+}

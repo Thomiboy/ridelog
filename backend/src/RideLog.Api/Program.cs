@@ -87,6 +87,9 @@ app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
 app.MapGet("/dashboard", async (IDispatcher dispatcher) =>
     Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery())));
 
+app.MapGet("/statistics", async (IDispatcher dispatcher) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetStatisticsQuery())));
+
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {
     var token = await auth.LoginAsync(request.Email, request.Password);
