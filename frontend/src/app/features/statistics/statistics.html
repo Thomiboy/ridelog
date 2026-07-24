@@ -3,7 +3,7 @@
 
   @if (stats(); as stats) {
     <!-- Records -->
-    <h2>{{ 'statistics.records.title' | transloco }}</h2>
+    <h2>{{ 'statistics.records.title' | transloco }} <span class="section-note">{{ 'statistics.allTime' | transloco }}</span></h2>
     <div class="tiles">
       @if (records()?.longestRide; as longest) {
         <mat-card appearance="outlined" class="tile" data-record="longest-ride">
@@ -78,7 +78,7 @@
 
     @if (hrZoneChart(); as chart) {
       <section data-section="hr-zones">
-        <h2>{{ 'statistics.hrZones.title' | transloco }}</h2>
+        <h2>{{ 'statistics.hrZones.title' | transloco }} <span class="section-note">{{ 'statistics.allTime' | transloco }}</span></h2>
         <div class="charts">
           <mat-card appearance="outlined" class="chart-card" data-chart="hr-zones">
             <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
@@ -89,7 +89,7 @@
 
     @if (temperature(); as temp) {
       <section data-section="temperature">
-        <h2>{{ 'statistics.temperature.title' | transloco }}</h2>
+        <h2>{{ 'statistics.temperature.title' | transloco }} <span class="section-note">{{ 'statistics.allTime' | transloco }}</span></h2>
         <div class="tiles">
           @if (temp.coldest; as cold) {
             <mat-card appearance="outlined" class="tile" data-record="coldest">

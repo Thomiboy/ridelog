@@ -156,6 +156,7 @@
       "seasonRange": "Season range",
       "distribution": "Distance by temperature",
       "trend": "Monthly average"
-    }
+    },
+    "allTime": "· all-time"
   }
 }
