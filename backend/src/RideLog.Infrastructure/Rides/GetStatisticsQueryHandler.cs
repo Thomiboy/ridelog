@@ -12,7 +12,8 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
     private sealed record Row(
         Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters,
         double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh,
-        IReadOnlyList<MetricSample>? MetricSeries);
+        IReadOnlyList<MetricSample>? MetricSeries,
+        double? AverageTemperatureCelsius, double? MinTemperatureCelsius, double? MaxTemperatureCelsius);
 
     public async Task<StatisticsResult> HandleAsync(GetStatisticsQuery query, CancellationToken cancellationToken = default)
     {
@@ -27,7 +28,8 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
         var rows = await cycling
             .Select(ride => new Row(
                 ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters,
-                ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MetricSeries))
+                ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MetricSeries,
+                ride.AverageTemperatureCelsius, ride.MinTemperatureCelsius, ride.MaxTemperatureCelsius))
             .ToListAsync(cancellationToken);
 
         var maxHeartRateByUser = await context.UserSettings
@@ -45,7 +47,58 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .OrderBy(m => m.Year).ThenBy(m => m.Month)
             .ToList();
 
-        return new StatisticsResult(monthlyAggregates, BuildRecords(rows), AggregateHrZones(rows, maxHeartRateByUser));
+        return new StatisticsResult(
+            monthlyAggregates, BuildRecords(rows), AggregateHrZones(rows, maxHeartRateByUser), AggregateTemperature(rows));
+    }
+
+    private static TemperatureStats? AggregateTemperature(IReadOnlyList<Row> rows)
+    {
+        // Distance-per-band comes from the per-point series; extremes and trend from the per-ride summary.
+        var totals = new double[TemperatureBandCalculator.Bands.Count];
+        var hasSeriesTemperature = false;
+        foreach (var row in rows)
+        {
+            if (row.MetricSeries is { } series && series.Any(s => s.TemperatureCelsius is not null))
+            {
+                hasSeriesTemperature = true;
+                var bands = TemperatureBandCalculator.KmPerBand(series);
+                for (var i = 0; i < bands.Count; i++)
+                {
+                    totals[i] += bands[i].Km;
+                }
+            }
+        }
+
+        var withAverage = rows.Where(r => r.AverageTemperatureCelsius is not null).ToList();
+        if (!hasSeriesTemperature && withAverage.Count == 0)
+        {
+            return null;
+        }
+
+        var distribution = TemperatureBandCalculator.Bands
+            .Select((band, i) => new TemperatureBandSlice(band.From, band.To, Math.Round(totals[i], 1)))
+            .ToList();
+
+        var coldest = withAverage
+            .OrderBy(r => r.AverageTemperatureCelsius).ThenBy(r => r.StartTime)
+            .Select(r => new TemperatureExtreme(r.Id, r.StartTime, r.AverageTemperatureCelsius!.Value))
+            .FirstOrDefault();
+        var warmest = withAverage
+            .OrderByDescending(r => r.AverageTemperatureCelsius).ThenBy(r => r.StartTime)
+            .Select(r => new TemperatureExtreme(r.Id, r.StartTime, r.AverageTemperatureCelsius!.Value))
+            .FirstOrDefault();
+
+        // Nullable Min/Max return null for an empty sequence, so absent readings give a null range.
+        var seasonMin = rows.Select(r => r.MinTemperatureCelsius).Where(t => t is not null).Min();
+        var seasonMax = rows.Select(r => r.MaxTemperatureCelsius).Where(t => t is not null).Max();
+
+        var monthlyAverage = withAverage
+            .GroupBy(r => (r.StartTime.Year, r.StartTime.Month))
+            .Select(g => new MonthlyTemperature(g.Key.Year, g.Key.Month, Math.Round(g.Average(r => r.AverageTemperatureCelsius!.Value), 1)))
+            .OrderBy(m => m.Year).ThenBy(m => m.Month)
+            .ToList();
+
+        return new TemperatureStats(distribution, coldest, warmest, seasonMin, seasonMax, monthlyAverage);
     }
 
     private static IReadOnlyList<HrZoneSlice>? AggregateHrZones(

@@ -26,6 +26,7 @@ export interface MetricSample {
   elapsedMinutes: number;
   elevationMeters?: number | null;
   heartRate?: number | null;
+  temperatureCelsius?: number | null;
 }
 
 /** Time spent in one HR zone (1–5), mirroring the backend HrZoneSlice. */

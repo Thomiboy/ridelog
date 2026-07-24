@@ -1,11 +1,18 @@
 import { buildMetricSeriesChart, hasGraphableSeries } from './metric-series-chart';
 import type { MetricSample } from '../../core/api/ride.models';
 
-const sample = (distanceKm: number, elapsedMinutes: number, elevationMeters?: number | null, heartRate?: number | null): MetricSample => ({
+const sample = (
+  distanceKm: number,
+  elapsedMinutes: number,
+  elevationMeters?: number | null,
+  heartRate?: number | null,
+  temperatureCelsius?: number | null,
+): MetricSample => ({
   distanceKm,
   elapsedMinutes,
   elevationMeters,
   heartRate,
+  temperatureCelsius,
 });
 
 describe('metric series chart', () => {
@@ -38,9 +45,19 @@ describe('metric series chart', () => {
     expect(chart.datasets[0].yAxisID).toBe('elevation');
   });
 
+  it('plots temperature as its own dataset when present', () => {
+    const withTemp = [sample(0, 0, 100, 120, 8), sample(1, 5, 120, 130, 12)];
+    const chart = buildMetricSeriesChart(withTemp, 'distance');
+
+    const temperature = chart.datasets.find((d) => d.yAxisID === 'temperature')!;
+    expect(temperature).toBeTruthy();
+    expect(temperature.data).toEqual([8, 12]);
+  });
+
   it('reports whether a series has anything to graph', () => {
     expect(hasGraphableSeries([sample(0, 0, 100, null)])).toBe(true);
     expect(hasGraphableSeries([sample(0, 0, null, 120)])).toBe(true);
+    expect(hasGraphableSeries([sample(0, 0, null, null, 15)])).toBe(true); // temperature-only
     expect(hasGraphableSeries([sample(0, 0, null, null)])).toBe(false);
     expect(hasGraphableSeries([])).toBe(false);
   });

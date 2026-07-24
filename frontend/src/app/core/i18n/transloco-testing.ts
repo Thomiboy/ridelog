@@ -29,6 +29,14 @@ const en = {
       yearTotals: 'Distance by year',
     },
     hrZones: { title: 'HR zones' },
+    temperature: {
+      title: 'Temperature',
+      coldest: 'Coldest ride',
+      warmest: 'Warmest ride',
+      seasonRange: 'Season range',
+      distribution: 'Distance by temperature',
+      trend: 'Monthly average',
+    },
   },
   dashboard: {
     title: 'Dashboard',

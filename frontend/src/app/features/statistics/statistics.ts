@@ -6,7 +6,13 @@ import { MatCardModule } from '@angular/material/card';
 import { StatisticsService } from '../../core/api/statistics.service';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
-import { buildMonthlyMetricChart, buildYearTotalsChart, statisticsYears } from './statistics-charts';
+import {
+  buildMonthlyMetricChart,
+  buildTemperatureDistributionChart,
+  buildTemperatureTrendChart,
+  buildYearTotalsChart,
+  statisticsYears,
+} from './statistics-charts';
 import { buildHrZoneChart } from '../ride-detail/hr-zone-chart';
 
 @Component({
@@ -50,6 +56,18 @@ export class Statistics {
   readonly hrZoneChart = computed(() => {
     const zones = this.stats()?.hrZones;
     return zones && zones.some((z) => z.minutes > 0) ? buildHrZoneChart(zones) : null;
+  });
+
+  readonly temperature = computed(() => this.stats()?.temperature ?? null);
+
+  readonly temperatureDistributionChart = computed(() => {
+    const temp = this.temperature();
+    return temp ? buildTemperatureDistributionChart(temp.distribution) : null;
+  });
+
+  readonly temperatureTrendChart = computed(() => {
+    const temp = this.temperature();
+    return temp && temp.monthlyAverage.length > 0 ? buildTemperatureTrendChart(temp.monthlyAverage) : null;
   });
 
   constructor() {

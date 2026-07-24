@@ -35,4 +35,5 @@ public sealed record StatisticsRecords(
 public sealed record StatisticsResult(
     IReadOnlyList<MonthlyAggregate> MonthlyAggregates,
     StatisticsRecords Records,
-    IReadOnlyList<HrZoneSlice>? HrZones);
+    IReadOnlyList<HrZoneSlice>? HrZones,
+    TemperatureStats? Temperature);

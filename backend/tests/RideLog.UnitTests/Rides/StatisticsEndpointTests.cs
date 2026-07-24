@@ -40,6 +40,15 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Source = RideSource.Polar,
     };
 
+    private static Ride TempRide(DateTimeOffset start, double avg, double min, double max)
+    {
+        var ride = Ride(start, km: 40, elevation: 100, avgSpeed: 30, calories: 500);
+        ride.AverageTemperatureCelsius = avg;
+        ride.MinTemperatureCelsius = min;
+        ride.MaxTemperatureCelsius = max;
+        return ride;
+    }
+
     private async Task SeedAsync()
     {
         using var scope = factory.Services.CreateScope();
@@ -172,6 +181,91 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(10, stats.HrZones.Single(z => z.Zone == 2).Minutes, 0.01);
         Assert.Equal(10, stats.HrZones.Single(z => z.Zone == 4).Minutes, 0.01);
         Assert.Equal(0, stats.HrZones.Single(z => z.Zone == 3).Minutes, 0.01);
+    }
+
+    private sealed record BandDto(int? FromCelsius, int? ToCelsius, double Km);
+    private sealed record ExtremeDto(Guid Id, DateTimeOffset Date, double AverageTemperatureCelsius);
+    private sealed record MonthlyTempDto(int Year, int Month, double AverageTemperatureCelsius);
+    private sealed record TempStatsDto(
+        IReadOnlyList<BandDto> Distribution, ExtremeDto? Coldest, ExtremeDto? Warmest,
+        double? SeasonMinCelsius, double? SeasonMaxCelsius, IReadOnlyList<MonthlyTempDto> MonthlyAverage);
+    private sealed record TempResultDto(TempStatsDto? Temperature);
+
+    [Fact]
+    public async Task Reports_temperature_extremes_season_range_and_monthly_average()
+    {
+        Guid coldId, warmId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            await context.SaveChangesAsync();
+
+            var cold = TempRide(new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero), avg: 5, min: 2, max: 8);
+            var mild = TempRide(new DateTimeOffset(2026, 7, 6, 8, 0, 0, TimeSpan.Zero), avg: 18, min: 15, max: 22);
+            var warm = TempRide(new DateTimeOffset(2026, 8, 10, 8, 0, 0, TimeSpan.Zero), avg: 20, min: 18, max: 25);
+            coldId = cold.Id;
+            warmId = warm.Id;
+            context.Rides.AddRange(cold, mild, warm);
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<TempResultDto>("/statistics");
+        var temp = stats!.Temperature!;
+
+        Assert.Equal(coldId, temp.Coldest!.Id);
+        Assert.Equal(5, temp.Coldest.AverageTemperatureCelsius, 0.01);
+        Assert.Equal(warmId, temp.Warmest!.Id);
+        Assert.Equal(20, temp.Warmest.AverageTemperatureCelsius, 0.01);
+
+        Assert.Equal(2, temp.SeasonMinCelsius!.Value, 0.01);  // lowest min
+        Assert.Equal(25, temp.SeasonMaxCelsius!.Value, 0.01); // highest max
+
+        // July average = (5 + 18) / 2 = 11.5; August = 20.
+        Assert.Equal(11.5, temp.MonthlyAverage.Single(m => m.Year == 2026 && m.Month == 7).AverageTemperatureCelsius, 0.01);
+        Assert.Equal(20, temp.MonthlyAverage.Single(m => m.Year == 2026 && m.Month == 8).AverageTemperatureCelsius, 0.01);
+    }
+
+    [Fact]
+    public async Task Aggregates_distance_per_temperature_band_across_rides()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            await context.SaveChangesAsync();
+
+            var rideA = Ride(new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero), km: 10, elevation: 100, avgSpeed: 30, calories: 500);
+            rideA.MetricSeries = [new MetricSample(0, 0, null, null, 3), new MetricSample(10, 30, null, null, 3)]; // 10 km @ 0–5°C
+            var rideB = Ride(new DateTimeOffset(2026, 7, 6, 8, 0, 0, TimeSpan.Zero), km: 20, elevation: 100, avgSpeed: 30, calories: 500);
+            rideB.MetricSeries = [new MetricSample(0, 0, null, null, 12), new MetricSample(20, 40, null, null, 12)]; // 20 km @ 10–15°C
+            context.Rides.AddRange(rideA, rideB);
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<TempResultDto>("/statistics");
+
+        Assert.NotNull(stats!.Temperature);
+        var dist = stats.Temperature!.Distribution;
+        Assert.Equal(10, dist.Single(b => b.FromCelsius == 0 && b.ToCelsius == 5).Km, 0.01);
+        Assert.Equal(20, dist.Single(b => b.FromCelsius == 10 && b.ToCelsius == 15).Km, 0.01);
+        Assert.Equal(0, dist.Single(b => b.FromCelsius == 5 && b.ToCelsius == 10).Km, 0.01);
+    }
+
+    [Fact]
+    public async Task Temperature_stats_are_null_without_temperature_data()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            context.Rides.Add(Ride(new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero), km: 10, elevation: 100, avgSpeed: 30, calories: 500));
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<TempResultDto>("/statistics");
+
+        Assert.Null(stats!.Temperature);
     }
 
     [Fact]

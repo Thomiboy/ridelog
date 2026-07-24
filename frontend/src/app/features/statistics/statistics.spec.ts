@@ -75,6 +75,38 @@ describe('Statistics', () => {
     expect(el.querySelector('[data-section="hr-zones"]')).toBeNull();
   });
 
+  it('shows the Temperature section with distribution, extremes and trend', () => {
+    const { fixture, el } = setup({
+      temperature: {
+        distribution: [
+          { fromCelsius: null, toCelsius: 0, km: 3 },
+          { fromCelsius: 0, toCelsius: 5, km: 12 },
+        ],
+        coldest: { id: 'ride-cold', date: '2026-01-05T08:00:00+00:00', averageTemperatureCelsius: 2 },
+        warmest: { id: 'ride-warm', date: '2026-07-05T08:00:00+00:00', averageTemperatureCelsius: 24 },
+        seasonMinCelsius: -1,
+        seasonMaxCelsius: 30,
+        monthlyAverage: [
+          { year: 2026, month: 1, averageTemperatureCelsius: 2 },
+          { year: 2026, month: 7, averageTemperatureCelsius: 24 },
+        ],
+      },
+    });
+
+    const section = el.querySelector('[data-section="temperature"]')!;
+    expect(section).not.toBeNull();
+    expect(chartData(fixture, 'temperature-distribution').datasets[0].data).toEqual([3, 12]);
+    expect(chartData(fixture, 'temperature-trend').datasets[0].data).toEqual([2, 24]);
+    // Warmest ride average is shown, linked to the ride.
+    expect(section.textContent).toContain('24');
+    expect(section.querySelector('a[href="/rides/ride-warm"]')).not.toBeNull();
+  });
+
+  it('hides the Temperature section without temperature data', () => {
+    const { el } = setup({ temperature: null });
+    expect(el.querySelector('[data-section="temperature"]')).toBeNull();
+  });
+
   it('renders the three records, linking rides where relevant', () => {
     const { el } = setup();
 
