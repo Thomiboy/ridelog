@@ -28,4 +28,7 @@ public sealed record RideDetail
     public Guid? NextId { get; init; }
 
     public string? RoutePolyline { get; init; }
+
+    /// <summary>Downsampled per-point series for the elevation/HR graph; null when neither was recorded.</summary>
+    public IReadOnlyList<Domain.Rides.MetricSample>? MetricSeries { get; init; }
 }

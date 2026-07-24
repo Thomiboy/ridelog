@@ -146,12 +146,15 @@ internal sealed class TcxActivityParser : IActivityFileParser
         var lon = double.Parse(Child(position, "LongitudeDegrees")!, CultureInfo.InvariantCulture);
         var ele = Child(trackpoint, "AltitudeMeters");
         var time = Child(trackpoint, "Time");
+        var hrElement = Descendant(trackpoint, "HeartRateBpm");
+        var hr = hrElement is null ? null : Child(hrElement, "Value");
 
         return new GeoPoint(
             lat,
             lon,
             ele is null ? null : double.Parse(ele, CultureInfo.InvariantCulture),
-            time is null ? null : DateTimeOffset.Parse(time, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+            time is null ? null : DateTimeOffset.Parse(time, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            hr is null ? null : (int)Math.Round(double.Parse(hr, CultureInfo.InvariantCulture)));
     }
 
     private static string? Child(XElement element, string localName) =>

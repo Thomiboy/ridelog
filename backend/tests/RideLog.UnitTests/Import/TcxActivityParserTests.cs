@@ -88,6 +88,14 @@ public class TcxActivityParserTests
     }
 
     [Fact]
+    public void Keeps_per_point_heart_rate_on_the_route()
+    {
+        var activity = Parse();
+
+        Assert.Equal([120, 140, 160], activity.RoutePoints.Select(p => p.HeartRate));
+    }
+
+    [Fact]
     public void Averages_cadence()
     {
         Assert.Equal(86, Parse().AverageCadence); // (80 + 90 + 88) / 3 → 86

@@ -29,6 +29,28 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
 
     private sealed record SourcesDto(IReadOnlyList<string> Sources);
 
+    private sealed record MetricSampleDto(double DistanceKm, double ElapsedMinutes, double? ElevationMeters, int? HeartRate);
+    private sealed record SeriesDetailDto(IReadOnlyList<MetricSampleDto>? MetricSeries);
+
+    [Fact]
+    public async Task Returns_the_metric_series_on_the_detail()
+    {
+        var ride = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        ride.MetricSeries =
+        [
+            new MetricSample(0, 0, 100, 120),
+            new MetricSample(2.5, 15, 140, 150),
+        ];
+        await SeedRidesAsync(ride);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<SeriesDetailDto>($"/rides/{ride.Id}");
+
+        Assert.NotNull(detail!.MetricSeries);
+        Assert.Equal(2, detail.MetricSeries!.Count);
+        Assert.Equal(new MetricSampleDto(0, 0, 100, 120), detail.MetricSeries[0]);
+        Assert.Equal(new MetricSampleDto(2.5, 15, 140, 150), detail.MetricSeries[1]);
+    }
+
     private static RawFile Raw(RawFileFormat format) => new()
     {
         Id = Guid.NewGuid(),

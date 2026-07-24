@@ -20,6 +20,14 @@ export interface RideSummary {
   sources: string[];
 }
 
+/** One downsampled point of a ride's metric series, mirroring the backend MetricSample. */
+export interface MetricSample {
+  distanceKm: number;
+  elapsedMinutes: number;
+  elevationMeters?: number | null;
+  heartRate?: number | null;
+}
+
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
@@ -30,4 +38,5 @@ export interface RideDetail extends RideSummary {
   previousId?: string | null;
   nextId?: string | null;
   routePolyline?: string;
+  metricSeries?: MetricSample[] | null;
 }

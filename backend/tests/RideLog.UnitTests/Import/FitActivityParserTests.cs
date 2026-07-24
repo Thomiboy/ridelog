@@ -12,7 +12,7 @@ public sealed class FitActivityParserTests
     /// The expected values in the tests come from these inputs, decoded back independently.
     /// </summary>
     private static byte[] BuildFit(
-        (System.DateTime Time, double Lat, double Lon, float Altitude, sbyte Temperature)[] records,
+        (System.DateTime Time, double Lat, double Lon, float Altitude, sbyte Temperature, byte HeartRate)[] records,
         Sport sport = Sport.Cycling,
         float totalDistanceMeters = 25000f,
         float totalTimerSeconds = 3600f)
@@ -34,6 +34,7 @@ public sealed class FitActivityParserTests
             record.SetPositionLong(Semicircles(r.Lon));
             record.SetAltitude(r.Altitude);
             record.SetTemperature(r.Temperature);
+            record.SetHeartRate(r.HeartRate);
             encoder.Write(record);
         }
 
@@ -57,9 +58,9 @@ public sealed class FitActivityParserTests
     {
         var bytes = BuildFit(
         [
-            (T0, 47.50, 19.00, 100f, (sbyte)10),
-            (T0.AddMinutes(30), 47.55, 19.05, 150f, (sbyte)20),
-            (T0.AddHours(1), 47.60, 19.10, 120f, (sbyte)15),
+            (T0, 47.50, 19.00, 100f, (sbyte)10, (byte)120),
+            (T0.AddMinutes(30), 47.55, 19.05, 150f, (sbyte)20, (byte)140),
+            (T0.AddHours(1), 47.60, 19.10, 120f, (sbyte)15, (byte)130),
         ]);
 
         var parser = new FitActivityParser();
@@ -81,5 +82,19 @@ public sealed class FitActivityParserTests
         Assert.Equal(3, parsed.RoutePoints.Count);
         Assert.Equal(47.50, parsed.RoutePoints[0].Latitude, 0.001);
         Assert.Equal("Cycling", parsed.Sport);
+    }
+
+    [Fact]
+    public void Keeps_per_point_heart_rate_on_the_route()
+    {
+        var bytes = BuildFit(
+        [
+            (T0, 47.50, 19.00, 100f, (sbyte)10, (byte)120),
+            (T0.AddMinutes(30), 47.55, 19.05, 150f, (sbyte)20, (byte)145),
+        ]);
+
+        var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
+
+        Assert.Equal([120, 145], parsed.RoutePoints.Select(p => p.HeartRate));
     }
 }

@@ -96,5 +96,32 @@
         </div>
       </mat-card>
     </div>
+
+    @if (metricChart(); as chart) {
+      <mat-card appearance="outlined" class="graph-card" data-graph>
+        <div class="graph-header">
+          <span class="card-title">{{ 'rideDetail.graph.title' | transloco }}</span>
+          <span class="axis-toggle">
+            <button
+              type="button"
+              data-axis="distance"
+              [class.active]="metricAxis() === 'distance'"
+              (click)="setAxis('distance')"
+            >
+              {{ 'rideDetail.graph.byDistance' | transloco }}
+            </button>
+            <button
+              type="button"
+              data-axis="time"
+              [class.active]="metricAxis() === 'time'"
+              (click)="setAxis('time')"
+            >
+              {{ 'rideDetail.graph.byTime' | transloco }}
+            </button>
+          </span>
+        </div>
+        <div class="graph-host"><app-chart type="line" [data]="chart" [options]="graphOptions" /></div>
+      </mat-card>
+    }
   }
 </section>

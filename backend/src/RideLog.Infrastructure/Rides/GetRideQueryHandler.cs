@@ -30,6 +30,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
                 r.AverageCadence,
                 r.Calories,
                 r.RoutePolyline,
+                r.MetricSeries,
             })
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -72,6 +73,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             PreviousId = previousId,
             NextId = nextId,
             RoutePolyline = ride.RoutePolyline,
+            MetricSeries = ride.MetricSeries,
         };
     }
 }

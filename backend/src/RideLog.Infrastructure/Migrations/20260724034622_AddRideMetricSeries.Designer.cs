@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RideLog.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using RideLog.Infrastructure.Persistence;
 namespace RideLog.Infrastructure.Migrations
 {
     [DbContext(typeof(RideLogDbContext))]
-    partial class RideLogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260724034622_AddRideMetricSeries")]
+    partial class AddRideMetricSeries
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -1,21 +1,34 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import type { ChartOptions } from 'chart.js';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
+import { Chart } from '../../shared/chart/chart';
+import { buildMetricSeriesChart, hasGraphableSeries, type MetricAxis } from './metric-series-chart';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 
 @Component({
   selector: 'app-ride-detail',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule, MatCardModule, SourceChips],
+  imports: [
+    TranslocoPipe,
+    DatePipe,
+    DecimalPipe,
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatCardModule,
+    SourceChips,
+    Chart,
+  ],
   templateUrl: './ride-detail.html',
   styleUrl: './ride-detail.scss',
 })
@@ -28,8 +41,31 @@ export class RideDetail {
 
   readonly ride = signal<RideDetailDto | null>(null);
 
+  /** X-axis of the elevation/HR graph: cumulative distance or elapsed time. */
+  readonly metricAxis = signal<MetricAxis>('distance');
+
+  readonly metricChart = computed(() => {
+    const series = this.ride()?.metricSeries;
+    return series && hasGraphableSeries(series) ? buildMetricSeriesChart(series, this.metricAxis()) : null;
+  });
+
+  // Elevation on the left axis, heart rate on the right, so the two share one plot.
+  readonly graphOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { intersect: false, mode: 'index' },
+    scales: {
+      elevation: { type: 'linear', position: 'left' },
+      hr: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
+    },
+  };
+
   /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
   readonly formatDuration = formatDuration;
+
+  setAxis(axis: MetricAxis): void {
+    this.metricAxis.set(axis);
+  }
 
   goToPrevious(): void {
     this.step(this.ride()?.previousId);

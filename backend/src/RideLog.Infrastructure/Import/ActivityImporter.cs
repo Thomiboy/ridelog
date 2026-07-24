@@ -90,6 +90,7 @@ internal sealed class ActivityImporter(
             Sport = parsed.Sport,
             Source = RideSource.Import,
             RoutePolyline = PolylineEncoder.Encode(Downsample(parsed.RoutePoints)),
+            MetricSeries = MetricSeriesBuilder.BuildStorable(parsed.RoutePoints),
         };
 
         ride.RawFiles.Add(new RawFile

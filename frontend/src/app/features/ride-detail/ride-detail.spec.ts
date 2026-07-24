@@ -1,13 +1,25 @@
+import { Component, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { vi } from 'vitest';
+import type { ChartData, ChartOptions, ChartType } from 'chart.js';
 import { RideDetail } from './ride-detail';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
+import { Chart } from '../../shared/chart/chart';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
+
+// Chart.js needs a real canvas; stub the chart so the detail renders in jsdom.
+@Component({ selector: 'app-chart', template: '' })
+class ChartStub {
+  readonly type = input.required<ChartType>();
+  readonly data = input.required<ChartData>();
+  readonly options = input<ChartOptions>();
+}
 
 describe('RideDetail', () => {
   const detail: RideDetailDto = {
@@ -46,6 +58,9 @@ describe('RideDetail', () => {
         { provide: SheetState, useValue: sheetState },
         { provide: ActivatedRoute, useValue: { paramMap: paramMap$.asObservable() } },
       ],
+    }).overrideComponent(RideDetail, {
+      remove: { imports: [Chart] },
+      add: { imports: [ChartStub] },
     });
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(RideDetail);
@@ -59,6 +74,54 @@ describe('RideDetail', () => {
     expect(ridesService.getRide).toHaveBeenCalledWith('r1');
     expect(el.textContent).toContain('61.5'); // distance
     expect(el.textContent).toContain('178'); // max HR
+  });
+
+  const withSeries = (): RideDetailDto => ({
+    ...detail,
+    metricSeries: [
+      { distanceKm: 0, elapsedMinutes: 0, elevationMeters: 100, heartRate: 120 },
+      { distanceKm: 2, elapsedMinutes: 10, elevationMeters: 140, heartRate: 150 },
+    ],
+  });
+
+  function graphChart(fixture: ReturnType<typeof setup>['fixture']): ChartStub | null {
+    const node = fixture.debugElement.query(By.css('[data-graph] app-chart'));
+    return node ? (node.componentInstance as ChartStub) : null;
+  }
+
+  it('shows the elevation/HR graph, x-axis by distance, when a series is present', () => {
+    const { fixture } = setup(withSeries());
+
+    const chart = graphChart(fixture);
+    expect(chart).not.toBeNull();
+    expect(chart!.data().labels).toEqual([0, 2]); // distance km
+  });
+
+  it('switches the graph x-axis from distance to elapsed time', () => {
+    const { fixture, el } = setup(withSeries());
+
+    (el.querySelector('[data-axis="time"]') as HTMLElement).click();
+    fixture.detectChanges();
+
+    expect(graphChart(fixture)!.data().labels).toEqual([0, 10]); // elapsed minutes
+  });
+
+  it('hides the graph when the ride has no series', () => {
+    const { el } = setup({ ...detail, metricSeries: null });
+
+    expect(el.querySelector('[data-graph]')).toBeNull();
+  });
+
+  it('hides the graph when the series has neither elevation nor heart rate', () => {
+    const { el } = setup({
+      ...detail,
+      metricSeries: [
+        { distanceKm: 0, elapsedMinutes: 0, elevationMeters: null, heartRate: null },
+        { distanceKm: 1, elapsedMinutes: 5, elevationMeters: null, heartRate: null },
+      ],
+    });
+
+    expect(el.querySelector('[data-graph]')).toBeNull();
   });
 
   it('shows the source chips in the header', () => {
