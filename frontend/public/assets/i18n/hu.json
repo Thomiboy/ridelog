@@ -172,6 +172,7 @@
       "elevation": "Szintemelkedés",
       "rides": "Túrák",
       "calories": "Kalória",
+      "byYear": "Évenként",
       "yearTotals": "Táv évenként",
       "ridesByYear": "Túrák évenként",
       "temperatureDistribution": "Táv hőmérséklet szerint"
