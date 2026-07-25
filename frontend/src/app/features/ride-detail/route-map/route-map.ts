@@ -21,7 +21,7 @@ export class RouteMap implements OnDestroy {
   private readonly host = viewChild<ElementRef<HTMLElement>>('map');
 
   private map?: L.Map;
-  private tracks: L.Polyline[] = [];
+  private layers: L.Layer[] = [];
 
   constructor() {
     effect(() => {
@@ -32,9 +32,9 @@ export class RouteMap implements OnDestroy {
         return;
       }
       const map = (this.map ??= createRouteMap(host.nativeElement));
-      this.tracks.forEach((track) => track.remove());
+      this.layers.forEach((layer) => layer.remove());
       const bottomPaddingPx = obscuredBottomFraction * map.getSize().y;
-      this.tracks = drawRoutes(map, routes, undefined, { bottomPaddingPx });
+      this.layers = drawRoutes(map, routes, undefined, { bottomPaddingPx });
     });
   }
 

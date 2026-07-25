@@ -2,7 +2,10 @@ import * as Leaflet from 'leaflet';
 import { decodePolyline } from './polyline-decoder';
 
 /** The slice of the Leaflet API we use — injectable so tests pass a fake without module mocking. */
-export type LeafletApi = Pick<typeof Leaflet, 'map' | 'tileLayer' | 'polyline' | 'latLngBounds'>;
+export type LeafletApi = Pick<
+  typeof Leaflet,
+  'map' | 'tileLayer' | 'polyline' | 'latLngBounds' | 'marker' | 'divIcon'
+>;
 
 /**
  * Distinct track colours, in draw order. The first is the app's navy (matching the Material accent
@@ -36,15 +39,17 @@ export function createRouteMap(element: HTMLElement, api: LeafletApi = Leaflet):
 }
 
 /**
- * Draws each encoded route in a distinct colour and fits the view to all of them; returns the drawn
- * tracks (empty when there's nothing to draw) so the caller can remove them before redrawing.
+ * Draws each encoded route in a distinct colour and fits the view to all of them. When exactly one
+ * route is shown (ride detail, single-route background), it also marks the start and finish. Returns
+ * every drawn layer (tracks and markers), empty when there's nothing to draw, so the caller can
+ * remove them before redrawing.
  */
 export function drawRoutes(
   map: Leaflet.Map,
   encoded: readonly (string | null | undefined)[],
   api: LeafletApi = Leaflet,
   fit: FitOptions = {},
-): Leaflet.Polyline[] {
+): Leaflet.Layer[] {
   const routes = encoded.map((e) => (e ? decodePolyline(e) : [])).filter((coords) => coords.length > 0);
   if (routes.length === 0) {
     map.setView([0, 0], 2);
@@ -58,5 +63,29 @@ export function drawRoutes(
     paddingTopLeft: [EDGE_PADDING_PX, EDGE_PADDING_PX],
     paddingBottomRight: [EDGE_PADDING_PX, EDGE_PADDING_PX + (fit.bottomPaddingPx ?? 0)],
   });
-  return tracks;
+
+  // Start/finish markers only make sense for a single track; several routes (Statistics) stay clean.
+  const markers = routes.length === 1 ? drawStartFinishMarkers(map, routes[0], api) : [];
+  return [...tracks, ...markers];
+}
+
+/** A round dot (start) / square (finish) divIcon — inline-styled so no external assets or CSS class. */
+function endpointIcon(api: LeafletApi, color: string, radius: string): Leaflet.DivIcon {
+  return api.divIcon({
+    className: '', // drop Leaflet's default white box so only the styled dot shows
+    html:
+      `<span style="display:block;width:14px;height:14px;border-radius:${radius};` +
+      `background:${color};border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)"></span>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
+/** Places a green start marker and a red finish marker at the ends of the route (finish on top). */
+function drawStartFinishMarkers(map: Leaflet.Map, coords: [number, number][], api: LeafletApi): Leaflet.Marker[] {
+  const start = api.marker(coords[0], { icon: endpointIcon(api, '#2e7d32', '50%'), title: 'Start' }).addTo(map);
+  const finish = api
+    .marker(coords[coords.length - 1], { icon: endpointIcon(api, '#c62828', '3px'), title: 'Finish' })
+    .addTo(map);
+  return [start, finish];
 }

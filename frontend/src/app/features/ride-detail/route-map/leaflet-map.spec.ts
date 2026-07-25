@@ -6,12 +6,19 @@ const ENCODED = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 function fakeLeaflet() {
   const line: Record<string, unknown> = { getBounds: vi.fn(() => 'BOUNDS'), remove: vi.fn() };
   line['addTo'] = vi.fn(() => line);
+  const makeMarker = () => {
+    const marker: Record<string, unknown> = { remove: vi.fn() };
+    marker['addTo'] = vi.fn(() => marker);
+    return marker;
+  };
   const map = { setView: vi.fn(), fitBounds: vi.fn(), remove: vi.fn() };
   const api = {
     map: vi.fn(() => map),
     tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
     polyline: vi.fn(() => line),
     latLngBounds: vi.fn(() => 'ALL_BOUNDS'),
+    marker: vi.fn(() => makeMarker()),
+    divIcon: vi.fn((options) => options),
   } as unknown as LeafletApi;
   return { api, map };
 }
@@ -37,7 +44,32 @@ describe('leaflet-map', () => {
     expect(coords[0][0]).toBeCloseTo(38.5, 4);
     expect(coords[0][1]).toBeCloseTo(-120.2, 4);
     expect((map.fitBounds as unknown as Mock).mock.calls[0][0]).toBe('ALL_BOUNDS');
-    expect(tracks).toHaveLength(1);
+    expect(tracks.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('marks the start and finish at the ends of a single route', () => {
+    const { api, map } = fakeLeaflet();
+
+    const layers = drawRoutes(map as never, [ENCODED], api);
+
+    // Two markers placed at the first and last decoded coordinate of the one route.
+    expect(api.marker).toHaveBeenCalledTimes(2);
+    const start = (api.marker as unknown as Mock).mock.calls[0][0] as [number, number];
+    const finish = (api.marker as unknown as Mock).mock.calls[1][0] as [number, number];
+    expect(start[0]).toBeCloseTo(38.5, 4);
+    expect(start[1]).toBeCloseTo(-120.2, 4);
+    expect(finish[0]).toBeCloseTo(43.252, 4);
+    expect(finish[1]).toBeCloseTo(-126.453, 4);
+    // Returned so the caller can remove them on redraw: 1 track + 2 markers.
+    expect(layers).toHaveLength(3);
+  });
+
+  it('does not mark start/finish when several routes are drawn', () => {
+    const { api, map } = fakeLeaflet();
+
+    drawRoutes(map as never, [ENCODED, ENCODED], api);
+
+    expect(api.marker).not.toHaveBeenCalled();
   });
 
   it('reserves space at the bottom so the route clears the content sheet', () => {
@@ -79,6 +111,7 @@ describe('leaflet-map', () => {
     const tracks = drawRoutes(map as never, [], api);
 
     expect(api.polyline).not.toHaveBeenCalled();
+    expect(api.marker).not.toHaveBeenCalled();
     expect(map.setView).toHaveBeenCalled();
     expect(tracks).toEqual([]);
   });
