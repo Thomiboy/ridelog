@@ -28,13 +28,13 @@
         <button mat-icon-button type="button" data-cal-prev [attr.aria-label]="'rides.prev' | transloco" (click)="prevMonth()">
           <mat-icon>chevron_left</mat-icon>
         </button>
-        <span class="cal-label" data-cal-label>{{ calendarDate() | date: 'MMMM y' }}</span>
+        <span class="cal-label" data-cal-label>{{ calendarLabel() }}</span>
         <button mat-icon-button type="button" data-cal-next [attr.aria-label]="'rides.next' | transloco" (click)="nextMonth()">
           <mat-icon>chevron_right</mat-icon>
         </button>
       </nav>
       <div class="cal-grid">
-        @for (label of weekdayLabels; track label) {
+        @for (label of weekdayLabels(); track $index) {
           <div class="cal-weekday">{{ label }}</div>
         }
         @for (week of cal.weeks; track $index) {

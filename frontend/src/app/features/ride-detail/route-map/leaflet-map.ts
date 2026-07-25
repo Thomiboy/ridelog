@@ -41,6 +41,13 @@ export interface DrawOptions {
    * start/finish markers — the "where have I been" overview, rather than a single highlighted ride.
    */
   coverage?: boolean;
+
+  /**
+   * Whether to fit the view to the routes. Defaults to true; pass false to keep the current view —
+   * used when the content sheet is fully open, where fitting into the tiny visible strip would shrink
+   * the route to a meaningless dot.
+   */
+  fit?: boolean;
 }
 
 /** Breathing room around the fitted routes so tracks aren't flush against the map edges. */
@@ -81,10 +88,12 @@ export function drawRoutes(
   const tracks = routes.map((coords, index) =>
     api.polyline(coords, coverageStyle(index, options.coverage ?? false)).addTo(map),
   );
-  map.fitBounds(api.latLngBounds(routes.flat()), {
-    paddingTopLeft: [EDGE_PADDING_PX, EDGE_PADDING_PX],
-    paddingBottomRight: [EDGE_PADDING_PX, EDGE_PADDING_PX + (options.bottomPaddingPx ?? 0)],
-  });
+  if (options.fit ?? true) {
+    map.fitBounds(api.latLngBounds(routes.flat()), {
+      paddingTopLeft: [EDGE_PADDING_PX, EDGE_PADDING_PX],
+      paddingBottomRight: [EDGE_PADDING_PX, EDGE_PADDING_PX + (options.bottomPaddingPx ?? 0)],
+    });
+  }
 
   // Coverage is a single translucent layer of every route — no per-ride start/finish markers. They
   // also only make sense for a single track; several distinct routes (Statistics) stay clean too.

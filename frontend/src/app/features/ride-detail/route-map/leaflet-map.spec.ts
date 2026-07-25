@@ -147,6 +147,15 @@ describe('leaflet-map', () => {
     expect(map.fitBounds).toHaveBeenCalledTimes(1);
   });
 
+  it('still draws the tracks but skips fitting the view when fit is false', () => {
+    const { api, map } = fakeLeaflet();
+
+    drawRoutes(map as never, [ENCODED], api, { fit: false });
+
+    expect(api.polyline).toHaveBeenCalledTimes(1); // route is drawn
+    expect(map.fitBounds).not.toHaveBeenCalled(); // but the current view is kept
+  });
+
   it('draws nothing and shows the default view when there are no routes', () => {
     const { api, map } = fakeLeaflet();
 

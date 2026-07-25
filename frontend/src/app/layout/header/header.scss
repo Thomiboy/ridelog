@@ -76,9 +76,11 @@
     font: inherit;
     cursor: pointer;
 
+    // A high-contrast chip in both schemes: inverse-surface/on is the guaranteed contrast pair that
+    // also stands out against the primary-coloured bar (plain surface blended into it).
     &.active {
-      background: var(--mat-sys-surface);
-      color: var(--mat-sys-on-surface);
+      background: var(--mat-sys-inverse-surface);
+      color: var(--mat-sys-inverse-on-surface);
     }
   }
 }
@@ -95,5 +97,33 @@
     font-size: 1.1rem;
     width: 1.1rem;
     height: 1.1rem;
+  }
+}
+
+// Portrait phones: the single-row grid overflows (nav collides, switchers clip). Stack the three
+// groups vertically and let each wrap, so every control stays reachable.
+@media (max-width: 640px) {
+  .app-header {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+
+    .brand,
+    .nav,
+    .session {
+      justify-self: center;
+    }
+
+    .nav {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.9rem;
+    }
+
+    .session {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
   }
 }

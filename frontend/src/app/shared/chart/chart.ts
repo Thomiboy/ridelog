@@ -2,7 +2,7 @@ import { Component, effect, inject, input, viewChild } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart as ChartJs, type ChartData, type ChartOptions, type ChartType } from 'chart.js';
 import { ThemeService } from '../../core/theme/theme.service';
-import { chartThemeColors } from './chart-theme';
+import { applyChartTheme, chartThemeColors, type ThemeableChart } from './chart-theme';
 
 /**
  * The only place Chart.js/ng2-charts is used directly, so the chart engine can later be swapped
@@ -25,15 +25,19 @@ export class Chart {
   private readonly chart = viewChild(BaseChartDirective);
 
   constructor() {
-    // Axis text and gridlines follow the theme; re-render the chart when it changes.
-    // NB: only theme the scale grid/border here — overriding the global `borderColor` would
-    // defeat the ng2-charts Colors plugin, which auto-assigns series colours to any dataset that
-    // hasn't set an explicit colour.
+    // Axis text and gridlines follow the theme. Set the global defaults (so charts built later start
+    // themed) but NOT `borderColor` — that would defeat the ng2-charts Colors plugin, which
+    // auto-assigns a series colour to any dataset without an explicit one. Existing charts don't pick
+    // up default changes on update(), so also retheme the live instance directly, then re-render.
     effect(() => {
-      const { text, grid } = chartThemeColors(this.theme.resolved());
-      ChartJs.defaults.color = text;
-      ChartJs.defaults.scale.grid.color = grid;
-      this.chart()?.chart?.update();
+      const colors = chartThemeColors(this.theme.resolved());
+      ChartJs.defaults.color = colors.text;
+      ChartJs.defaults.scale.grid.color = colors.grid;
+      const chart = this.chart()?.chart;
+      if (chart) {
+        applyChartTheme(chart as unknown as ThemeableChart, colors);
+        chart.update();
+      }
     });
   }
 }

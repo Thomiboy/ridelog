@@ -10,6 +10,7 @@ import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { buildCalendarMonth, type CalendarDay } from './rides-calendar';
 import { RidesViewState, type RidesView } from './rides-view-state';
@@ -42,6 +43,7 @@ export class Rides {
   private readonly transloco = inject(TranslocoService);
   private readonly sheetState = inject(SheetState);
   private readonly viewState = inject(RidesViewState);
+  private readonly language = inject(LanguageService);
 
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly pageSize = computed(() => PAGE_SIZE[this.sheetState.current()] ?? 9);
@@ -70,14 +72,24 @@ export class Rides {
   /** The displayed month as a Date, for the localized month label. */
   readonly calendarDate = computed(() => new Date(this.calendarYear(), this.calendarMonth() - 1, 1));
 
+  /** Month + year heading in the active language (e.g. "July 2026" / "2026. július"). */
+  readonly calendarLabel = computed(() =>
+    new Intl.DateTimeFormat(this.language.current(), { month: 'long', year: 'numeric' }).format(this.calendarDate()),
+  );
+
   readonly calendar = computed(() => {
     const rides = this.allRides();
     return rides ? buildCalendarMonth(rides, this.calendarYear(), this.calendarMonth()) : null;
   });
 
-  /** Monday-first localized weekday headers (Jan 1 2024 was a Monday). */
-  readonly weekdayLabels = Array.from({ length: 7 }, (_, i) =>
-    new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(2024, 0, 1 + i)),
+  /**
+   * Monday-first weekday headers in the active language (Jan 1 2024 was a Monday). A computed so they
+   * re-translate when the language switches — a plain field would freeze the startup locale.
+   */
+  readonly weekdayLabels = computed(() =>
+    Array.from({ length: 7 }, (_, i) =>
+      new Intl.DateTimeFormat(this.language.current(), { weekday: 'short' }).format(new Date(2024, 0, 1 + i)),
+    ),
   );
 
   private currentPage = 1;
