@@ -4,6 +4,7 @@ using RideLog.Application.Import;
 using RideLog.Application.Polar;
 using RideLog.Application.Routes;
 using RideLog.Domain.Rides;
+using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Polar;
@@ -85,7 +86,9 @@ internal sealed class PolarSyncService(
         var tcx = Parse(tcxBytes, "exercise.tcx");
         var gpx = Parse(gpxBytes, "exercise.gpx");
         var metrics = tcx ?? gpx ?? throw new InvalidOperationException($"Exercise '{exerciseUrl}' has no GPX or TCX data.");
-        var route = gpx?.RoutePoints ?? tcx?.RoutePoints ?? [];
+        // Prefer the TCX track (position + elevation + heart rate); fall back to GPX (no HR) only when
+        // the TCX has no positioned points. This keeps per-point HR in the graph series.
+        var route = tcx?.RoutePoints is { Count: > 0 } tcxRoute ? tcxRoute : gpx?.RoutePoints ?? [];
 
         var windows = await context.Rides
             .Where(r => r.UserId == userId)
@@ -114,6 +117,8 @@ internal sealed class PolarSyncService(
             Sport = exercise.Sport, // mapped from Polar metadata, not the TCX label
             Source = RideSource.Polar,
             RoutePolyline = PolylineEncoder.Encode(Downsample(route)),
+            // Build the elevation/HR graph series at ingest so the chart shows without a reprocess.
+            MetricSeries = MetricSeriesBuilder.BuildStorable(route),
         };
 
         if (gpxBytes is not null)

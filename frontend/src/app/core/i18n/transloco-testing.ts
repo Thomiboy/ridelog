@@ -86,6 +86,7 @@ const en = {
     back: 'Rides',
     previous: 'Previous ride',
     next: 'Next ride',
+    reprocess: 'Reprocess',
     distance: 'Distance',
     duration: 'Duration',
     avg: 'Avg',

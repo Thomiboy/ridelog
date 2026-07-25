@@ -51,6 +51,22 @@ internal sealed class RideMaintenanceService(
         return new ReprocessSummary(processed, failed);
     }
 
+    public async Task<bool> ReprocessAsync(string userId, Guid rideId, CancellationToken cancellationToken = default)
+    {
+        var ride = await context.Rides
+            .Where(r => r.UserId == userId && r.Id == rideId)
+            .Include(r => r.RawFiles)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (ride is null)
+        {
+            return false;
+        }
+
+        Reprocess(ride);
+        await context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<int> DeleteAllAsync(string userId, CancellationToken cancellationToken = default)
     {
         var rides = await context.Rides
@@ -80,7 +96,7 @@ internal sealed class RideMaintenanceService(
     }
 
     /// <summary>Re-derives metrics from the stored files, mirroring the Polar sync precedence
-    /// (TCX metrics, GPX route). Returns false when a ride has no parseable raw file.</summary>
+    /// (TCX preferred, GPX fallback). Returns false when a ride has no parseable raw file.</summary>
     private bool Reprocess(Ride ride)
     {
         var tcx = ParseFirst(ride, RawFileFormat.Tcx);
@@ -91,7 +107,10 @@ internal sealed class RideMaintenanceService(
             return false;
         }
 
-        var route = gpx?.RoutePoints ?? tcx?.RoutePoints ?? [];
+        // Prefer the TCX track: it carries heart rate (and elevation), which GPX lacks. Falling back
+        // to the GPX route would drop per-point HR from the series even though the ride records it.
+        // Use GPX only when the TCX has no positioned track points.
+        var route = tcx?.RoutePoints is { Count: > 0 } tcxRoute ? tcxRoute : gpx?.RoutePoints ?? [];
 
         ride.DistanceMeters = metrics.DistanceMeters;
         ride.Duration = metrics.Duration;

@@ -84,6 +84,38 @@ public class RideMaintenanceEndpointTests(RideLogApiFactory factory) : IClassFix
     }
 
     [Fact]
+    public async Task Anonymous_reprocess_one_is_rejected()
+    {
+        var id = await SeedRideAsync();
+
+        var response = await factory.CreateClient().PostAsync($"/rides/{id}/reprocess", null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_reprocesses_a_single_ride()
+    {
+        var id = await SeedRideAsync();
+        var client = await AdminClientAsync();
+
+        var response = await client.PostAsync($"/rides/{id}/reprocess", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_reprocessing_an_unknown_ride_is_404()
+    {
+        await SeedRideAsync();
+        var client = await AdminClientAsync();
+
+        var response = await client.PostAsync($"/rides/{Guid.NewGuid()}/reprocess", null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Anonymous_delete_one_is_rejected()
     {
         var id = await SeedRideAsync();

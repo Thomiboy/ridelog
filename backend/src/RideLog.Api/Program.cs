@@ -158,6 +158,13 @@ app.MapPost("/rides/reprocess", async (IRideMaintenanceService maintenance, Clai
     Results.Ok(await maintenance.ReprocessAsync(user.FindFirstValue("sub")!)))
     .RequireAuthorization(AdminSeedOptions.RoleName);
 
+// Admin re-parses a single ride's stored files; 404 when the user has no such ride.
+app.MapPost("/rides/{id:guid}/reprocess", async (Guid id, IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
+    await maintenance.ReprocessAsync(user.FindFirstValue("sub")!, id)
+        ? Results.Ok()
+        : Results.NotFound())
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
 // Admin danger action: delete every ride (and its raw files) for the user.
 app.MapDelete("/rides", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     Results.Ok(new { deleted = await maintenance.DeleteAllAsync(user.FindFirstValue("sub")!) }))

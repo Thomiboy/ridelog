@@ -53,6 +53,24 @@ public sealed class PolarSyncServiceTests : IDisposable
         </TrainingCenterDatabase>
         """);
 
+    // A realistic Polar TCX: positioned trackpoints with altitude and heart rate (real exports have all three).
+    private static byte[] TcxWithTrack() => Encoding.UTF8.GetBytes($"""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+          <Activities><Activity Sport="Biking">
+            <Id>{Start}</Id>
+            <Lap StartTime="{Start}"><DistanceMeters>28000</DistanceMeters><Track>
+              <Trackpoint><Time>{Start}</Time>
+                <Position><LatitudeDegrees>47.5</LatitudeDegrees><LongitudeDegrees>19.0</LongitudeDegrees></Position>
+                <AltitudeMeters>100</AltitudeMeters><HeartRateBpm><Value>135</Value></HeartRateBpm></Trackpoint>
+              <Trackpoint><Time>{End}</Time>
+                <Position><LatitudeDegrees>47.6</LatitudeDegrees><LongitudeDegrees>19.1</LongitudeDegrees></Position>
+                <AltitudeMeters>150</AltitudeMeters><HeartRateBpm><Value>165</Value></HeartRateBpm></Trackpoint>
+            </Track></Lap>
+          </Activity></Activities>
+        </TrainingCenterDatabase>
+        """);
+
     private FakePolarClient ClientWithOneExercise()
     {
         var client = new FakePolarClient { Transaction = new PolarTransaction("txn-1", ["https://polar/ex/1"]) };
@@ -112,6 +130,27 @@ public sealed class PolarSyncServiceTests : IDisposable
             Assert.Equal(2, ride.RawFiles.Count);
             Assert.Contains(ride.RawFiles, f => f.Format == RawFileFormat.Gpx);
             Assert.Contains(ride.RawFiles, f => f.Format == RawFileFormat.Tcx);
+        }
+    }
+
+    [Fact]
+    public async Task Sync_builds_a_metric_series_with_heart_rate_from_the_tcx_track()
+    {
+        var client = ClientWithOneExercise();
+        client.Tcx["https://polar/ex/1"] = TcxWithTrack(); // positioned track with altitude + HR
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(client, context).SyncAsync("admin-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var ride = await verify.Rides.SingleAsync();
+            // The chart appears straight after sync (series built at ingest), and keeps the TCX heart rate.
+            Assert.NotNull(ride.MetricSeries);
+            Assert.Equal([135, 165], ride.MetricSeries!.Select(s => s.HeartRate));
+            Assert.Equal([100.0, 150.0], ride.MetricSeries.Select(s => s.ElevationMeters));
         }
     }
 
