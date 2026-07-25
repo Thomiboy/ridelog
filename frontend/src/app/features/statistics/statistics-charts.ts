@@ -5,8 +5,7 @@ import type {
   TemperatureBandSlice,
   YearlyTemperatureBand,
 } from '../../core/api/statistics.models';
-
-export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { MONTH_LABELS } from '../../core/i18n/month-labels';
 
 /** A numeric per-month metric of a monthly aggregate. */
 export type MonthlyMetric = 'distanceKm' | 'elevationGainMeters' | 'rideCount' | 'calories';
@@ -21,13 +20,14 @@ export function buildMonthlyMetricChart(
   monthly: MonthlyAggregate[],
   year: number,
   metric: MonthlyMetric,
+  months: readonly string[] = MONTH_LABELS,
 ): ChartData<'bar'> {
   return {
-    labels: [...MONTH_LABELS],
+    labels: [...months],
     datasets: [
       {
         label: String(year),
-        data: MONTH_LABELS.map((_, index) => monthly.find((m) => m.year === year && m.month === index + 1)?.[metric] ?? 0),
+        data: months.map((_, index) => monthly.find((m) => m.year === year && m.month === index + 1)?.[metric] ?? 0),
       },
     ],
   };
@@ -50,13 +50,13 @@ export function buildYearTotalsChart(monthly: MonthlyAggregate[]): ChartData<'ba
 }
 
 /** Total ride count per year across every year with data, as a single-series bar chart. */
-export function buildRidesByYearChart(monthly: MonthlyAggregate[]): ChartData<'bar'> {
+export function buildRidesByYearChart(monthly: MonthlyAggregate[], label = 'rides'): ChartData<'bar'> {
   const years = statisticsYears(monthly);
   return {
     labels: years.map(String),
     datasets: [
       {
-        label: 'rides',
+        label,
         data: years.map((year) => monthly.filter((m) => m.year === year).reduce((sum, m) => sum + m.rideCount, 0)),
       },
     ],

@@ -1,0 +1,191 @@
+{
+  "app": {
+    "title": "RideLog"
+  },
+  "nav": {
+    "dashboard": "Áttekintés",
+    "rides": "Túrák",
+    "admin": "Admin",
+    "login": "Bejelentkezés",
+    "logout": "Kijelentkezés",
+    "statistics": "Statisztika",
+    "language": "Nyelv"
+  },
+  "dashboard": {
+    "title": "Áttekintés",
+    "tiles": {
+      "monthDistance": "Ebben a hónapban",
+      "monthRides": "Túrák ebben a hónapban",
+      "yearDistance": "Idén",
+      "yearRides": "Túrák idén",
+      "yearElevation": "Szintemelkedés idén",
+      "bestMonthDistance": "Legjobb hónap ({{month}})",
+      "bestMonthRides": "Legjobb hónap túrái ({{month}})",
+      "lastYearDistance": "Tavaly",
+      "lastYearRides": "Túrák tavaly",
+      "lastYearElevation": "Szintemelkedés tavaly"
+    },
+    "charts": {
+      "monthlyDistance": "Havi táv",
+      "speedTrend": "Átlagsebesség-trend",
+      "speedAndTemperatureTrend": "Sebesség- és hőmérséklet-trend"
+    }
+  },
+  "rides": {
+    "title": "Túrák",
+    "empty": "Még nincs túra. Jelentkezz be adminként a történet importálásához vagy a Polar-szinkronhoz.",
+    "next": "Következő",
+    "prev": "Előző",
+    "delete": "Túra törlése",
+    "deleteConfirm": "Törlöd ezt a túrát és a tárolt fájljait? Ez nem vonható vissza.",
+    "view": { "list": "Lista", "map": "Térkép", "calendar": "Naptár" },
+    "mapEmpty": "Még nincs megjeleníthető útvonal.",
+    "columns": {
+      "date": "Dátum",
+      "distance": "Táv",
+      "duration": "Időtartam",
+      "avgSpeed": "Átlagsebesség",
+      "elevation": "Szint",
+      "source": "Forrás"
+    },
+    "source": {
+      "polarAutoSync": "Polar · Auto-szinkron",
+      "polarImport": "Polar · Import",
+      "bryton": "Bryton"
+    }
+  },
+  "rideDetail": {
+    "previous": "Előző túra",
+    "next": "Következő túra",
+    "reprocess": "Újrafeldolgozás",
+    "distance": "Táv",
+    "duration": "Időtartam",
+    "avg": "Átlag",
+    "max": "Max",
+    "elevation": "Szint",
+    "calories": "Kalória",
+    "back": "Túrák",
+    "card": {
+      "distanceTime": "Táv és idő",
+      "speed": "Sebesség",
+      "heartRate": "Pulzus",
+      "climbingEnergy": "Szint és energia",
+      "temperature": "Hőmérséklet"
+    },
+    "graph": {
+      "title": "Szint és pulzus",
+      "byDistance": "Táv",
+      "byTime": "Idő"
+    },
+    "hrZones": {
+      "title": "Idő a pulzuszónákban"
+    },
+    "min": "Min",
+    "compare": {
+      "action": "Összehasonlítás",
+      "title": "Összehasonlítás egy túrával",
+      "search": "Keresés dátum vagy táv szerint",
+      "close": "Bezárás",
+      "none": "Nincs összehasonlítható túra.",
+      "exit": "Összehasonlítás bezárása",
+      "current": "Ez a túra",
+      "other": "Összehasonlított"
+    },
+    "compareMetric": {
+      "distance": "Táv",
+      "duration": "Időtartam",
+      "avgSpeed": "Átlagsebesség",
+      "maxSpeed": "Max sebesség",
+      "avgHeartRate": "Átlagpulzus",
+      "maxHeartRate": "Max pulzus",
+      "elevation": "Szintemelkedés",
+      "calories": "Kalória"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "error": "Valami hiba történt. Próbáld újra.",
+    "polar": {
+      "title": "Polar",
+      "hint": "Kösd össze a Polar-fiókodat, hogy az új túrák automatikusan szinkronizálódjanak.",
+      "connect": "Polar összekötése",
+      "connected": "Összekötve",
+      "notConnected": "Nincs összekötve",
+      "justLinked": "A Polar-fiók sikeresen összekötve."
+    },
+    "import": {
+      "title": "Történet importálása",
+      "hint": "Tölts fel GPX/TCX fájlokat, vagy egy Bryton FIT-et a hőmérséklethez.",
+      "button": "Import",
+      "result": "Importálva: {{imported}}, kihagyva: {{skipped}}, sikertelen: {{failed}}."
+    },
+    "sync": {
+      "title": "Szinkron",
+      "hint": "Új túrák behúzása a Polarból most.",
+      "button": "Szinkron most",
+      "lastSync": "Utolsó szinkron:",
+      "never": "soha",
+      "result": "Importálva: {{imported}}, kihagyva: {{skipped}}, sikertelen: {{failed}}."
+    },
+    "maintenance": {
+      "title": "Karbantartás",
+      "reprocessHint": "Minden túra metrikáinak újraszámítása a tárolt fájlokból. Használd parser-változtatás után a meglévő túrák javításához — beleértve a Polar-szinkronizáltakat is.",
+      "reprocessButton": "Összes újrafeldolgozása",
+      "reprocessResult": "Újrafeldolgozva: {{processed}}, sikertelen: {{failed}}.",
+      "deleteHint": "Veszélyes: minden túra és a tárolt fájljaik törlése. A Polar-szinkronizált túrák utána nem húzhatók vissza a Polarból — csak az újratöltött exportok állíthatók helyre.",
+      "deleteButton": "Összes túra törlése",
+      "deleteConfirm1": "Törlöd az ÖSSZES túrát és a tárolt fájljaikat? Ez nem vonható vissza.",
+      "deleteConfirm2": "A Polar-szinkronizált túrák nem húzhatók vissza a Polarból. Biztosan folytatod?",
+      "deleteResult": "{{deleted}} túra törölve."
+    },
+    "settings": {
+      "title": "Pulzuszónák",
+      "hint": "Add meg a maximális pulzusod; az öt zóna ennek 50/60/70/80/90%-a.",
+      "maxHr": "Max pulzus (bpm)",
+      "save": "Mentés",
+      "saved": "Mentve."
+    }
+  },
+  "login": {
+    "title": "Bejelentkezés",
+    "email": "E-mail",
+    "password": "Jelszó",
+    "submit": "Bejelentkezés",
+    "error": "Sikertelen bejelentkezés. Ellenőrizd az adataidat."
+  },
+  "statistics": {
+    "title": "Statisztika",
+    "records": {
+      "title": "Rekordok",
+      "longestRide": "Leghosszabb túra",
+      "fastestAverage": "Leggyorsabb átlag (≥ 30 km)",
+      "longestStreak": "Leghosszabb sorozat",
+      "mostCalories": "Legtöbb kalória",
+      "longestDuration": "Leghosszabb időtartam",
+      "days": "{{count}} nap"
+    },
+    "trends": {
+      "title": "Trendek",
+      "year": "Év",
+      "distance": "Táv",
+      "elevation": "Szintemelkedés",
+      "rides": "Túrák",
+      "calories": "Kalória",
+      "yearTotals": "Táv évenként",
+      "ridesByYear": "Túrák évenként",
+      "temperatureDistribution": "Táv hőmérséklet szerint"
+    },
+    "hrZones": {
+      "title": "Pulzuszónák"
+    },
+    "temperature": {
+      "title": "Hőmérséklet",
+      "coldest": "Leghidegebb túra",
+      "warmest": "Legmelegebb túra",
+      "seasonRange": "Szezon tartomány",
+      "distribution": "Táv hőmérséklet szerint",
+      "trend": "Havi átlag"
+    },
+    "allTime": "· minden idők"
+  }
+}

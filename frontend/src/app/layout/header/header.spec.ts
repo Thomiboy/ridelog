@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { Header } from './header';
 import { AuthService } from '../../core/auth/auth.service';
+import { LanguageService } from '../../core/i18n/language.service';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Header', () => {
@@ -13,13 +14,18 @@ describe('Header', () => {
       isAdmin: signal(state.admin),
       logout: vi.fn(),
     };
+    const language = { current: signal('en'), use: vi.fn() };
     TestBed.configureTestingModule({
       imports: [Header, translocoTesting()],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
+        { provide: LanguageService, useValue: language },
+      ],
     });
     const fixture = TestBed.createComponent(Header);
     fixture.detectChanges();
-    return { fixture, auth, text: () => (fixture.nativeElement as HTMLElement).textContent ?? '' };
+    return { fixture, auth, language, el: fixture.nativeElement as HTMLElement, text: () => (fixture.nativeElement as HTMLElement).textContent ?? '' };
   }
 
   it('shows a login link when logged out', () => {
@@ -48,7 +54,22 @@ describe('Header', () => {
 
   it('logs out when the logout button is clicked', () => {
     const { fixture, auth } = setup({ loggedIn: true, admin: false });
-    (fixture.nativeElement as HTMLElement).querySelector('button')!.click();
+    (fixture.nativeElement as HTMLElement).querySelector('[data-logout]')!.dispatchEvent(new Event('click'));
     expect(auth.logout).toHaveBeenCalled();
+  });
+
+  it('switches language when a switcher option is clicked', () => {
+    const { el, language } = setup({ loggedIn: false, admin: false });
+
+    (el.querySelector('[data-lang="hu"]') as HTMLButtonElement).click();
+
+    expect(language.use).toHaveBeenCalledWith('hu');
+  });
+
+  it('marks the active language', () => {
+    const { el } = setup({ loggedIn: false, admin: false });
+
+    expect(el.querySelector('[data-lang="en"]')?.classList.contains('active')).toBe(true);
+    expect(el.querySelector('[data-lang="hu"]')?.classList.contains('active')).toBe(false);
   });
 });

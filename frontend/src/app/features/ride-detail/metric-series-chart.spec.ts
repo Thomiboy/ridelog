@@ -37,6 +37,13 @@ describe('metric series chart', () => {
     expect(hr.data).toEqual([120, 140, 130]);
   });
 
+  it('uses the provided (localized) dataset labels', () => {
+    const chart = buildMetricSeriesChart(series, 'distance', { elevation: 'Szint', heartRate: 'Pulzus', temperature: 'Hő' });
+
+    expect(chart.datasets.find((d) => d.yAxisID === 'elevation')!.label).toBe('Szint');
+    expect(chart.datasets.find((d) => d.yAxisID === 'hr')!.label).toBe('Pulzus');
+  });
+
   it('omits a dataset the series never recorded', () => {
     const elevationOnly = [sample(0, 0, 100, null), sample(1, 5, 120, null)];
     const chart = buildMetricSeriesChart(elevationOnly, 'distance');
