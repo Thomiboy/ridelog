@@ -67,6 +67,19 @@ describe('MapState', () => {
     expect(state.routes()).toEqual(['a', 'b', 'c']);
   });
 
+  it('showRoute carries rest stops for the single route', () => {
+    state.showRoute('abc', [{ latitude: 1, longitude: 2 }]);
+
+    expect(state.restStops()).toEqual([{ latitude: 1, longitude: 2 }]);
+  });
+
+  it('showRoutes clears rest stops (they only make sense for a single route)', () => {
+    state.showRoute('abc', [{ latitude: 1, longitude: 2 }]);
+    state.showRoutes(['a', 'b']);
+
+    expect(state.restStops()).toEqual([]);
+  });
+
   it('showRoutes drops empty entries so the map never draws a blank track', () => {
     state.showRoutes(['a', '', 'c']);
 

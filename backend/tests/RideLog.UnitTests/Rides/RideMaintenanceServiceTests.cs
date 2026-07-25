@@ -233,7 +233,7 @@ public sealed class RideMaintenanceServiceTests : IDisposable
             var reloaded = await verify.Rides.SingleAsync();
             // The series must keep the TCX heart rate, not fall back to the HR-less GPX track.
             Assert.Equal([120, 160], reloaded.MetricSeries!.Select(s => s.HeartRate));
-            Assert.Equal([100.0, 140.0], reloaded.MetricSeries.Select(s => s.ElevationMeters));
+            Assert.Equal([100.0, 140.0], reloaded.MetricSeries!.Select(s => s.ElevationMeters));
         }
     }
 

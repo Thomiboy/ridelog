@@ -49,6 +49,12 @@ export interface HrZoneSlice {
   minutes: number;
 }
 
+/** A place on the route where the rider paused for more than about a minute. */
+export interface RestStop {
+  latitude: number;
+  longitude: number;
+}
+
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
@@ -61,6 +67,7 @@ export interface RideDetail extends RideSummary {
   routePolyline?: string;
   metricSeries?: MetricSample[] | null;
   hrZones?: HrZoneSlice[] | null;
+  restStops?: RestStop[];
   averageTemperatureCelsius?: number | null;
   minTemperatureCelsius?: number | null;
   maxTemperatureCelsius?: number | null;

@@ -39,4 +39,7 @@ public sealed record RideDetail
 
     /// <summary>Time-in-zone (5 slices); null when no HR series or no configured max heart rate.</summary>
     public IReadOnlyList<HrZoneSlice>? HrZones { get; init; }
+
+    /// <summary>Places on the route where the rider paused for more than about a minute; empty when none.</summary>
+    public IReadOnlyList<RestStop> RestStops { get; init; } = [];
 }

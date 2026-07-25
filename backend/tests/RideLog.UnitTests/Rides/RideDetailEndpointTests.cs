@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
+using RideLog.Application.Routes;
 using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Persistence;
 using RideLog.UnitTests.Auth;
@@ -49,6 +50,32 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
 
     private sealed record MetricSampleDto(double DistanceKm, double ElapsedMinutes, double? ElevationMeters, int? HeartRate);
     private sealed record SeriesDetailDto(IReadOnlyList<MetricSampleDto>? MetricSeries);
+
+    private sealed record RestStopDto(double Latitude, double Longitude);
+    private sealed record RestStopsDetailDto(IReadOnlyList<RestStopDto> RestStops);
+
+    [Fact]
+    public async Task Reports_rest_stops_positioned_on_the_route()
+    {
+        var ride = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        // A one-degree equator leg (~111.195 km end to end).
+        ride.RoutePolyline = PolylineEncoder.Encode([new GeoPoint(0, 0), new GeoPoint(0, 1)]);
+        ride.MetricSeries =
+        [
+            new MetricSample(0, 0, null, null),
+            new MetricSample(50, 100, null, null),
+            new MetricSample(50.01, 103, null, null), // paused ~3 min at 50 km
+            new MetricSample(100, 200, null, null),
+        ];
+        await SeedRidesAsync(ride);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<RestStopsDetailDto>($"/rides/{ride.Id}");
+
+        var rest = Assert.Single(detail!.RestStops);
+        // 50 km along a 111.195 km equator leg → ~0.45° longitude, still on the equator.
+        Assert.Equal(0, rest.Latitude, 3);
+        Assert.Equal(50 / (6_371_000 * Math.PI / 180 / 1000), rest.Longitude, 3);
+    }
 
     private sealed record HrZoneSliceDto(int Zone, double Minutes);
     private sealed record ZonesDetailDto(IReadOnlyList<HrZoneSliceDto>? HrZones);

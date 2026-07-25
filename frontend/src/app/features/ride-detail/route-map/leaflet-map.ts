@@ -1,5 +1,6 @@
 import * as Leaflet from 'leaflet';
 import { decodePolyline } from './polyline-decoder';
+import type { RestStop } from '../../../core/api/ride.models';
 
 /** The slice of the Leaflet API we use — injectable so tests pass a fake without module mocking. */
 export type LeafletApi = Pick<
@@ -96,6 +97,21 @@ function endpointIcon(api: LeafletApi, color: string, radius: string): Leaflet.D
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
+}
+
+/** Draws an amber pause marker at each rest stop; returns them so the caller can remove them on redraw. */
+export function drawRestStops(map: Leaflet.Map, restStops: readonly RestStop[], api: LeafletApi = Leaflet): Leaflet.Marker[] {
+  const icon = api.divIcon({
+    className: '',
+    html:
+      '<span style="display:flex;align-items:center;justify-content:center;width:16px;height:16px;' +
+      'border-radius:50%;background:#f59e0b;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)">' +
+      '<span style="width:2px;height:6px;background:#fff;margin:0 1px"></span>' +
+      '<span style="width:2px;height:6px;background:#fff;margin:0 1px"></span></span>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+  return restStops.map((rest) => api.marker([rest.latitude, rest.longitude], { icon, title: 'Rest' }).addTo(map));
 }
 
 /** Places a green start marker and a red finish marker at the ends of the route (finish on top). */

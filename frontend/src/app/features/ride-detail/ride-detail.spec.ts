@@ -223,7 +223,7 @@ describe('RideDetail', () => {
   it('publishes the route to the global background map', () => {
     const { mapState } = setup();
 
-    expect(mapState.showRoute).toHaveBeenCalledWith('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+    expect(mapState.showRoute).toHaveBeenCalledWith('_p~iF~ps|U_ulLnnqC_mqNvxq`@', []);
   });
 
   it('shows calories and no longer shows cadence', () => {
@@ -265,7 +265,7 @@ describe('RideDetail', () => {
     paramMap$.next(convertToParamMap({ id: 'r2' }));
 
     expect(ridesService.getRide).toHaveBeenCalledWith('r2');
-    expect(mapState.showRoute).toHaveBeenCalledWith('route-r2');
+    expect(mapState.showRoute).toHaveBeenCalledWith('route-r2', []);
   });
 
   it('groups the metrics into four icon-led cards', () => {
@@ -330,7 +330,14 @@ describe('RideDetail', () => {
     fixture.detectChanges();
 
     expect(el.querySelector('[data-compare-table]')).toBeNull();
-    expect(mapState.showRoute).toHaveBeenLastCalledWith(detail.routePolyline);
+    expect(mapState.showRoute).toHaveBeenLastCalledWith(detail.routePolyline, []);
+  });
+
+  it('passes the ride rest stops to the background map', () => {
+    const withRests = { ...detail, restStops: [{ latitude: 1, longitude: 2 }] };
+    const { mapState } = setup(withRests);
+
+    expect(mapState.showRoute).toHaveBeenCalledWith(detail.routePolyline, [{ latitude: 1, longitude: 2 }]);
   });
 
   it('hides the reprocess button from non-admins', () => {
