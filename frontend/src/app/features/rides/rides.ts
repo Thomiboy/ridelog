@@ -12,10 +12,8 @@ import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { buildCalendarMonth, type CalendarDay } from './rides-calendar';
+import { RidesViewState, type RidesView } from './rides-view-state';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
-
-/** Which Rides view is showing: the paged list, the all-routes coverage map, or the calendar. */
-type RidesView = 'list' | 'map' | 'calendar';
 
 // How many rides fit without scrolling at each sheet height (collapsed isn't for browsing).
 const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
@@ -43,6 +41,7 @@ export class Rides {
   private readonly auth = inject(AuthService);
   private readonly transloco = inject(TranslocoService);
   private readonly sheetState = inject(SheetState);
+  private readonly viewState = inject(RidesViewState);
 
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly pageSize = computed(() => PAGE_SIZE[this.sheetState.current()] ?? 9);
@@ -52,8 +51,8 @@ export class Rides {
 
   readonly result = signal<Paged<RideSummary> | null>(null);
 
-  /** List (paged table), the all-routes coverage map, or the monthly calendar. */
-  readonly view = signal<RidesView>('list');
+  /** List (paged table), the all-routes coverage map, or the monthly calendar; kept across navigation. */
+  readonly view = this.viewState.view;
 
   /** Every route's polyline for the coverage map; null until the map view is first opened. */
   readonly mapRoutes = signal<string[] | null>(null);
@@ -99,6 +98,8 @@ export class Rides {
     this.mapState.reset();
     // Restore the page from the URL so returning from a ride's detail keeps your place.
     this.load(this.pageFromUrl());
+    // Apply the remembered view (calendar by default), loading its data and sizing the sheet.
+    this.applyView(this.view());
 
     // Re-fetch when the sheet snap (and thus page size) changes. Snap states are discrete, so this
     // only fires on snap transitions, not during a drag. Skip the first run — the constructor already
@@ -119,11 +120,15 @@ export class Rides {
 
   setView(view: RidesView): void {
     this.view.set(view);
+    this.applyView(view);
+  }
+
+  /** Runs a view's side effects: the map/calendar expand the sheet and load their data once. */
+  private applyView(view: RidesView): void {
     if (view === 'list') {
       this.sheetState.request('half');
       return;
     }
-    // The map and calendar both want room, so expand the sheet and load their data once.
     this.sheetState.request('full');
     if (view === 'map' && this.mapRoutes() === null) {
       this.ridesService.getAllRoutes().subscribe((routes) => this.mapRoutes.set(routes.map((r) => r.routePolyline)));
