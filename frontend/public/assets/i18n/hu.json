@@ -9,7 +9,8 @@
     "login": "Bejelentkezés",
     "logout": "Kijelentkezés",
     "statistics": "Statisztika",
-    "language": "Nyelv"
+    "language": "Nyelv",
+    "theme": { "label": "Téma", "system": "Rendszer", "light": "Világos", "dark": "Sötét" }
   },
   "dashboard": {
     "title": "Áttekintés",

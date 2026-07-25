@@ -1,6 +1,19 @@
 import * as Leaflet from 'leaflet';
 import { decodePolyline } from './polyline-decoder';
 import type { RestStop } from '../../../core/api/ride.models';
+import type { Theme } from '../../../core/theme/theme.service';
+
+/** Free basemaps per theme: OSM standard for light, CARTO dark for dark. */
+const TILE_LAYERS: Record<Theme, { url: string; attribution: string }> = {
+  light: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors',
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors, © CARTO',
+  },
+};
 
 /** The slice of the Leaflet API we use — injectable so tests pass a fake without module mocking. */
 export type LeafletApi = Pick<
@@ -36,16 +49,15 @@ const EDGE_PADDING_PX = 24;
 /** Track opacity for the coverage overview, so overlapping routes visibly build up. */
 const COVERAGE_OPACITY = 0.35;
 
-/** Creates a Leaflet map on the element with an OpenStreetMap tile layer. */
+/** Creates a Leaflet map on the element (add a tile layer with setTileLayer). */
 export function createRouteMap(element: HTMLElement, api: LeafletApi = Leaflet): Leaflet.Map {
-  const map = api.map(element);
-  api
-    .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    })
-    .addTo(map);
-  return map;
+  return api.map(element);
+}
+
+/** Adds (and returns) the basemap tile layer for the given theme, so the caller can swap it later. */
+export function setTileLayer(map: Leaflet.Map, theme: Theme, api: LeafletApi = Leaflet): Leaflet.TileLayer {
+  const { url, attribution } = TILE_LAYERS[theme];
+  return api.tileLayer(url, { attribution, maxZoom: 19 }).addTo(map);
 }
 
 /**

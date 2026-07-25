@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { Header } from './header';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Header', () => {
@@ -15,17 +16,19 @@ describe('Header', () => {
       logout: vi.fn(),
     };
     const language = { current: signal('en'), use: vi.fn() };
+    const theme = { preference: signal('system'), use: vi.fn() };
     TestBed.configureTestingModule({
       imports: [Header, translocoTesting()],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: auth },
         { provide: LanguageService, useValue: language },
+        { provide: ThemeService, useValue: theme },
       ],
     });
     const fixture = TestBed.createComponent(Header);
     fixture.detectChanges();
-    return { fixture, auth, language, el: fixture.nativeElement as HTMLElement, text: () => (fixture.nativeElement as HTMLElement).textContent ?? '' };
+    return { fixture, auth, language, theme, el: fixture.nativeElement as HTMLElement, text: () => (fixture.nativeElement as HTMLElement).textContent ?? '' };
   }
 
   it('shows a login link when logged out', () => {
@@ -71,5 +74,14 @@ describe('Header', () => {
 
     expect(el.querySelector('[data-lang="en"]')?.classList.contains('active')).toBe(true);
     expect(el.querySelector('[data-lang="hu"]')?.classList.contains('active')).toBe(false);
+  });
+
+  it('switches theme via the three-state switcher, marking the active one', () => {
+    const { el, theme } = setup({ loggedIn: false, admin: false });
+
+    expect(el.querySelector('[data-theme="system"]')?.classList.contains('active')).toBe(true);
+    (el.querySelector('[data-theme="dark"]') as HTMLButtonElement).click();
+
+    expect(theme.use).toHaveBeenCalledWith('dark');
   });
 });

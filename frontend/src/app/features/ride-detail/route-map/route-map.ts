@@ -1,7 +1,8 @@
-import { Component, ElementRef, OnDestroy, effect, input, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, effect, inject, input, viewChild } from '@angular/core';
 import type * as L from 'leaflet';
-import { createRouteMap, drawRestStops, drawRoutes } from './leaflet-map';
+import { createRouteMap, drawRestStops, drawRoutes, setTileLayer } from './leaflet-map';
 import type { RestStop } from '../../../core/api/ride.models';
+import { ThemeService } from '../../../core/theme/theme.service';
 
 /**
  * The only place Leaflet is used (via leaflet-map helpers), so the map engine can later be swapped
@@ -24,11 +25,22 @@ export class RouteMap implements OnDestroy {
   readonly restStops = input<RestStop[]>([]);
 
   private readonly host = viewChild<ElementRef<HTMLElement>>('map');
+  private readonly theme = inject(ThemeService);
 
   private map?: L.Map;
+  private tile?: L.TileLayer;
   private layers: L.Layer[] = [];
 
   constructor() {
+    // Swap the basemap tiles when the theme changes (light OSM ⇄ dark CARTO).
+    effect(() => {
+      const theme = this.theme.resolved();
+      if (this.map) {
+        this.tile?.remove();
+        this.tile = setTileLayer(this.map, theme);
+      }
+    });
+
     effect(() => {
       const host = this.host();
       const routes = this.routes();
@@ -38,7 +50,11 @@ export class RouteMap implements OnDestroy {
       if (!host) {
         return;
       }
+      const created = !this.map;
       const map = (this.map ??= createRouteMap(host.nativeElement));
+      if (created) {
+        this.tile = setTileLayer(map, this.theme.resolved());
+      }
       this.layers.forEach((layer) => layer.remove());
       const bottomPaddingPx = obscuredBottomFraction * map.getSize().y;
       const layers = drawRoutes(map, routes, undefined, { bottomPaddingPx, coverage });
