@@ -1,5 +1,5 @@
 import { vi, type Mock } from 'vitest';
-import { createRouteMap, drawRoutes, ROUTE_COLORS, type LeafletApi } from './leaflet-map';
+import { createRouteMap, drawRestStops, drawRoutes, ROUTE_COLORS, type LeafletApi } from './leaflet-map';
 
 const ENCODED = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 
@@ -80,6 +80,16 @@ describe('leaflet-map', () => {
     const options = (api.polyline as unknown as Mock).mock.calls[0][1] as { opacity?: number };
     expect(options.opacity).toBeLessThan(1); // translucent so overlapping routes darken (coverage feel)
     expect(api.marker).not.toHaveBeenCalled(); // a coverage map has no per-ride start/finish
+  });
+
+  it('draws a marker at each rest stop', () => {
+    const { api, map } = fakeLeaflet();
+
+    const markers = drawRestStops(map as never, [{ latitude: 1, longitude: 2 }, { latitude: 3, longitude: 4 }], api);
+
+    expect(api.marker).toHaveBeenCalledTimes(2);
+    expect((api.marker as unknown as Mock).mock.calls[0][0]).toEqual([1, 2]);
+    expect(markers).toHaveLength(2);
   });
 
   it('coverage mode draws every route in the same colour', () => {

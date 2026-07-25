@@ -12,6 +12,7 @@ import { translocoTesting } from './core/i18n/transloco-testing';
 @Component({ selector: 'app-route-map', template: '' })
 class RouteMapStub {
   readonly routes = input<string[]>([]);
+  readonly restStops = input<unknown[]>([]);
   readonly obscuredBottomFraction = input<number>(0);
 }
 

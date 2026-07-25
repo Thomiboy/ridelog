@@ -179,7 +179,8 @@ export class RideDetail {
   exitCompare(): void {
     this.compareRide.set(null);
     this.pickerOpen.set(false);
-    this.mapState.showRoute(this.ride()?.routePolyline);
+    const current = this.ride();
+    this.mapState.showRoute(current?.routePolyline, current?.restStops ?? []);
   }
 
   setAxis(axis: MetricAxis): void {
@@ -212,8 +213,8 @@ export class RideDetail {
   private load(id: string): void {
     this.ridesService.getRide(id).subscribe((ride) => {
       this.ride.set(ride);
-      // The route draws on the global background map instead of an embedded one.
-      this.mapState.showRoute(ride.routePolyline);
+      // The route (with its rest markers) draws on the global background map instead of an embedded one.
+      this.mapState.showRoute(ride.routePolyline, ride.restStops ?? []);
     });
   }
 

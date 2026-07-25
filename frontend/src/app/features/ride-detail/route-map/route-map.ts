@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnDestroy, effect, input, viewChild } from '@angular/core';
 import type * as L from 'leaflet';
-import { createRouteMap, drawRoutes } from './leaflet-map';
+import { createRouteMap, drawRestStops, drawRoutes } from './leaflet-map';
+import type { RestStop } from '../../../core/api/ride.models';
 
 /**
  * The only place Leaflet is used (via leaflet-map helpers), so the map engine can later be swapped
@@ -19,6 +20,8 @@ export class RouteMap implements OnDestroy {
   readonly obscuredBottomFraction = input<number>(0);
   /** Draw all routes as one translucent coverage layer (Rides "all routes" map) instead of highlighting one. */
   readonly coverage = input<boolean>(false);
+  /** Rest markers for a single displayed route (ride detail). Ignored for coverage/multi-route maps. */
+  readonly restStops = input<RestStop[]>([]);
 
   private readonly host = viewChild<ElementRef<HTMLElement>>('map');
 
@@ -31,13 +34,19 @@ export class RouteMap implements OnDestroy {
       const routes = this.routes();
       const obscuredBottomFraction = this.obscuredBottomFraction();
       const coverage = this.coverage();
+      const restStops = this.restStops();
       if (!host) {
         return;
       }
       const map = (this.map ??= createRouteMap(host.nativeElement));
       this.layers.forEach((layer) => layer.remove());
       const bottomPaddingPx = obscuredBottomFraction * map.getSize().y;
-      this.layers = drawRoutes(map, routes, undefined, { bottomPaddingPx, coverage });
+      const layers = drawRoutes(map, routes, undefined, { bottomPaddingPx, coverage });
+      // Rest markers belong to a single highlighted route, not the coverage or multi-route views.
+      if (!coverage && routes.length === 1 && restStops.length > 0) {
+        layers.push(...drawRestStops(map, restStops));
+      }
+      this.layers = layers;
     });
   }
 

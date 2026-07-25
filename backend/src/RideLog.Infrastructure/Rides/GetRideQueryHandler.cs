@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RideLog.Application.Messaging;
 using RideLog.Application.Rides;
+using RideLog.Application.Routes;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Rides;
@@ -51,6 +52,11 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             ? HrZoneCalculator.TimeInZone(series, max)
             : null;
 
+        // Rest stops: detected from the series (time stalls, distance holds), placed on the decoded route.
+        var restStops = ride.MetricSeries is { } restSeries && ride.RoutePolyline is { } polyline
+            ? RestStopDetector.RestStops(restSeries, PolylineDecoder.Decode(polyline))
+            : [];
+
         // Chronological neighbours within the cycling set the list shows. Ordered in memory because
         // SQLite can't ORDER BY DateTimeOffset; at single-user scale the row set is small.
         var cycling = context.Rides.AsQueryable();
@@ -90,6 +96,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             RoutePolyline = ride.RoutePolyline,
             MetricSeries = ride.MetricSeries,
             HrZones = hrZones,
+            RestStops = restStops,
         };
     }
 }

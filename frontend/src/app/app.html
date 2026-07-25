@@ -1,5 +1,9 @@
 <div class="bg-map">
-  <app-route-map [routes]="mapState.routes()" [obscuredBottomFraction]="obscuredBottomFraction()" />
+  <app-route-map
+    [routes]="mapState.routes()"
+    [restStops]="mapState.restStops()"
+    [obscuredBottomFraction]="obscuredBottomFraction()"
+  />
 </div>
 
 <app-header />

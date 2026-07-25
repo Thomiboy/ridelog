@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { switchMap } from 'rxjs/operators';
 import { EMPTY } from 'rxjs';
 import { RidesService } from '../api/rides.service';
+import type { RestStop } from '../api/ride.models';
 
 /**
  * What the global background map shows. Defaults to the latest ride's route; pages override it via
@@ -14,17 +15,22 @@ export class MapState {
 
   readonly routes = signal<string[]>([]);
 
+  /** Rest markers for the single displayed route; cleared for multi-route and default backgrounds. */
+  readonly restStops = signal<RestStop[]>([]);
+
   private latest: string | null = null;
   private latestLoaded = false;
 
-  /** Shows a single route (or clears the map when there's none). */
-  showRoute(polyline: string | null | undefined): void {
+  /** Shows a single route (or clears the map when there's none), with optional rest markers. */
+  showRoute(polyline: string | null | undefined, restStops: RestStop[] = []): void {
     this.routes.set(polyline ? [polyline] : []);
+    this.restStops.set(polyline ? restStops : []);
   }
 
   /** Shows several routes at once; empty entries are dropped so no blank track is drawn. */
   showRoutes(polylines: string[]): void {
     this.routes.set(polylines.filter((p) => p.length > 0));
+    this.restStops.set([]);
   }
 
   /** Drops the cached latest route so the next reset refetches — call after a ride is deleted. */
