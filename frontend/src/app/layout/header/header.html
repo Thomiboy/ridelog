@@ -13,6 +13,20 @@
   </nav>
 
   <div class="session">
+    <div class="theme-switch" role="group" [attr.aria-label]="'nav.theme.label' | transloco">
+      @for (pref of themes; track pref) {
+        <button
+          type="button"
+          [attr.data-theme]="pref"
+          [class.active]="pref === activeTheme()"
+          [attr.aria-label]="'nav.theme.' + pref | transloco"
+          [attr.title]="'nav.theme.' + pref | transloco"
+          (click)="useTheme(pref)"
+        >
+          <mat-icon>{{ themeIcons[pref] }}</mat-icon>
+        </button>
+      }
+    </div>
     <div class="lang-switch" role="group" [attr.aria-label]="'nav.language' | transloco">
       @for (lang of languages; track lang) {
         <button

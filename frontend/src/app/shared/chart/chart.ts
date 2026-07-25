@@ -1,6 +1,8 @@
-import { Component, input } from '@angular/core';
+import { Component, effect, inject, input, viewChild } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
-import type { ChartData, ChartOptions, ChartType } from 'chart.js';
+import { Chart as ChartJs, type ChartData, type ChartOptions, type ChartType } from 'chart.js';
+import { ThemeService } from '../../core/theme/theme.service';
+import { chartThemeColors } from './chart-theme';
 
 /**
  * The only place Chart.js/ng2-charts is used directly, so the chart engine can later be swapped
@@ -18,4 +20,17 @@ export class Chart {
   readonly type = input.required<ChartType>();
   readonly data = input.required<ChartData>();
   readonly options = input<ChartOptions>({ responsive: true, maintainAspectRatio: false });
+
+  private readonly theme = inject(ThemeService);
+  private readonly chart = viewChild(BaseChartDirective);
+
+  constructor() {
+    // Axis text and gridlines follow the theme; re-render the chart when it changes.
+    effect(() => {
+      const { text, grid } = chartThemeColors(this.theme.resolved());
+      ChartJs.defaults.color = text;
+      ChartJs.defaults.borderColor = grid;
+      this.chart()?.chart?.update();
+    });
+  }
 }

@@ -10,6 +10,7 @@ const en = {
     login: 'Log in',
     logout: 'Log out',
     language: 'Language',
+    theme: { label: 'Theme', system: 'System', light: 'Light', dark: 'Dark' },
   },
   statistics: {
     title: 'Statistics',

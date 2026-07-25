@@ -2,7 +2,9 @@
 @use './theme/theme-colors' as palettes;
 
 html {
-  color-scheme: light;
+  // Emit both schemes as light-dark() values; ThemeService overrides color-scheme on the root to
+  // force light/dark, or leaves "light dark" to follow the OS.
+  color-scheme: light dark;
 
   @include mat.theme((
     color: (

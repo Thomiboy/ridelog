@@ -1,5 +1,5 @@
 import { vi, type Mock } from 'vitest';
-import { createRouteMap, drawRestStops, drawRoutes, ROUTE_COLORS, type LeafletApi } from './leaflet-map';
+import { createRouteMap, drawRestStops, drawRoutes, ROUTE_COLORS, setTileLayer, type LeafletApi } from './leaflet-map';
 
 const ENCODED = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 
@@ -12,9 +12,14 @@ function fakeLeaflet() {
     return marker;
   };
   const map = { setView: vi.fn(), fitBounds: vi.fn(), remove: vi.fn() };
+  const makeTile = () => {
+    const tile: Record<string, unknown> = { remove: vi.fn() };
+    tile['addTo'] = vi.fn(() => tile);
+    return tile;
+  };
   const api = {
     map: vi.fn(() => map),
-    tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
+    tileLayer: vi.fn(() => makeTile()),
     polyline: vi.fn(() => line),
     latLngBounds: vi.fn(() => 'ALL_BOUNDS'),
     marker: vi.fn(() => makeMarker()),
@@ -24,14 +29,22 @@ function fakeLeaflet() {
 }
 
 describe('leaflet-map', () => {
-  it('creates a map with an OpenStreetMap tile layer', () => {
+  it('creates a Leaflet map on the element', () => {
     const { api } = fakeLeaflet();
 
     createRouteMap(document.createElement('div'), api);
 
-    expect(api.tileLayer).toHaveBeenCalled();
-    const options = (api.tileLayer as unknown as Mock).mock.calls[0][1] as { attribution: string };
-    expect(options.attribution).toContain('OpenStreetMap');
+    expect(api.map).toHaveBeenCalled();
+  });
+
+  it('uses OSM tiles in light mode and a dark basemap in dark mode', () => {
+    const { api, map } = fakeLeaflet();
+
+    setTileLayer(map as never, 'light', api);
+    expect((api.tileLayer as unknown as Mock).mock.calls[0][0]).toContain('openstreetmap');
+
+    setTileLayer(map as never, 'dark', api);
+    expect((api.tileLayer as unknown as Mock).mock.calls[1][0]).toContain('cartocdn');
   });
 
   it('draws a single decoded route and fits the map to its bounds', () => {

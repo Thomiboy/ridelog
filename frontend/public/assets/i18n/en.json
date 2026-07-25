@@ -9,7 +9,8 @@
     "login": "Log in",
     "logout": "Log out",
     "statistics": "Statistics",
-    "language": "Language"
+    "language": "Language",
+    "theme": { "label": "Theme", "system": "System", "light": "Light", "dark": "Dark" }
   },
   "dashboard": {
     "title": "Dashboard",
