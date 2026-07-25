@@ -1,6 +1,6 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,17 +11,27 @@ import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
+import { buildCalendarMonth, type CalendarDay } from './rides-calendar';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
-/** Which Rides view is showing: the paged list, or the all-routes coverage map. */
-type RidesView = 'list' | 'map';
+/** Which Rides view is showing: the paged list, the all-routes coverage map, or the calendar. */
+type RidesView = 'list' | 'map' | 'calendar';
 
 // How many rides fit without scrolling at each sheet height (collapsed isn't for browsing).
 const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
 
 @Component({
   selector: 'app-rides',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule, SourceChips, RouteMap],
+  imports: [
+    TranslocoPipe,
+    DatePipe,
+    DecimalPipe,
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    SourceChips,
+    RouteMap,
+  ],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',
 })
@@ -42,11 +52,34 @@ export class Rides {
 
   readonly result = signal<Paged<RideSummary> | null>(null);
 
-  /** List (paged table) or the all-routes coverage map. */
+  /** List (paged table), the all-routes coverage map, or the monthly calendar. */
   readonly view = signal<RidesView>('list');
 
   /** Every route's polyline for the coverage map; null until the map view is first opened. */
   readonly mapRoutes = signal<string[] | null>(null);
+
+  /** Every ride for the calendar; null until the calendar view is first opened. */
+  readonly allRides = signal<RideSummary[] | null>(null);
+
+  private readonly today = new Date();
+  readonly calendarYear = signal(this.today.getFullYear());
+  readonly calendarMonth = signal(this.today.getMonth() + 1);
+
+  /** The multi-ride day whose rides are listed in the panel; null when none is chosen. */
+  readonly selectedDay = signal<CalendarDay | null>(null);
+
+  /** The displayed month as a Date, for the localized month label. */
+  readonly calendarDate = computed(() => new Date(this.calendarYear(), this.calendarMonth() - 1, 1));
+
+  readonly calendar = computed(() => {
+    const rides = this.allRides();
+    return rides ? buildCalendarMonth(rides, this.calendarYear(), this.calendarMonth()) : null;
+  });
+
+  /** Monday-first localized weekday headers (Jan 1 2024 was a Monday). */
+  readonly weekdayLabels = Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(2024, 0, 1 + i)),
+  );
 
   private currentPage = 1;
   private snapInitialised = false;
@@ -86,14 +119,49 @@ export class Rides {
 
   setView(view: RidesView): void {
     this.view.set(view);
-    if (view === 'map') {
-      // Give the coverage map room by expanding the sheet, and load every route once.
-      this.sheetState.request('full');
-      if (this.mapRoutes() === null) {
-        this.ridesService.getAllRoutes().subscribe((routes) => this.mapRoutes.set(routes.map((r) => r.routePolyline)));
-      }
-    } else {
+    if (view === 'list') {
       this.sheetState.request('half');
+      return;
+    }
+    // The map and calendar both want room, so expand the sheet and load their data once.
+    this.sheetState.request('full');
+    if (view === 'map' && this.mapRoutes() === null) {
+      this.ridesService.getAllRoutes().subscribe((routes) => this.mapRoutes.set(routes.map((r) => r.routePolyline)));
+    }
+    if (view === 'calendar' && this.allRides() === null) {
+      this.ridesService.getAllRides().subscribe((rides) => this.allRides.set(rides));
+    }
+  }
+
+  prevMonth(): void {
+    this.shiftMonth(-1);
+  }
+
+  nextMonth(): void {
+    this.shiftMonth(1);
+  }
+
+  private shiftMonth(delta: number): void {
+    const shifted = new Date(this.calendarYear(), this.calendarMonth() - 1 + delta, 1);
+    this.calendarYear.set(shifted.getFullYear());
+    this.calendarMonth.set(shifted.getMonth() + 1);
+    this.selectedDay.set(null);
+  }
+
+  /**
+   * Background shade for a day cell: navy scaled by the day's relative distance; none when ride-free.
+   * Alpha stays in a mid band so the busiest day is clearly darker yet the km text stays readable.
+   */
+  dayShade(day: CalendarDay): string {
+    return day.rideCount > 0 ? `rgba(27, 58, 107, ${0.1 + day.intensity * 0.45})` : '';
+  }
+
+  openDay(day: CalendarDay): void {
+    if (day.rideCount === 1) {
+      this.selectedDay.set(null);
+      this.open(day.rides[0]);
+    } else if (day.rideCount > 1) {
+      this.selectedDay.set(day);
     }
   }
 

@@ -61,4 +61,48 @@ describe('RidesService', () => {
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
   });
+
+  const summary = (id: string): RideSummary => ({
+    id,
+    startTime: '2026-07-05T08:00:00Z',
+    distanceKm: 40,
+    durationMinutes: 60,
+    sport: 'ROAD_BIKING',
+    sources: [],
+  });
+
+  it('getAllRides returns every ride in one request when they fit on a page', () => {
+    let result: RideSummary[] | undefined;
+    service.getAllRides().subscribe((rides) => (result = rides));
+
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=100`).flush({
+      items: [summary('r1'), summary('r2')],
+      page: 1,
+      pageSize: 100,
+      total: 2,
+    });
+
+    expect(result?.map((r) => r.id)).toEqual(['r1', 'r2']);
+  });
+
+  it('getAllRides pages through every ride when there is more than one page', () => {
+    let result: RideSummary[] | undefined;
+    service.getAllRides().subscribe((rides) => (result = rides));
+
+    // total 150 at 100 per page → two pages.
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=100`).flush({
+      items: [summary('r1')],
+      page: 1,
+      pageSize: 100,
+      total: 150,
+    });
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=2&pageSize=100`).flush({
+      items: [summary('r2')],
+      page: 2,
+      pageSize: 100,
+      total: 150,
+    });
+
+    expect(result?.map((r) => r.id)).toEqual(['r1', 'r2']);
+  });
 });
