@@ -1,4 +1,4 @@
-import { buildMetricSeriesChart, hasGraphableSeries } from './metric-series-chart';
+import { buildComparisonMetricChart, buildMetricSeriesChart, hasGraphableSeries } from './metric-series-chart';
 import type { MetricSample } from '../../core/api/ride.models';
 
 const sample = (
@@ -52,6 +52,40 @@ describe('metric series chart', () => {
     const temperature = chart.datasets.find((d) => d.yAxisID === 'temperature')!;
     expect(temperature).toBeTruthy();
     expect(temperature.data).toEqual([8, 12]);
+  });
+
+  it('overlays two rides as {x,y} points on a real distance axis', () => {
+    const current = [sample(0, 0, 100, 120), sample(5, 10, 150, 150)];
+    const compare = [sample(0, 0, 80, 110), sample(8, 12, 120, 140)];
+
+    const chart = buildComparisonMetricChart(current, compare, 'distance');
+
+    const elevations = chart.datasets.filter((d) => d.yAxisID === 'elevation');
+    expect(elevations).toHaveLength(2);
+    // Each ride keeps its own x range: current ends at 5 km, the compared ride at 8 km.
+    expect((elevations[0].data as { x: number; y: number }[]).at(-1)).toEqual({ x: 5, y: 150 });
+    expect((elevations[1].data as { x: number; y: number }[]).at(-1)).toEqual({ x: 8, y: 120 });
+  });
+
+  it('overlays the comparison on the elapsed-time axis when asked', () => {
+    const current = [sample(0, 0, 100, 120), sample(5, 10, 150, 150)];
+    const compare = [sample(0, 0, 80, 110), sample(8, 12, 120, 140)];
+
+    const chart = buildComparisonMetricChart(current, compare, 'time');
+
+    const elevations = chart.datasets.filter((d) => d.yAxisID === 'elevation');
+    expect((elevations[0].data as { x: number; y: number }[]).at(-1)).toEqual({ x: 10, y: 150 });
+    expect((elevations[1].data as { x: number; y: number }[]).at(-1)).toEqual({ x: 12, y: 120 });
+  });
+
+  it('drops a channel a ride never recorded from the overlay', () => {
+    const current = [sample(0, 0, 100, 120), sample(5, 10, 150, 150)];
+    const compareNoHr = [sample(0, 0, 80, null), sample(8, 12, 120, null)];
+
+    const chart = buildComparisonMetricChart(current, compareNoHr, 'distance');
+
+    // Only the current ride contributes a heart-rate line.
+    expect(chart.datasets.filter((d) => d.yAxisID === 'hr')).toHaveLength(1);
   });
 
   it('reports whether a series has anything to graph', () => {

@@ -46,3 +46,42 @@ export function buildMetricSeriesChart(series: MetricSample[], axis: MetricAxis)
 
   return { labels, datasets };
 }
+
+/**
+ * Overlays two rides' elevation and heart-rate lines on a shared real-value x-axis (cumulative
+ * distance or elapsed time), so rides of different length keep their own ranges. The compared ride's
+ * lines are dashed to tell them apart; a channel a ride never recorded is dropped for that ride.
+ */
+export function buildComparisonMetricChart(
+  current: MetricSample[],
+  compare: MetricSample[],
+  axis: MetricAxis,
+): ChartData<'line'> {
+  const x = (s: MetricSample) => (axis === 'distance' ? s.distanceKm : s.elapsedMinutes);
+
+  const linesFor = (series: MetricSample[], suffix: string, dashed: boolean): ChartData<'line'>['datasets'] => {
+    const dash = dashed ? [6, 4] : undefined;
+    const lines: ChartData<'line'>['datasets'] = [];
+    if (series.some((s) => s.elevationMeters != null)) {
+      lines.push({
+        label: `Elevation ${suffix}`,
+        yAxisID: 'elevation',
+        borderDash: dash,
+        data: series.map((s) => ({ x: x(s), y: s.elevationMeters ?? null })),
+        spanGaps: true,
+      });
+    }
+    if (series.some((s) => s.heartRate != null)) {
+      lines.push({
+        label: `HR ${suffix}`,
+        yAxisID: 'hr',
+        borderDash: dash,
+        data: series.map((s) => ({ x: x(s), y: s.heartRate ?? null })),
+        spanGaps: true,
+      });
+    }
+    return lines;
+  };
+
+  return { datasets: [...linesFor(current, 'A', false), ...linesFor(compare, 'B', true)] };
+}
