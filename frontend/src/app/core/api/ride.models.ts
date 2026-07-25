@@ -28,6 +28,12 @@ export interface LongestRideRoute {
   routePolyline: string;
 }
 
+/** A ride's route for the all-routes coverage map. Mirrors the backend RideRoute DTO. */
+export interface RideRoute {
+  id: string;
+  routePolyline: string;
+}
+
 /** One downsampled point of a ride's metric series, mirroring the backend MetricSample. */
 export interface MetricSample {
   distanceKm: number;

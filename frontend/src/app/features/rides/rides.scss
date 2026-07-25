@@ -1,3 +1,42 @@
+.rides-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.view-switch {
+  display: inline-flex;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 0.5rem;
+  overflow: hidden;
+
+  button {
+    padding: 0.35rem 0.9rem;
+    border: 0;
+    background: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+    font: inherit;
+    cursor: pointer;
+
+    &.active {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+    }
+
+    & + button {
+      border-left: 1px solid var(--mat-sys-outline);
+    }
+  }
+}
+
+.coverage-host {
+  height: 75dvh;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
 .rides {
   width: 100%;
   border-collapse: collapse;

@@ -84,6 +84,10 @@ app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
 app.MapGet("/rides/longest", async (IDispatcher dispatcher, int? take) =>
     Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(take ?? 3))));
 
+// Every cycling route for the Rides page's all-routes coverage map.
+app.MapGet("/rides/routes", async (IDispatcher dispatcher) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetRideRoutesQuery())));
+
 app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
     await dispatcher.QueryAsync(new GetRideQuery(id)) is { } ride
         ? Results.Ok(ride)

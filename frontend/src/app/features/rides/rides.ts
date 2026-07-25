@@ -6,18 +6,22 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import type { Paged, RideSummary } from '../../core/api/ride.models';
 
+/** Which Rides view is showing: the paged list, or the all-routes coverage map. */
+type RidesView = 'list' | 'map';
+
 // How many rides fit without scrolling at each sheet height (collapsed isn't for browsing).
 const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
 
 @Component({
   selector: 'app-rides',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule, SourceChips],
+  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule, SourceChips, RouteMap],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',
 })
@@ -37,6 +41,12 @@ export class Rides {
   readonly formatDuration = formatDuration;
 
   readonly result = signal<Paged<RideSummary> | null>(null);
+
+  /** List (paged table) or the all-routes coverage map. */
+  readonly view = signal<RidesView>('list');
+
+  /** Every route's polyline for the coverage map; null until the map view is first opened. */
+  readonly mapRoutes = signal<string[] | null>(null);
 
   private currentPage = 1;
   private snapInitialised = false;
@@ -72,6 +82,19 @@ export class Rides {
   private pageFromUrl(): number {
     const raw = Number(this.route.snapshot.queryParamMap.get('page'));
     return Number.isInteger(raw) && raw > 0 ? raw : 1;
+  }
+
+  setView(view: RidesView): void {
+    this.view.set(view);
+    if (view === 'map') {
+      // Give the coverage map room by expanding the sheet, and load every route once.
+      this.sheetState.request('full');
+      if (this.mapRoutes() === null) {
+        this.ridesService.getAllRoutes().subscribe((routes) => this.mapRoutes.set(routes.map((r) => r.routePolyline)));
+      }
+    } else {
+      this.sheetState.request('half');
+    }
   }
 
   open(ride: RideSummary): void {
