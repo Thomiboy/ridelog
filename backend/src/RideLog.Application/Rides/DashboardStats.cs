@@ -12,6 +12,9 @@ public sealed record MonthlyDistance(int Year, int Month, double DistanceKm);
 /// <summary>Average speed over one calendar month; null when there were no rides.</summary>
 public sealed record MonthlySpeed(int Year, int Month, double? AverageSpeedKmh);
 
+/// <summary>Average ridden temperature over one calendar month; null when no ride carried temperature.</summary>
+public sealed record MonthlyAverageTemperature(int Year, int Month, double? AverageTemperatureCelsius);
+
 /// <summary>
 /// The dashboard's "am I improving?" view: stat tiles plus chart series. Monthly distance covers
 /// the current and previous calendar year (12 entries each, zeros included); the speed trend covers
@@ -23,4 +26,5 @@ public sealed record DashboardStats(
     PeriodStats LastYear,
     BestMonth? LastYearBestMonth,
     IReadOnlyList<MonthlyDistance> MonthlyDistance,
-    IReadOnlyList<MonthlySpeed> AverageSpeedTrend);
+    IReadOnlyList<MonthlySpeed> AverageSpeedTrend,
+    IReadOnlyList<MonthlyAverageTemperature> AverageTemperatureTrend);

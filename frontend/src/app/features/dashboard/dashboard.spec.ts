@@ -28,6 +28,7 @@ describe('Dashboard', () => {
       { year: 2026, month: 7, distanceKm: 100 },
     ],
     averageSpeedTrend: [{ year: 2026, month: 7, averageSpeedKmh: 31 }],
+    averageTemperatureTrend: [{ year: 2026, month: 7, averageTemperatureCelsius: 22 }],
   };
 
   function setup(override: Partial<DashboardStats> = {}) {
@@ -93,6 +94,13 @@ describe('Dashboard', () => {
     const bar = charts.find((c) => c.type() === 'bar')!;
     const line = charts.find((c) => c.type() === 'line')!;
     expect(bar.data().datasets.length).toBe(2); // current + previous year
-    expect(line.data().datasets[0].data).toEqual([31]);
+
+    // The trend line carries speed and temperature on separate y-axes.
+    const datasets = line.data().datasets as Array<{ yAxisID?: string; data: unknown }>;
+    const speed = datasets.find((d) => d.yAxisID === 'speed')!;
+    const temperature = datasets.find((d) => d.yAxisID === 'temp')!;
+    expect(speed.data).toEqual([31]);
+    expect(temperature.data).toEqual([22]);
+    expect(line.options()?.scales).toMatchObject({ speed: { position: 'left' }, temp: { position: 'right' } });
   });
 });

@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 import { Rides } from './rides';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { RidesViewState, type RidesView } from './rides-view-state';
 import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
@@ -45,6 +46,8 @@ describe('Rides', () => {
     snap: SnapState = 'half',
     mapRoutes: RideRoute[] = routeList,
     calendarRides: RideSummary[] = [calRide('c1', 42)],
+    // The real default is 'calendar'; most tests exercise the list, so default the setup to 'list'.
+    startView: RidesView = 'list',
   ) {
     const ridesService = {
       getRides: vi.fn().mockReturnValue(of(paged)),
@@ -70,10 +73,12 @@ describe('Rides', () => {
       remove: { imports: [RouteMap] },
       add: { imports: [RouteMapStub] },
     });
+    const viewState = TestBed.inject(RidesViewState);
+    viewState.view.set(startView);
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(Rides);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, sheetState, router };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, sheetState, viewState, router };
   }
 
   function showMap(ctx: ReturnType<typeof setup>) {
@@ -249,11 +254,35 @@ describe('Rides', () => {
     expect((el.querySelector('[data-prev]') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('defaults to the list view', () => {
+  it('renders the list view', () => {
     const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
 
     expect(el.querySelector('table.rides')).not.toBeNull();
     expect(el.querySelector('app-route-map')).toBeNull();
+  });
+
+  it('defaults to the calendar view', () => {
+    // Fresh RidesViewState (no override) → the calendar is the default view.
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 }, false, {}, 'half', routeList, [calRide('c1', 42)], 'calendar');
+
+    expect(ctx.el.querySelector('[data-cal-day]')).not.toBeNull();
+    expect(ctx.el.querySelector('table.rides')).toBeNull();
+    expect(ctx.ridesService.getAllRides).toHaveBeenCalled();
+  });
+
+  it('restores the view you left from when returning to the page', () => {
+    const paged = { items: [ride('r1')], page: 1, pageSize: 20, total: 1 };
+    const ctx = setup(paged); // starts on the list
+
+    // Switch to the map, then leave and come back (a new component, same shared view state).
+    showMap(ctx);
+    ctx.fixture.destroy();
+    const returned = TestBed.createComponent(Rides);
+    returned.detectChanges();
+
+    const el = returned.nativeElement as HTMLElement;
+    expect(el.querySelector('app-route-map')).not.toBeNull();
+    expect(el.querySelector('table.rides')).toBeNull();
   });
 
   it('switches to a coverage map of every route polyline', () => {

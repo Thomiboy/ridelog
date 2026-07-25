@@ -5,7 +5,12 @@ import { MatCardModule } from '@angular/material/card';
 import { DashboardService } from '../../core/api/dashboard.service';
 import type { DashboardStats } from '../../core/api/dashboard.models';
 import { Chart } from '../../shared/chart/chart';
-import { buildMonthlyDistanceChart, buildSpeedTrendChart, MONTH_LABELS } from './dashboard-charts';
+import {
+  buildMonthlyDistanceChart,
+  buildSpeedAndTemperatureTrendChart,
+  MONTH_LABELS,
+  SPEED_TEMPERATURE_TREND_OPTIONS,
+} from './dashboard-charts';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,8 +30,13 @@ export class Dashboard {
 
   readonly speedChart = computed(() => {
     const stats = this.stats();
-    return stats ? buildSpeedTrendChart(stats.averageSpeedTrend) : null;
+    return stats
+      ? buildSpeedAndTemperatureTrendChart(stats.averageSpeedTrend, stats.averageTemperatureTrend ?? [])
+      : null;
   });
+
+  /** Dual-axis scales (speed left, temperature right) for the trend chart. */
+  readonly speedChartOptions = SPEED_TEMPERATURE_TREND_OPTIONS;
 
   /** Short month name for a 1-based month number (e.g. 7 → "Jul"), for the best-month tiles. */
   monthLabel(month: number): string {

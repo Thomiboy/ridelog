@@ -26,7 +26,8 @@
     },
     "charts": {
       "monthlyDistance": "Monthly distance",
-      "speedTrend": "Average speed trend"
+      "speedTrend": "Average speed trend",
+      "speedAndTemperatureTrend": "Speed & temperature trend"
     }
   },
   "rides": {

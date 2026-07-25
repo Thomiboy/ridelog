@@ -1,5 +1,5 @@
-import type { ChartData } from 'chart.js';
-import type { MonthlyDistance, MonthlySpeed } from '../../core/api/dashboard.models';
+import type { ChartData, ChartOptions } from 'chart.js';
+import type { MonthlyAverageTemperature, MonthlyDistance, MonthlySpeed } from '../../core/api/dashboard.models';
 
 export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -19,16 +19,46 @@ export function buildMonthlyDistanceChart(monthly: MonthlyDistance[]): ChartData
   };
 }
 
-/** Average speed per month as a single line; empty months stay as gaps. */
-export function buildSpeedTrendChart(trend: MonthlySpeed[]): ChartData<'line'> {
+/** Month key "YYYY-MM" for a trend point. */
+function monthLabel(point: { year: number; month: number }): string {
+  return `${point.year}-${String(point.month).padStart(2, '0')}`;
+}
+
+/**
+ * Average speed and average temperature per month on one line chart: speed on the left y-axis,
+ * temperature on the right. Both series share the same 12-month labels (from the speed trend);
+ * empty months stay as gaps on both lines.
+ */
+export function buildSpeedAndTemperatureTrendChart(
+  speed: MonthlySpeed[],
+  temperature: MonthlyAverageTemperature[],
+): ChartData<'line'> {
   return {
-    labels: trend.map((t) => `${t.year}-${String(t.month).padStart(2, '0')}`),
+    labels: speed.map(monthLabel),
     datasets: [
       {
         label: 'km/h',
-        data: trend.map((t) => t.averageSpeedKmh ?? null),
+        yAxisID: 'speed',
+        data: speed.map((t) => t.averageSpeedKmh ?? null),
+        spanGaps: false,
+      },
+      {
+        label: '°C',
+        yAxisID: 'temp',
+        data: temperature.map((t) => t.averageTemperatureCelsius ?? null),
         spanGaps: false,
       },
     ],
   };
 }
+
+/** Dual-axis scales for the speed/temperature trend: speed left, temperature right (no extra gridlines). */
+export const SPEED_TEMPERATURE_TREND_OPTIONS: ChartOptions<'line'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { intersect: false, mode: 'index' },
+  scales: {
+    speed: { type: 'linear', position: 'left' },
+    temp: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
+  },
+};

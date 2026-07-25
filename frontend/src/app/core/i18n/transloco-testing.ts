@@ -57,7 +57,11 @@ const en = {
       lastYearRides: 'Rides last year',
       lastYearElevation: 'Climbing last year',
     },
-    charts: { monthlyDistance: 'Monthly distance', speedTrend: 'Average speed trend' },
+    charts: {
+      monthlyDistance: 'Monthly distance',
+      speedTrend: 'Average speed trend',
+      speedAndTemperatureTrend: 'Speed & temperature trend',
+    },
   },
   rides: {
     title: 'Rides',

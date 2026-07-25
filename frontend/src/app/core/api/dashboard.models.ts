@@ -17,6 +17,12 @@ export interface MonthlySpeed {
   averageSpeedKmh?: number | null;
 }
 
+export interface MonthlyAverageTemperature {
+  year: number;
+  month: number;
+  averageTemperatureCelsius?: number | null;
+}
+
 /** The best (highest-distance) month of a year, mirroring the backend BestMonth. */
 export interface BestMonth {
   month: number;
@@ -33,4 +39,6 @@ export interface DashboardStats {
   lastYearBestMonth?: BestMonth | null;
   monthlyDistance: MonthlyDistance[];
   averageSpeedTrend: MonthlySpeed[];
+  // Optional so the dashboard survives an older backend that doesn't send it yet.
+  averageTemperatureTrend?: MonthlyAverageTemperature[];
 }
