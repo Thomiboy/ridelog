@@ -8,6 +8,9 @@
       <button type="button" data-view="map" [class.active]="view() === 'map'" (click)="setView('map')">
         {{ 'rides.view.map' | transloco }}
       </button>
+      <button type="button" data-view="calendar" [class.active]="view() === 'calendar'" (click)="setView('calendar')">
+        {{ 'rides.view.calendar' | transloco }}
+      </button>
     </div>
   </header>
 
@@ -17,6 +20,57 @@
         <div class="coverage-host"><app-route-map [routes]="routes" [coverage]="true" /></div>
       } @else {
         <p class="empty" data-map-empty>{{ 'rides.mapEmpty' | transloco }}</p>
+      }
+    }
+  } @else if (view() === 'calendar') {
+    @if (calendar(); as cal) {
+      <nav class="cal-nav">
+        <button mat-icon-button type="button" data-cal-prev [attr.aria-label]="'rides.prev' | transloco" (click)="prevMonth()">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="cal-label" data-cal-label>{{ calendarDate() | date: 'MMMM y' }}</span>
+        <button mat-icon-button type="button" data-cal-next [attr.aria-label]="'rides.next' | transloco" (click)="nextMonth()">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </nav>
+      <div class="cal-grid">
+        @for (label of weekdayLabels; track label) {
+          <div class="cal-weekday">{{ label }}</div>
+        }
+        @for (week of cal.weeks; track $index) {
+          @for (day of week; track day.date.getTime()) {
+            <button
+              type="button"
+              class="cal-day"
+              data-cal-day
+              [class.out-month]="!day.inMonth"
+              [class.has-rides]="day.rideCount > 0"
+              [style.background]="dayShade(day)"
+              [disabled]="day.rideCount === 0"
+              (click)="openDay(day)"
+            >
+              <span class="cal-date">{{ day.date | date: 'd' }}</span>
+              @if (day.rideCount > 0) {
+                <span class="cal-km">{{ day.totalKm | number: '1.0-0' }} km</span>
+                @if (day.rideCount > 1) {
+                  <span class="cal-count">{{ day.rideCount }}×</span>
+                }
+              }
+            </button>
+          }
+        }
+      </div>
+      @if (selectedDay(); as day) {
+        <div class="cal-day-panel" data-cal-day-rides>
+          <h3>{{ day.date | date: 'mediumDate' }}</h3>
+          <ul>
+            @for (r of day.rides; track r.id) {
+              <li>
+                <a [routerLink]="['/rides', r.id]">{{ r.distanceKm | number: '1.1-1' }} km · {{ formatDuration(r.durationMinutes) }}</a>
+              </li>
+            }
+          </ul>
+        </div>
       }
     }
   } @else if (result(); as page) {

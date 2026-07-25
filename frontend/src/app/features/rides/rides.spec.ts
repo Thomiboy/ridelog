@@ -28,17 +28,29 @@ describe('Rides', () => {
     { id: 'r2', routePolyline: 'poly-2' },
   ];
 
+  // A ride on a given day of the *current* month, so it lands in the calendar's default month.
+  const calRide = (id: string, distanceKm: number, day = 15): RideSummary => {
+    const now = new Date();
+    return {
+      ...ride(id),
+      startTime: new Date(now.getFullYear(), now.getMonth(), day, 8, 0, 0).toISOString(),
+      distanceKm,
+    };
+  };
+
   function setup(
     paged: Paged<RideSummary>,
     loggedIn = false,
     queryParams: Record<string, string> = {},
     snap: SnapState = 'half',
     mapRoutes: RideRoute[] = routeList,
+    calendarRides: RideSummary[] = [calRide('c1', 42)],
   ) {
     const ridesService = {
       getRides: vi.fn().mockReturnValue(of(paged)),
       deleteRide: vi.fn().mockReturnValue(of(void 0)),
       getAllRoutes: vi.fn().mockReturnValue(of(mapRoutes)),
+      getAllRides: vi.fn().mockReturnValue(of(calendarRides)),
     };
     const mapState = { reset: vi.fn(), invalidate: vi.fn() };
     const authService = { isLoggedIn: signal(loggedIn) };
@@ -66,6 +78,11 @@ describe('Rides', () => {
 
   function showMap(ctx: ReturnType<typeof setup>) {
     (ctx.el.querySelector('[data-view="map"]') as HTMLButtonElement).click();
+    ctx.fixture.detectChanges();
+  }
+
+  function showCalendar(ctx: ReturnType<typeof setup>) {
+    (ctx.el.querySelector('[data-view="calendar"]') as HTMLButtonElement).click();
     ctx.fixture.detectChanges();
   }
 
@@ -268,5 +285,60 @@ describe('Rides', () => {
 
     expect(ctx.el.querySelector('[data-map-empty]')).not.toBeNull();
     expect(ctx.fixture.debugElement.query(By.css('app-route-map'))).toBeNull();
+  });
+
+  it('switches to a calendar grid built from all rides', () => {
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    showCalendar(ctx);
+
+    expect(ctx.ridesService.getAllRides).toHaveBeenCalled();
+    expect(ctx.el.querySelectorAll('[data-cal-day]').length).toBeGreaterThanOrEqual(28);
+    // The seeded ride's day shows its distance.
+    const dayCell = ctx.el.querySelector('[data-cal-day].has-rides');
+    expect(dayCell?.textContent).toContain('42');
+    expect(ctx.el.querySelector('table.rides')).toBeNull();
+  });
+
+  it('navigates between months', () => {
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+    showCalendar(ctx);
+
+    const label = ctx.el.querySelector('[data-cal-label]')?.textContent;
+    (ctx.el.querySelector('[data-cal-prev]') as HTMLButtonElement).click();
+    ctx.fixture.detectChanges();
+
+    expect(ctx.el.querySelector('[data-cal-label]')?.textContent).not.toBe(label);
+    // Last month has no rides, so the seeded day is gone.
+    expect(ctx.el.querySelector('[data-cal-day].has-rides')).toBeNull();
+  });
+
+  it('opens the ride detail when a single-ride day is clicked', () => {
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+    const navigate = vi.spyOn(ctx.router, 'navigateByUrl');
+    showCalendar(ctx);
+
+    (ctx.el.querySelector('[data-cal-day].has-rides') as HTMLElement).click();
+
+    expect(navigate).toHaveBeenCalledWith('/rides/c1');
+  });
+
+  it("lists the day's rides in a panel when a multi-ride day is clicked", () => {
+    const ctx = setup(
+      { items: [ride('r1')], page: 1, pageSize: 20, total: 1 },
+      false,
+      {},
+      'half',
+      routeList,
+      [calRide('c1', 30), calRide('c2', 20)],
+    );
+    showCalendar(ctx);
+
+    (ctx.el.querySelector('[data-cal-day].has-rides') as HTMLElement).click();
+    ctx.fixture.detectChanges();
+
+    const panel = ctx.el.querySelector('[data-cal-day-rides]');
+    expect(panel).not.toBeNull();
+    expect(panel!.querySelectorAll('a').length).toBe(2);
   });
 });

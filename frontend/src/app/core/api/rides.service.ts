@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import type { LongestRideRoute, Paged, RideDetail, RideRoute, RideSummary } from './ride.models';
 
@@ -26,6 +27,21 @@ export class RidesService {
   /** Every cycling route (routes only) for the all-routes coverage map. */
   getAllRoutes(): Observable<RideRoute[]> {
     return this.http.get<RideRoute[]>(`${this.baseUrl}/rides/routes`);
+  }
+
+  /** Every cycling ride, paging through the list endpoint (for the calendar view). */
+  getAllRides(): Observable<RideSummary[]> {
+    const pageSize = 100;
+    return this.getRides(1, pageSize).pipe(
+      switchMap((first) => {
+        const pages = Math.ceil(first.total / pageSize);
+        if (pages <= 1) {
+          return of(first.items);
+        }
+        const rest = Array.from({ length: pages - 1 }, (_, i) => this.getRides(i + 2, pageSize));
+        return forkJoin(rest).pipe(map((results) => [...first.items, ...results.flatMap((r) => r.items)]));
+      }),
+    );
   }
 
   deleteRide(id: string): Observable<void> {
