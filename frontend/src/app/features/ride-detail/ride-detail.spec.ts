@@ -11,7 +11,7 @@ import { MapState } from '../../core/map/map-state';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { Chart } from '../../shared/chart/chart';
-import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
+import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 // Chart.js needs a real canvas; stub the chart so the detail renders in jsdom.
@@ -43,12 +43,27 @@ describe('RideDetail', () => {
     routePolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
   };
 
-  function setup(ride: RideDetailDto = detail, getRideImpl?: (id: string) => Observable<RideDetailDto>, admin = false) {
+  const summary = (id: string, distanceKm: number): RideSummary => ({
+    id,
+    startTime: '2026-05-01T08:00:00Z',
+    distanceKm,
+    durationMinutes: 90,
+    sport: 'ROAD_BIKING',
+    sources: [],
+  });
+
+  function setup(
+    ride: RideDetailDto = detail,
+    getRideImpl?: (id: string) => Observable<RideDetailDto>,
+    admin = false,
+    allRides: RideSummary[] = [summary('r1', 61.5), summary('r2', 50)],
+  ) {
     const ridesService = {
       getRide: getRideImpl ? vi.fn().mockImplementation(getRideImpl) : vi.fn().mockReturnValue(of(ride)),
       reprocessRide: vi.fn().mockReturnValue(of(void 0)),
+      getAllRides: vi.fn().mockReturnValue(of(allRides)),
     };
-    const mapState = { showRoute: vi.fn() };
+    const mapState = { showRoute: vi.fn(), showRoutes: vi.fn() };
     const sheetState = { request: vi.fn() };
     const authService = { isAdmin: signal(admin) };
     const paramMap$ = new BehaviorSubject(convertToParamMap({ id: 'r1' }));
@@ -273,6 +288,49 @@ describe('RideDetail', () => {
 
     expect((el.querySelector('[data-prev-ride]') as HTMLButtonElement).disabled).toBe(true);
     expect((el.querySelector('[data-next-ride]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  const compareDetail: RideDetailDto = {
+    ...detail,
+    id: 'r2',
+    distanceKm: 50,
+    routePolyline: 'compare-poly',
+  };
+
+  it('opens the compare picker over all rides', () => {
+    const { el, fixture, ridesService } = setup();
+
+    (el.querySelector('[data-compare]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(ridesService.getAllRides).toHaveBeenCalled();
+    expect(el.querySelector('app-ride-picker')).not.toBeNull();
+  });
+
+  it('compares against the picked ride, showing deltas and overlaying both routes', () => {
+    const { el, fixture, mapState } = setup(detail, (id) => of(id === 'r2' ? compareDetail : detail));
+
+    (el.querySelector('[data-compare]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('[data-picker-row]') as HTMLButtonElement).click(); // the one non-current ride (r2)
+    fixture.detectChanges();
+
+    expect(el.querySelector('[data-compare-table]')).not.toBeNull();
+    expect(mapState.showRoutes).toHaveBeenCalledWith([detail.routePolyline, 'compare-poly']);
+  });
+
+  it('exits comparison back to the single ride', () => {
+    const { el, fixture, mapState } = setup(detail, (id) => of(id === 'r2' ? compareDetail : detail));
+
+    (el.querySelector('[data-compare]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('[data-picker-row]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('[data-compare-exit]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[data-compare-table]')).toBeNull();
+    expect(mapState.showRoute).toHaveBeenLastCalledWith(detail.routePolyline);
   });
 
   it('hides the reprocess button from non-admins', () => {

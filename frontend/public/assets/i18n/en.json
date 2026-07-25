@@ -79,7 +79,27 @@
     "hrZones": {
       "title": "Time in HR zones"
     },
-    "min": "Min"
+    "min": "Min",
+    "compare": {
+      "action": "Compare",
+      "title": "Compare with a ride",
+      "search": "Search by date or distance",
+      "close": "Close",
+      "none": "No rides to compare.",
+      "exit": "Exit comparison",
+      "current": "This ride",
+      "other": "Compared"
+    },
+    "compareMetric": {
+      "distance": "Distance",
+      "duration": "Duration",
+      "avgSpeed": "Avg speed",
+      "maxSpeed": "Max speed",
+      "avgHeartRate": "Avg HR",
+      "maxHeartRate": "Max HR",
+      "elevation": "Climbing",
+      "calories": "Calories"
+    }
   },
   "admin": {
     "title": "Admin",

@@ -30,6 +30,10 @@
         <mat-icon>chevron_right</mat-icon>
       </button>
     </span>
+    <button mat-stroked-button type="button" data-compare (click)="pickerOpen() ? closePicker() : openPicker()">
+      <mat-icon>compare_arrows</mat-icon>
+      {{ 'rideDetail.compare.action' | transloco }}
+    </button>
     @if (isAdmin()) {
       <button mat-stroked-button type="button" data-reprocess (click)="reprocess()">
         <mat-icon>refresh</mat-icon>
@@ -38,7 +42,52 @@
     }
   </nav>
 
+  @if (pickerOpen() && ride(); as ride) {
+    <app-ride-picker
+      [rides]="allRides() ?? []"
+      [excludeId]="ride.id"
+      (pick)="choose($event)"
+      (close)="closePicker()"
+    />
+  }
+
+  @if (deltas(); as deltas) {
+    <mat-card appearance="outlined" class="compare-card" data-compare-table>
+      <header class="compare-header">
+        <span class="card-title">
+          {{ ride()?.startTime | date: 'mediumDate' }} · {{ compareRide()?.startTime | date: 'mediumDate' }}
+        </span>
+        <button mat-icon-button type="button" data-compare-exit [attr.aria-label]="'rideDetail.compare.exit' | transloco" (click)="exitCompare()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </header>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>{{ 'rideDetail.compare.current' | transloco }}</th>
+            <th>{{ 'rideDetail.compare.other' | transloco }}</th>
+            <th>Δ</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (delta of deltas; track delta.key) {
+            <tr [attr.data-metric]="delta.key">
+              <td class="metric-name">{{ 'rideDetail.compareMetric.' + delta.key | transloco }}</td>
+              <td>{{ displayMetric(delta.key, delta.a) }}</td>
+              <td>{{ displayMetric(delta.key, delta.b) }}</td>
+              <td [class.better]="delta.direction === 'better'" [class.worse]="delta.direction === 'worse'">
+                {{ displayDelta(delta) }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </mat-card>
+  }
+
   @if (ride(); as ride) {
+    @if (!compareRide()) {
     <div class="cards">
       <mat-card appearance="outlined" class="metric-card" data-card>
         <span class="card-title">{{ 'rideDetail.card.distanceTime' | transloco }}</span>
@@ -127,8 +176,9 @@
         </mat-card>
       }
     </div>
+    }
 
-    @if (metricChart(); as chart) {
+    @if (graphChart(); as chart) {
       <mat-card appearance="outlined" class="graph-card" data-graph>
         <div class="graph-header">
           <span class="card-title">{{ 'rideDetail.graph.title' | transloco }}</span>
@@ -151,7 +201,9 @@
             </button>
           </span>
         </div>
-        <div class="graph-host"><app-chart type="line" [data]="chart" [options]="graphOptions" /></div>
+        <div class="graph-host">
+          <app-chart type="line" [data]="chart" [options]="compareRide() ? comparisonGraphOptions : graphOptions" />
+        </div>
       </mat-card>
     }
 

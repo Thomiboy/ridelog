@@ -1,0 +1,27 @@
+<div class="picker" role="dialog" [attr.aria-label]="'rideDetail.compare.title' | transloco">
+  <header class="picker-header">
+    <input
+      type="search"
+      data-testid="picker-search"
+      [placeholder]="'rideDetail.compare.search' | transloco"
+      [value]="query()"
+      (input)="search($any($event.target).value)"
+    />
+    <button mat-icon-button type="button" data-picker-close [attr.aria-label]="'rideDetail.compare.close' | transloco" (click)="dismiss()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <ul class="picker-list">
+    @for (ride of filtered(); track ride.id) {
+      <li>
+        <button type="button" data-picker-row (click)="select(ride)">
+          <span class="date">{{ ride.startTime | date: 'mediumDate' }}</span>
+          <span class="distance">{{ ride.distanceKm | number: '1.1-1' }} km</span>
+        </button>
+      </li>
+    } @empty {
+      <li class="empty">{{ 'rideDetail.compare.none' | transloco }}</li>
+    }
+  </ul>
+</div>

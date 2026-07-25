@@ -14,9 +14,11 @@ import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { Chart } from '../../shared/chart/chart';
-import { buildMetricSeriesChart, hasGraphableSeries, type MetricAxis } from './metric-series-chart';
+import { buildComparisonMetricChart, buildMetricSeriesChart, hasGraphableSeries, type MetricAxis } from './metric-series-chart';
 import { buildHrZoneChart } from './hr-zone-chart';
-import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
+import { compareRides, type MetricDelta } from './ride-comparison';
+import { RidePicker } from './ride-picker';
+import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ride.models';
 
 @Component({
   selector: 'app-ride-detail',
@@ -30,6 +32,7 @@ import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
     MatCardModule,
     SourceChips,
     Chart,
+    RidePicker,
   ],
   templateUrl: './ride-detail.html',
   styleUrl: './ride-detail.scss',
@@ -46,12 +49,38 @@ export class RideDetail {
 
   readonly ride = signal<RideDetailDto | null>(null);
 
+  /** The ride being compared against (full detail), and whether the picker is open. */
+  readonly compareRide = signal<RideDetailDto | null>(null);
+  readonly pickerOpen = signal(false);
+  /** All cycling rides for the compare picker; null until first opened. */
+  readonly allRides = signal<RideSummary[] | null>(null);
+
   /** X-axis of the elevation/HR graph: cumulative distance or elapsed time. */
   readonly metricAxis = signal<MetricAxis>('distance');
 
   readonly metricChart = computed(() => {
     const series = this.ride()?.metricSeries;
     return series && hasGraphableSeries(series) ? buildMetricSeriesChart(series, this.metricAxis()) : null;
+  });
+
+  /** Per-metric comparison of the current ride against the selected one; null outside compare mode. */
+  readonly deltas = computed<MetricDelta[] | null>(() => {
+    const current = this.ride();
+    const other = this.compareRide();
+    return current && other ? compareRides(current, other) : null;
+  });
+
+  /** The overlaid two-ride graph in compare mode; the single-ride graph otherwise. */
+  readonly graphChart = computed(() => {
+    const other = this.compareRide();
+    if (!other) {
+      return this.metricChart();
+    }
+    const current = this.ride()?.metricSeries ?? [];
+    const compare = other.metricSeries ?? [];
+    return current.length > 0 || compare.length > 0
+      ? buildComparisonMetricChart(current, compare, this.metricAxis())
+      : null;
   });
 
   readonly hrZoneChart = computed(() => {
@@ -72,8 +101,86 @@ export class RideDetail {
     },
   };
 
+  // Comparison overlay uses a real-value linear x-axis so rides of different length keep their ranges.
+  readonly comparisonGraphOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { intersect: false, mode: 'nearest' },
+    scales: {
+      x: { type: 'linear' },
+      elevation: { type: 'linear', position: 'left' },
+      hr: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
+    },
+  };
+
   /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
   readonly formatDuration = formatDuration;
+
+  /** Formats a comparison metric value with its unit (dash when absent). */
+  displayMetric(key: string, value: number | null): string {
+    if (value === null) {
+      return '—';
+    }
+    switch (key) {
+      case 'distance':
+        return `${this.round(value, 1)} km`;
+      case 'duration':
+        return formatDuration(value);
+      case 'avgSpeed':
+      case 'maxSpeed':
+        return `${this.round(value, 1)} km/h`;
+      case 'avgHeartRate':
+      case 'maxHeartRate':
+        return `${Math.round(value)} bpm`;
+      case 'elevation':
+        return `${Math.round(value)} m`;
+      case 'calories':
+        return `${Math.round(value)} kcal`;
+      default:
+        return String(value);
+    }
+  }
+
+  /** The signed delta with its unit (e.g. "+10 km", "−5 bpm"); dash when it can't be computed. */
+  displayDelta(delta: MetricDelta): string {
+    if (delta.delta === null) {
+      return '—';
+    }
+    const sign = delta.delta > 0 ? '+' : delta.delta < 0 ? '−' : '';
+    return `${sign}${this.displayMetric(delta.key, Math.abs(delta.delta))}`;
+  }
+
+  private round(value: number, digits: number): number {
+    const factor = 10 ** digits;
+    return Math.round(value * factor) / factor;
+  }
+
+  openPicker(): void {
+    if (this.allRides() === null) {
+      this.ridesService.getAllRides().subscribe((rides) => this.allRides.set(rides));
+    }
+    this.pickerOpen.set(true);
+  }
+
+  closePicker(): void {
+    this.pickerOpen.set(false);
+  }
+
+  choose(other: RideSummary): void {
+    this.pickerOpen.set(false);
+    this.ridesService.getRide(other.id).subscribe((ride) => {
+      this.compareRide.set(ride);
+      // Overlay both routes on the background map (drops any ride without a polyline).
+      const polylines = [this.ride()?.routePolyline, ride.routePolyline].filter((p): p is string => !!p);
+      this.mapState.showRoutes(polylines);
+    });
+  }
+
+  exitCompare(): void {
+    this.compareRide.set(null);
+    this.pickerOpen.set(false);
+    this.mapState.showRoute(this.ride()?.routePolyline);
+  }
 
   setAxis(axis: MetricAxis): void {
     this.metricAxis.set(axis);
@@ -120,6 +227,9 @@ export class RideDetail {
       }
       // Snap to half so the selected ride's route stays visible on the background map.
       this.sheetState.request('half');
+      // Stepping to another ride leaves any comparison behind.
+      this.compareRide.set(null);
+      this.pickerOpen.set(false);
       this.load(id);
     });
   }
