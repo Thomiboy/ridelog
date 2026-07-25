@@ -9,6 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import type { ChartOptions } from 'chart.js';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
@@ -39,6 +40,9 @@ export class RideDetail {
   private readonly ridesService = inject(RidesService);
   private readonly mapState = inject(MapState);
   private readonly sheetState = inject(SheetState);
+  private readonly auth = inject(AuthService);
+
+  readonly isAdmin = this.auth.isAdmin;
 
   readonly ride = signal<RideDetailDto | null>(null);
 
@@ -89,6 +93,23 @@ export class RideDetail {
     }
   }
 
+  /** Admin: re-parse this ride's stored files, then reload it to show the refreshed metrics/graph. */
+  reprocess(): void {
+    const id = this.ride()?.id;
+    if (!id) {
+      return;
+    }
+    this.ridesService.reprocessRide(id).subscribe(() => this.load(id));
+  }
+
+  private load(id: string): void {
+    this.ridesService.getRide(id).subscribe((ride) => {
+      this.ride.set(ride);
+      // The route draws on the global background map instead of an embedded one.
+      this.mapState.showRoute(ride.routePolyline);
+    });
+  }
+
   constructor() {
     // React to every id change (the stepper navigates between /rides/:id without recreating this
     // component, so reading the snapshot once would leave the page and map on the old ride).
@@ -99,11 +120,7 @@ export class RideDetail {
       }
       // Snap to half so the selected ride's route stays visible on the background map.
       this.sheetState.request('half');
-      this.ridesService.getRide(id).subscribe((ride) => {
-        this.ride.set(ride);
-        // The route draws on the global background map instead of an embedded one.
-        this.mapState.showRoute(ride.routePolyline);
-      });
+      this.load(id);
     });
   }
 }

@@ -30,6 +30,12 @@
         <mat-icon>chevron_right</mat-icon>
       </button>
     </span>
+    @if (isAdmin()) {
+      <button mat-stroked-button type="button" data-reprocess (click)="reprocess()">
+        <mat-icon>refresh</mat-icon>
+        {{ 'rideDetail.reprocess' | transloco }}
+      </button>
+    }
   </nav>
 
   @if (ride(); as ride) {

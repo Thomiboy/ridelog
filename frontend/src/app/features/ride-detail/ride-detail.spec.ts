@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
@@ -8,6 +8,7 @@ import type { ChartData, ChartOptions, ChartType } from 'chart.js';
 import { RideDetail } from './ride-detail';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { Chart } from '../../shared/chart/chart';
 import type { RideDetail as RideDetailDto } from '../../core/api/ride.models';
@@ -42,12 +43,14 @@ describe('RideDetail', () => {
     routePolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
   };
 
-  function setup(ride: RideDetailDto = detail, getRideImpl?: (id: string) => Observable<RideDetailDto>) {
+  function setup(ride: RideDetailDto = detail, getRideImpl?: (id: string) => Observable<RideDetailDto>, admin = false) {
     const ridesService = {
       getRide: getRideImpl ? vi.fn().mockImplementation(getRideImpl) : vi.fn().mockReturnValue(of(ride)),
+      reprocessRide: vi.fn().mockReturnValue(of(void 0)),
     };
     const mapState = { showRoute: vi.fn() };
     const sheetState = { request: vi.fn() };
+    const authService = { isAdmin: signal(admin) };
     const paramMap$ = new BehaviorSubject(convertToParamMap({ id: 'r1' }));
     TestBed.configureTestingModule({
       imports: [RideDetail, translocoTesting()],
@@ -56,6 +59,7 @@ describe('RideDetail', () => {
         { provide: RidesService, useValue: ridesService },
         { provide: MapState, useValue: mapState },
         { provide: SheetState, useValue: sheetState },
+        { provide: AuthService, useValue: authService },
         { provide: ActivatedRoute, useValue: { paramMap: paramMap$.asObservable() } },
       ],
     }).overrideComponent(RideDetail, {
@@ -269,5 +273,21 @@ describe('RideDetail', () => {
 
     expect((el.querySelector('[data-prev-ride]') as HTMLButtonElement).disabled).toBe(true);
     expect((el.querySelector('[data-next-ride]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('hides the reprocess button from non-admins', () => {
+    const { el } = setup();
+
+    expect(el.querySelector('[data-reprocess]')).toBeNull();
+  });
+
+  it('reprocesses the ride and reloads it when an admin clicks reprocess', () => {
+    const { el, ridesService } = setup(detail, undefined, true);
+    ridesService.getRide.mockClear(); // ignore the initial load
+
+    (el.querySelector('[data-reprocess]') as HTMLButtonElement).click();
+
+    expect(ridesService.reprocessRide).toHaveBeenCalledWith('r1');
+    expect(ridesService.getRide).toHaveBeenCalledWith('r1'); // reloaded to show refreshed metrics
   });
 });

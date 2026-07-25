@@ -12,6 +12,9 @@ public interface IRideMaintenanceService
 {
     Task<ReprocessSummary> ReprocessAsync(string userId, CancellationToken cancellationToken = default);
 
+    /// <summary>Re-parses one ride (owned by the user) and refreshes its metrics; false when no such ride exists.</summary>
+    Task<bool> ReprocessAsync(string userId, Guid rideId, CancellationToken cancellationToken = default);
+
     Task<int> DeleteAllAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes one ride (and its raw files) owned by the user; false when no such ride exists.</summary>

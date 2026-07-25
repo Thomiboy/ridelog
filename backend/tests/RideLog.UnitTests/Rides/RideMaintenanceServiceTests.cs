@@ -60,6 +60,27 @@ public sealed class RideMaintenanceServiceTests : IDisposable
         </TrainingCenterDatabase>
         """);
 
+    // A GPX for the same track: it carries position and elevation but, like every GPX, no heart rate.
+    private static byte[] GpxWithoutHeartRate() => Encoding.UTF8.GetBytes("""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx xmlns="http://www.topografix.com/GPX/1/1">
+          <trk><trkseg>
+            <trkpt lat="47.5" lon="19.0"><ele>100</ele><time>2026-06-01T08:00:00Z</time></trkpt>
+            <trkpt lat="47.6" lon="19.1"><ele>140</ele><time>2026-06-01T09:00:00Z</time></trkpt>
+          </trkseg></trk>
+        </gpx>
+        """);
+
+    private static RawFile Raw(RawFileFormat format, string fileName, byte[] content, string userId = "user-1") => new()
+    {
+        Id = Guid.NewGuid(),
+        UserId = userId,
+        Format = format,
+        FileName = fileName,
+        Content = content,
+        UploadedAt = DateTimeOffset.UtcNow,
+    };
+
     // A Polar-synced ride with deliberately stale/derived metrics and the original TCX kept as a raw file.
     private static Ride StaleRide(string userId = "user-1", DateTimeOffset? start = null)
     {
@@ -191,6 +212,32 @@ public sealed class RideMaintenanceServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Reprocess_keeps_heart_rate_in_the_series_when_both_gpx_and_tcx_are_stored()
+    {
+        // Polar sync stores both a GPX (no HR) and a TCX (HR) for the same ride.
+        var ride = StaleRide();
+        ride.RawFiles.Add(Raw(RawFileFormat.Gpx, "exercise.gpx", GpxWithoutHeartRate()));
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(context).ReprocessAsync("user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloaded = await verify.Rides.SingleAsync();
+            // The series must keep the TCX heart rate, not fall back to the HR-less GPX track.
+            Assert.Equal([120, 160], reloaded.MetricSeries!.Select(s => s.HeartRate));
+            Assert.Equal([100.0, 140.0], reloaded.MetricSeries.Select(s => s.ElevationMeters));
+        }
+    }
+
+    [Fact]
     public async Task Reprocess_counts_processed_and_failed_and_survives_a_bad_file()
     {
         var good = StaleRide(start: new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
@@ -227,6 +274,50 @@ public sealed class RideMaintenanceServiceTests : IDisposable
             // The good ride was still updated despite the bad one throwing.
             var updated = await verify.Rides.SingleAsync(r => r.Id == good.Id);
             Assert.Equal(620, updated.Calories);
+        }
+    }
+
+    [Fact]
+    public async Task Reprocess_one_ride_backfills_its_series_and_leaves_others_untouched()
+    {
+        var target = StaleRide(start: new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        var other = StaleRide(start: new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero));
+        var targetId = target.Id;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.AddRange(target, other);
+            await context.SaveChangesAsync();
+        }
+
+        bool reprocessed;
+        await using (var context = new RideLogDbContext(_options))
+        {
+            reprocessed = await NewService(context).ReprocessAsync("user-1", targetId);
+        }
+
+        Assert.True(reprocessed);
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloadedTarget = await verify.Rides.SingleAsync(r => r.Id == targetId);
+            Assert.Equal([120, 160], reloadedTarget.MetricSeries!.Select(s => s.HeartRate));
+            // The other ride was not part of this single-ride reprocess.
+            var reloadedOther = await verify.Rides.SingleAsync(r => r.Id == other.Id);
+            Assert.Null(reloadedOther.MetricSeries);
+        }
+    }
+
+    [Fact]
+    public async Task Reprocess_one_ride_returns_false_for_an_unknown_ride()
+    {
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(StaleRide());
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            Assert.False(await NewService(context).ReprocessAsync("user-1", Guid.NewGuid()));
         }
     }
 

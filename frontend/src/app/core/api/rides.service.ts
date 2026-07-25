@@ -47,4 +47,9 @@ export class RidesService {
   deleteRide(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/rides/${id}`);
   }
+
+  /** Admin: re-parse one ride's stored files and refresh its metrics in place. */
+  reprocessRide(id: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/rides/${id}/reprocess`, null);
+  }
 }
