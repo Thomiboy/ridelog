@@ -8,7 +8,9 @@ namespace RideLog.Infrastructure.Rides;
 internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimeProvider clock)
     : IQueryHandler<GetDashboardQuery, DashboardStats>
 {
-    private sealed record Row(DateTimeOffset StartTime, double DistanceMeters, double? ElevationGainMeters, double? AverageSpeedKmh);
+    private sealed record Row(
+        DateTimeOffset StartTime, double DistanceMeters, double? ElevationGainMeters,
+        double? AverageSpeedKmh, double? AverageTemperatureCelsius);
 
     public async Task<DashboardStats> HandleAsync(GetDashboardQuery query, CancellationToken cancellationToken = default)
     {
@@ -24,7 +26,9 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
         // Lightweight projection; grouping runs in memory (SQLite can't translate DateTimeOffset
         // parts, and at single-user scale two years of summary rows are small).
         var rows = await cycling
-            .Select(ride => new Row(ride.StartTime, ride.DistanceMeters, ride.ElevationGainMeters, ride.AverageSpeedKmh))
+            .Select(ride => new Row(
+                ride.StartTime, ride.DistanceMeters, ride.ElevationGainMeters,
+                ride.AverageSpeedKmh, ride.AverageTemperatureCelsius))
             .ToListAsync(cancellationToken);
 
         var relevant = rows.Where(row => row.StartTime.Year >= currentYear - 1).ToList();
@@ -54,17 +58,23 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
         }
 
         var speedTrend = new List<MonthlySpeed>(12);
+        var temperatureTrend = new List<MonthlyAverageTemperature>(12);
         for (var offset = 11; offset >= 0; offset--)
         {
             var month = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero).AddMonths(-offset);
-            var speeds = relevant
-                .Where(r => r.StartTime.Year == month.Year && r.StartTime.Month == month.Month && r.AverageSpeedKmh.HasValue)
-                .Select(r => r.AverageSpeedKmh!.Value)
+            var inMonth = relevant
+                .Where(r => r.StartTime.Year == month.Year && r.StartTime.Month == month.Month)
                 .ToList();
+
+            var speeds = inMonth.Where(r => r.AverageSpeedKmh.HasValue).Select(r => r.AverageSpeedKmh!.Value).ToList();
             speedTrend.Add(new MonthlySpeed(month.Year, month.Month, speeds.Count > 0 ? Math.Round(speeds.Average(), 1) : null));
+
+            var temps = inMonth.Where(r => r.AverageTemperatureCelsius.HasValue).Select(r => r.AverageTemperatureCelsius!.Value).ToList();
+            temperatureTrend.Add(new MonthlyAverageTemperature(month.Year, month.Month, temps.Count > 0 ? Math.Round(temps.Average(), 1) : null));
         }
 
-        return new DashboardStats(thisMonth, thisYear, lastYear, lastYearBestMonth, monthlyDistance, speedTrend);
+        return new DashboardStats(
+            thisMonth, thisYear, lastYear, lastYearBestMonth, monthlyDistance, speedTrend, temperatureTrend);
     }
 
     private static PeriodStats Period(IEnumerable<Row> rides)

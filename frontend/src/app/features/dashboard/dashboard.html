@@ -68,10 +68,10 @@
     @if (speedChart(); as speed) {
       <mat-card appearance="outlined" class="chart-card">
         <mat-card-header>
-          <mat-card-title>{{ 'dashboard.charts.speedTrend' | transloco }}</mat-card-title>
+          <mat-card-title>{{ 'dashboard.charts.speedAndTemperatureTrend' | transloco }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <div class="chart-host"><app-chart type="line" [data]="speed" /></div>
+          <div class="chart-host"><app-chart type="line" [data]="speed" [options]="speedChartOptions" /></div>
         </mat-card-content>
       </mat-card>
     }

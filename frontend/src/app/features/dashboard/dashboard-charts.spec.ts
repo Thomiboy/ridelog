@@ -1,4 +1,4 @@
-import { buildMonthlyDistanceChart, buildSpeedTrendChart } from './dashboard-charts';
+import { buildMonthlyDistanceChart, buildSpeedAndTemperatureTrendChart } from './dashboard-charts';
 import type { DashboardStats } from '../../core/api/dashboard.models';
 
 describe('dashboard chart builders', () => {
@@ -21,6 +21,11 @@ describe('dashboard chart builders', () => {
       { year: 2026, month: 3, averageSpeedKmh: 28 },
       { year: 2026, month: 7, averageSpeedKmh: 31 },
     ],
+    averageTemperatureTrend: [
+      { year: 2025, month: 8, averageTemperatureCelsius: null },
+      { year: 2026, month: 3, averageTemperatureCelsius: 12 },
+      { year: 2026, month: 7, averageTemperatureCelsius: 22 },
+    ],
   };
 
   it('builds a two-series bar chart of monthly distance (current vs previous year)', () => {
@@ -38,11 +43,18 @@ describe('dashboard chart builders', () => {
     expect(previous.data[6]).toBe(80); // July last year
   });
 
-  it('builds a line chart of the speed trend with month labels and gaps for empty months', () => {
-    const chart = buildSpeedTrendChart(stats.averageSpeedTrend);
+  it('builds a dual-axis speed + temperature line chart with aligned labels and gaps', () => {
+    const chart = buildSpeedAndTemperatureTrendChart(stats.averageSpeedTrend, stats.averageTemperatureTrend!);
 
     expect(chart.labels).toEqual(['2025-08', '2026-03', '2026-07']);
-    expect(chart.datasets.length).toBe(1);
-    expect(chart.datasets[0].data).toEqual([null, 28, 31]);
+    expect(chart.datasets.length).toBe(2);
+
+    const speed = chart.datasets.find((d) => d.yAxisID === 'speed')!;
+    const temperature = chart.datasets.find((d) => d.yAxisID === 'temp')!;
+    expect(speed.data).toEqual([null, 28, 31]);
+    expect(temperature.data).toEqual([null, 12, 22]);
+    // Empty months stay as gaps on both lines.
+    expect(speed.spanGaps).toBe(false);
+    expect(temperature.spanGaps).toBe(false);
   });
 });

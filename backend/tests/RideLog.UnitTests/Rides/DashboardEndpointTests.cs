@@ -65,6 +65,36 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
         await context.SaveChangesAsync();
     }
 
+    private sealed record TempTrendDto(int Year, int Month, double? AverageTemperatureCelsius);
+    private sealed record TempTrendDashboardDto(IReadOnlyList<TempTrendDto> AverageTemperatureTrend);
+
+    [Fact]
+    public async Task Average_temperature_trend_is_the_monthly_mean_over_the_last_twelve_months()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            await context.SaveChangesAsync();
+
+            var julyA = Ride(new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero), km: 60, elevation: 400, avgSpeed: 30);
+            julyA.AverageTemperatureCelsius = 20;
+            var julyB = Ride(new DateTimeOffset(2026, 7, 12, 8, 0, 0, TimeSpan.Zero), km: 40, elevation: 200, avgSpeed: 32);
+            julyB.AverageTemperatureCelsius = 24;
+            // June ride without a temperature reading: June's trend point stays a gap (null).
+            var june = Ride(new DateTimeOffset(2026, 6, 10, 8, 0, 0, TimeSpan.Zero), km: 50, elevation: 300, avgSpeed: 29);
+            context.Rides.AddRange(julyA, julyB, june);
+            await context.SaveChangesAsync();
+        }
+
+        var dashboard = await factory.CreateClient().GetFromJsonAsync<TempTrendDashboardDto>("/dashboard");
+
+        var trend = dashboard!.AverageTemperatureTrend;
+        Assert.Equal(12, trend.Count); // same 12-month window as the speed trend
+        Assert.Equal(22, trend.Single(t => t.Year == 2026 && t.Month == 7).AverageTemperatureCelsius!.Value, 0.01); // (20+24)/2
+        Assert.Null(trend.Single(t => t.Year == 2026 && t.Month == 6).AverageTemperatureCelsius); // no reading
+    }
+
     [Fact]
     public async Task Aggregates_are_correct_for_seeded_rides_and_public()
     {
