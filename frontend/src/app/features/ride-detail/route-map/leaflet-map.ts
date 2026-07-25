@@ -14,17 +14,26 @@ export type LeafletApi = Pick<
  */
 export const ROUTE_COLORS = ['#1b3a6b', '#c2410c', '#0f766e'] as const;
 
-/** How the view is fitted to the routes. */
-export interface FitOptions {
+/** How the routes are drawn and the view fitted. */
+export interface DrawOptions {
   /**
    * Pixels at the bottom of the map that are covered by the content sheet. The view is fitted into
    * the area above it, so the whole route stays visible on a half-open page.
    */
   bottomPaddingPx?: number;
+
+  /**
+   * Coverage map: every route in one translucent colour (so frequently-ridden roads darken) with no
+   * start/finish markers — the "where have I been" overview, rather than a single highlighted ride.
+   */
+  coverage?: boolean;
 }
 
 /** Breathing room around the fitted routes so tracks aren't flush against the map edges. */
 const EDGE_PADDING_PX = 24;
+
+/** Track opacity for the coverage overview, so overlapping routes visibly build up. */
+const COVERAGE_OPACITY = 0.35;
 
 /** Creates a Leaflet map on the element with an OpenStreetMap tile layer. */
 export function createRouteMap(element: HTMLElement, api: LeafletApi = Leaflet): Leaflet.Map {
@@ -48,7 +57,7 @@ export function drawRoutes(
   map: Leaflet.Map,
   encoded: readonly (string | null | undefined)[],
   api: LeafletApi = Leaflet,
-  fit: FitOptions = {},
+  options: DrawOptions = {},
 ): Leaflet.Layer[] {
   const routes = encoded.map((e) => (e ? decodePolyline(e) : [])).filter((coords) => coords.length > 0);
   if (routes.length === 0) {
@@ -57,16 +66,24 @@ export function drawRoutes(
   }
 
   const tracks = routes.map((coords, index) =>
-    api.polyline(coords, { color: ROUTE_COLORS[index % ROUTE_COLORS.length], weight: 4 }).addTo(map),
+    api.polyline(coords, coverageStyle(index, options.coverage ?? false)).addTo(map),
   );
   map.fitBounds(api.latLngBounds(routes.flat()), {
     paddingTopLeft: [EDGE_PADDING_PX, EDGE_PADDING_PX],
-    paddingBottomRight: [EDGE_PADDING_PX, EDGE_PADDING_PX + (fit.bottomPaddingPx ?? 0)],
+    paddingBottomRight: [EDGE_PADDING_PX, EDGE_PADDING_PX + (options.bottomPaddingPx ?? 0)],
   });
 
-  // Start/finish markers only make sense for a single track; several routes (Statistics) stay clean.
-  const markers = routes.length === 1 ? drawStartFinishMarkers(map, routes[0], api) : [];
+  // Coverage is a single translucent layer of every route — no per-ride start/finish markers. They
+  // also only make sense for a single track; several distinct routes (Statistics) stay clean too.
+  const markers = !options.coverage && routes.length === 1 ? drawStartFinishMarkers(map, routes[0], api) : [];
   return [...tracks, ...markers];
+}
+
+/** Per-route line style: one translucent colour for coverage, otherwise the distinct palette. */
+function coverageStyle(index: number, coverage: boolean): Leaflet.PolylineOptions {
+  return coverage
+    ? { color: ROUTE_COLORS[0], weight: 3, opacity: COVERAGE_OPACITY }
+    : { color: ROUTE_COLORS[index % ROUTE_COLORS.length], weight: 4 };
 }
 
 /** A round dot (start) / square (finish) divIcon — inline-styled so no external assets or CSS class. */

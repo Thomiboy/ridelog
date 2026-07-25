@@ -72,6 +72,25 @@ describe('leaflet-map', () => {
     expect(api.marker).not.toHaveBeenCalled();
   });
 
+  it('coverage mode draws a translucent track and no markers, even for a single route', () => {
+    const { api, map } = fakeLeaflet();
+
+    drawRoutes(map as never, [ENCODED], api, { coverage: true });
+
+    const options = (api.polyline as unknown as Mock).mock.calls[0][1] as { opacity?: number };
+    expect(options.opacity).toBeLessThan(1); // translucent so overlapping routes darken (coverage feel)
+    expect(api.marker).not.toHaveBeenCalled(); // a coverage map has no per-ride start/finish
+  });
+
+  it('coverage mode draws every route in the same colour', () => {
+    const { api, map } = fakeLeaflet();
+
+    drawRoutes(map as never, [ENCODED, ENCODED, ENCODED], api, { coverage: true });
+
+    const colours = (api.polyline as unknown as Mock).mock.calls.map((c) => (c[1] as { color: string }).color);
+    expect(new Set(colours).size).toBe(1);
+  });
+
   it('reserves space at the bottom so the route clears the content sheet', () => {
     const { api, map } = fakeLeaflet();
 

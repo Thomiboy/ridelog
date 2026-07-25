@@ -1,7 +1,25 @@
 <section class="page">
-  <h1>{{ 'rides.title' | transloco }}</h1>
+  <header class="rides-header">
+    <h1>{{ 'rides.title' | transloco }}</h1>
+    <div class="view-switch" role="group" [attr.aria-label]="'rides.title' | transloco">
+      <button type="button" data-view="list" [class.active]="view() === 'list'" (click)="setView('list')">
+        {{ 'rides.view.list' | transloco }}
+      </button>
+      <button type="button" data-view="map" [class.active]="view() === 'map'" (click)="setView('map')">
+        {{ 'rides.view.map' | transloco }}
+      </button>
+    </div>
+  </header>
 
-  @if (result(); as page) {
+  @if (view() === 'map') {
+    @if (mapRoutes(); as routes) {
+      @if (routes.length > 0) {
+        <div class="coverage-host"><app-route-map [routes]="routes" [coverage]="true" /></div>
+      } @else {
+        <p class="empty" data-map-empty>{{ 'rides.mapEmpty' | transloco }}</p>
+      }
+    }
+  } @else if (result(); as page) {
     @if (page.items.length > 0) {
       <table class="rides">
         <thead>

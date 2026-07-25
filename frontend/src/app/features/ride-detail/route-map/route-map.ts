@@ -17,6 +17,8 @@ import { createRouteMap, drawRoutes } from './leaflet-map';
 export class RouteMap implements OnDestroy {
   readonly routes = input<string[]>([]);
   readonly obscuredBottomFraction = input<number>(0);
+  /** Draw all routes as one translucent coverage layer (Rides "all routes" map) instead of highlighting one. */
+  readonly coverage = input<boolean>(false);
 
   private readonly host = viewChild<ElementRef<HTMLElement>>('map');
 
@@ -28,13 +30,14 @@ export class RouteMap implements OnDestroy {
       const host = this.host();
       const routes = this.routes();
       const obscuredBottomFraction = this.obscuredBottomFraction();
+      const coverage = this.coverage();
       if (!host) {
         return;
       }
       const map = (this.map ??= createRouteMap(host.nativeElement));
       this.layers.forEach((layer) => layer.remove());
       const bottomPaddingPx = obscuredBottomFraction * map.getSize().y;
-      this.layers = drawRoutes(map, routes, undefined, { bottomPaddingPx });
+      this.layers = drawRoutes(map, routes, undefined, { bottomPaddingPx, coverage });
     });
   }
 

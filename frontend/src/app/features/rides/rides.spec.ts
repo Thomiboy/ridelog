@@ -1,31 +1,48 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { signal } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { Rides } from './rides';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import type { SnapState } from '../../layout/bottom-sheet/snap';
-import type { Paged, RideSummary } from '../../core/api/ride.models';
+import type { Paged, RideRoute, RideSummary } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
+// Leaflet needs a real canvas; stub the map so the coverage view renders in jsdom.
+@Component({ selector: 'app-route-map', template: '' })
+class RouteMapStub {
+  readonly routes = input<string[]>([]);
+  readonly coverage = input<boolean>(false);
+  readonly obscuredBottomFraction = input<number>(0);
+}
+
 describe('Rides', () => {
+  const routeList: RideRoute[] = [
+    { id: 'r1', routePolyline: 'poly-1' },
+    { id: 'r2', routePolyline: 'poly-2' },
+  ];
+
   function setup(
     paged: Paged<RideSummary>,
     loggedIn = false,
     queryParams: Record<string, string> = {},
     snap: SnapState = 'half',
+    mapRoutes: RideRoute[] = routeList,
   ) {
     const ridesService = {
       getRides: vi.fn().mockReturnValue(of(paged)),
       deleteRide: vi.fn().mockReturnValue(of(void 0)),
+      getAllRoutes: vi.fn().mockReturnValue(of(mapRoutes)),
     };
     const mapState = { reset: vi.fn(), invalidate: vi.fn() };
     const authService = { isLoggedIn: signal(loggedIn) };
-    const sheetState = { current: signal<SnapState>(snap) };
+    const sheetState = { current: signal<SnapState>(snap), request: vi.fn() };
     const route = { snapshot: { queryParamMap: convertToParamMap(queryParams) } };
     TestBed.configureTestingModule({
       imports: [Rides, translocoTesting()],
@@ -37,11 +54,19 @@ describe('Rides', () => {
         { provide: SheetState, useValue: sheetState },
         { provide: ActivatedRoute, useValue: route },
       ],
+    }).overrideComponent(Rides, {
+      remove: { imports: [RouteMap] },
+      add: { imports: [RouteMapStub] },
     });
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(Rides);
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, sheetState, router };
+  }
+
+  function showMap(ctx: ReturnType<typeof setup>) {
+    (ctx.el.querySelector('[data-view="map"]') as HTMLButtonElement).click();
+    ctx.fixture.detectChanges();
   }
 
   const ride = (id: string, sources: string[] = ['PolarAutoSync']): RideSummary => ({
@@ -205,5 +230,43 @@ describe('Rides', () => {
 
     expect((el.querySelector('[data-next]') as HTMLButtonElement).disabled).toBe(true);
     expect((el.querySelector('[data-prev]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('defaults to the list view', () => {
+    const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    expect(el.querySelector('table.rides')).not.toBeNull();
+    expect(el.querySelector('app-route-map')).toBeNull();
+  });
+
+  it('switches to a coverage map of every route polyline', () => {
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    showMap(ctx);
+
+    expect(ctx.ridesService.getAllRoutes).toHaveBeenCalled();
+    const map = ctx.fixture.debugElement.query(By.css('app-route-map'));
+    expect(map).not.toBeNull();
+    expect((map.componentInstance as RouteMapStub).routes()).toEqual(['poly-1', 'poly-2']);
+    expect((map.componentInstance as RouteMapStub).coverage()).toBe(true);
+    // The list is replaced by the map.
+    expect(ctx.el.querySelector('table.rides')).toBeNull();
+  });
+
+  it('expands the sheet to full when showing the map', () => {
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    showMap(ctx);
+
+    expect(ctx.sheetState.request).toHaveBeenCalledWith('full');
+  });
+
+  it('shows an empty state in the map view when there are no routes', () => {
+    const ctx = setup({ items: [], page: 1, pageSize: 20, total: 0 }, false, {}, 'half', []);
+
+    showMap(ctx);
+
+    expect(ctx.el.querySelector('[data-map-empty]')).not.toBeNull();
+    expect(ctx.fixture.debugElement.query(By.css('app-route-map'))).toBeNull();
   });
 });

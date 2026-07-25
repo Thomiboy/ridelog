@@ -62,6 +62,8 @@ const en = {
     prev: 'Previous',
     delete: 'Delete ride',
     deleteConfirm: 'Delete this ride and its stored files? This cannot be undone.',
+    view: { list: 'List', map: 'Map' },
+    mapEmpty: 'No routes to show yet.',
     columns: {
       date: 'Date',
       distance: 'Distance',
