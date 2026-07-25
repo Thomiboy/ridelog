@@ -10,7 +10,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
     : IQueryHandler<GetStatisticsQuery, StatisticsResult>
 {
     private sealed record Row(
-        Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters,
+        Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters, TimeSpan Duration,
         double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh,
         IReadOnlyList<MetricSample>? MetricSeries,
         double? AverageTemperatureCelsius, double? MinTemperatureCelsius, double? MaxTemperatureCelsius);
@@ -27,7 +27,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
         // and at single-user scale the whole history is a handful of summary rows).
         var rows = await cycling
             .Select(ride => new Row(
-                ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters,
+                ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters, ride.Duration,
                 ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MetricSeries,
                 ride.AverageTemperatureCelsius, ride.MinTemperatureCelsius, ride.MaxTemperatureCelsius))
             .ToListAsync(cancellationToken);
@@ -54,7 +54,9 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
     private static TemperatureStats? AggregateTemperature(IReadOnlyList<Row> rows)
     {
         // Distance-per-band comes from the per-point series; extremes and trend from the per-ride summary.
-        var totals = new double[TemperatureBandCalculator.Bands.Count];
+        var bandCount = TemperatureBandCalculator.Bands.Count;
+        var totals = new double[bandCount];
+        var perYear = new Dictionary<int, double[]>();
         var hasSeriesTemperature = false;
         foreach (var row in rows)
         {
@@ -62,9 +64,13 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             {
                 hasSeriesTemperature = true;
                 var bands = TemperatureBandCalculator.KmPerBand(series);
+                var yearTotals = perYear.TryGetValue(row.StartTime.Year, out var existing)
+                    ? existing
+                    : perYear[row.StartTime.Year] = new double[bandCount];
                 for (var i = 0; i < bands.Count; i++)
                 {
                     totals[i] += bands[i].Km;
+                    yearTotals[i] += bands[i].Km;
                 }
             }
         }
@@ -77,6 +83,13 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
 
         var distribution = TemperatureBandCalculator.Bands
             .Select((band, i) => new TemperatureBandSlice(band.From, band.To, Math.Round(totals[i], 1)))
+            .ToList();
+
+        // Every band per year (including empty ones) so the client renders a stable per-year chart.
+        var yearlyDistribution = perYear
+            .OrderBy(entry => entry.Key)
+            .SelectMany(entry => TemperatureBandCalculator.Bands
+                .Select((band, i) => new YearlyTemperatureBand(entry.Key, band.From, band.To, Math.Round(entry.Value[i], 1))))
             .ToList();
 
         var coldest = withAverage
@@ -98,7 +111,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .OrderBy(m => m.Year).ThenBy(m => m.Month)
             .ToList();
 
-        return new TemperatureStats(distribution, coldest, warmest, seasonMin, seasonMax, monthlyAverage);
+        return new TemperatureStats(distribution, coldest, warmest, seasonMin, seasonMax, monthlyAverage, yearlyDistribution);
     }
 
     private static IReadOnlyList<HrZoneSlice>? AggregateHrZones(
@@ -139,7 +152,21 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Select(r => new FastestAverageRecord(r.Id, r.StartTime, Math.Round(r.AverageSpeedKmh!.Value, 1)))
             .FirstOrDefault();
 
-        return new StatisticsRecords(longest, fastest, LongestStreak(rows));
+        // Most calories: greatest single-ride burn; rides without a reading are ignored; ties → earlier.
+        var mostCalories = rows
+            .Where(r => r.Calories is > 0)
+            .OrderByDescending(r => r.Calories).ThenBy(r => r.StartTime)
+            .Select(r => new MostCaloriesRecord(r.Id, r.StartTime, r.Calories!.Value))
+            .FirstOrDefault();
+
+        // Longest duration: greatest moving time; zero-duration rides are ignored; ties → earlier.
+        var longestDuration = rows
+            .Where(r => r.Duration > TimeSpan.Zero)
+            .OrderByDescending(r => r.Duration).ThenBy(r => r.StartTime)
+            .Select(r => new LongestDurationRecord(r.Id, r.StartTime, Math.Round(r.Duration.TotalMinutes)))
+            .FirstOrDefault();
+
+        return new StatisticsRecords(longest, fastest, LongestStreak(rows), mostCalories, longestDuration);
     }
 
     private static StreakRecord? LongestStreak(IReadOnlyList<Row> rows)

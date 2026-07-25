@@ -6,12 +6,15 @@ import { MatCardModule } from '@angular/material/card';
 import { StatisticsService } from '../../core/api/statistics.service';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { formatDuration } from '../../core/format/duration';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
 import {
   buildMonthlyMetricChart,
+  buildRidesByYearChart,
   buildTemperatureDistributionChart,
   buildTemperatureTrendChart,
+  buildYearTemperatureDistributionChart,
   buildYearTotalsChart,
   statisticsYears,
 } from './statistics-charts';
@@ -58,7 +61,22 @@ export class Statistics implements OnDestroy {
     return stats ? buildYearTotalsChart(stats.monthlyAggregates) : null;
   });
 
+  readonly ridesByYearChart = computed(() => {
+    const stats = this.stats();
+    return stats ? buildRidesByYearChart(stats.monthlyAggregates) : null;
+  });
+
+  /** Distance by temperature for the selected year (Trends), unlike the all-time Temperature section. */
+  readonly yearTemperatureDistributionChart = computed(() => {
+    const temp = this.temperature();
+    const year = this.activeYear();
+    return temp && year !== null ? buildYearTemperatureDistributionChart(temp.yearlyDistribution, year) : null;
+  });
+
   readonly records = computed(() => this.stats()?.records ?? null);
+
+  /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
+  readonly formatDuration = formatDuration;
 
   readonly hrZoneChart = computed(() => {
     const zones = this.stats()?.hrZones;

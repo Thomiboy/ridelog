@@ -1,12 +1,19 @@
 import {
   bandLabel,
   buildMonthlyMetricChart,
+  buildRidesByYearChart,
   buildTemperatureDistributionChart,
   buildTemperatureTrendChart,
+  buildYearTemperatureDistributionChart,
   buildYearTotalsChart,
   statisticsYears,
 } from './statistics-charts';
-import type { MonthlyAggregate, TemperatureBandSlice, MonthlyTemperature } from '../../core/api/statistics.models';
+import type {
+  MonthlyAggregate,
+  TemperatureBandSlice,
+  MonthlyTemperature,
+  YearlyTemperatureBand,
+} from '../../core/api/statistics.models';
 
 const aggregate = (year: number, month: number, distanceKm: number): MonthlyAggregate => ({
   year,
@@ -57,6 +64,20 @@ describe('statistics chart builders', () => {
     expect(chart.datasets[0].data).toEqual([50, 140]);
   });
 
+  it('builds a rides-by-year chart summing every month of each year', () => {
+    const monthly = [
+      { year: 2024, month: 5, distanceKm: 50, elevationGainMeters: 500, rideCount: 2, calories: 250 },
+      { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 1000, rideCount: 4, calories: 500 },
+      { year: 2026, month: 7, distanceKm: 40, elevationGainMeters: 400, rideCount: 3, calories: 200 },
+    ];
+
+    const chart = buildRidesByYearChart(monthly);
+
+    // One bar per year with data, ascending; each bar is that year's summed ride count.
+    expect(chart.labels).toEqual(['2024', '2026']);
+    expect(chart.datasets[0].data).toEqual([2, 7]);
+  });
+
   it('labels open-ended and inner temperature bands', () => {
     expect(bandLabel({ fromCelsius: null, toCelsius: 0, km: 0 })).toBe('<0°');
     expect(bandLabel({ fromCelsius: 25, toCelsius: null, km: 0 })).toBe('25°+');
@@ -85,6 +106,21 @@ describe('statistics chart builders', () => {
 
     const colors = buildTemperatureDistributionChart(bands).datasets[0].backgroundColor;
     expect(colors).toEqual(['#0d47a1', '#fb8c00', '#e53935']);
+  });
+
+  it('builds a temperature distribution chart filtered to the selected year, in band order', () => {
+    const yearly: YearlyTemperatureBand[] = [
+      { year: 2025, fromCelsius: 0, toCelsius: 5, km: 10 },
+      { year: 2026, fromCelsius: 0, toCelsius: 5, km: 3 },
+      { year: 2026, fromCelsius: 5, toCelsius: 10, km: 40 },
+    ];
+
+    const chart = buildYearTemperatureDistributionChart(yearly, 2026);
+
+    // Only 2026's bands, in band order, colour-coded like the all-time distribution.
+    expect(chart.labels).toEqual(['0–5°', '5–10°']);
+    expect(chart.datasets[0].data).toEqual([3, 40]);
+    expect(chart.datasets[0].backgroundColor).toEqual(['#1e88e5', '#4fc3f7']);
   });
 
   it('builds a monthly average-temperature line chart', () => {

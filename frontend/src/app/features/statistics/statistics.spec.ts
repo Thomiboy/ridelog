@@ -103,6 +103,10 @@ describe('Statistics', () => {
           { year: 2026, month: 1, averageTemperatureCelsius: 2 },
           { year: 2026, month: 7, averageTemperatureCelsius: 24 },
         ],
+        yearlyDistribution: [
+          { year: 2026, fromCelsius: null, toCelsius: 0, km: 3 },
+          { year: 2026, fromCelsius: 0, toCelsius: 5, km: 12 },
+        ],
       },
     });
 
@@ -120,6 +124,27 @@ describe('Statistics', () => {
     expect(el.querySelector('[data-section="temperature"]')).toBeNull();
   });
 
+  it('renders a year-filtered temperature distribution chart in Trends', () => {
+    const { fixture } = setup({
+      temperature: {
+        distribution: [],
+        coldest: null,
+        warmest: null,
+        seasonMinCelsius: null,
+        seasonMaxCelsius: null,
+        monthlyAverage: [],
+        yearlyDistribution: [
+          { year: 2025, fromCelsius: 0, toCelsius: 5, km: 99 },
+          { year: 2026, fromCelsius: null, toCelsius: 0, km: 3 },
+          { year: 2026, fromCelsius: 0, toCelsius: 5, km: 12 },
+        ],
+      },
+    });
+
+    // Active year defaults to 2026; only its bands appear (the 2025 band is filtered out).
+    expect(chartData(fixture, 'temperature-by-year').datasets[0].data).toEqual([3, 12]);
+  });
+
   it('renders the three records, linking rides where relevant', () => {
     const { el } = setup();
 
@@ -133,6 +158,24 @@ describe('Statistics', () => {
 
     const streak = el.querySelector('[data-record="longest-streak"]')!;
     expect(streak.textContent).toContain('3');
+  });
+
+  it('renders the most-calories and longest-duration records, linking their rides', () => {
+    const { el } = setup({
+      records: {
+        ...stats.records,
+        mostCalories: { id: 'ride-cal', date: '2026-06-01T08:00:00+00:00', calories: 1500 },
+        longestDuration: { id: 'ride-dur', date: '2026-06-02T08:00:00+00:00', durationMinutes: 185 },
+      },
+    });
+
+    const calories = el.querySelector('[data-record="most-calories"]')!;
+    expect(calories.textContent).toContain('1,500'); // grouped by the decimal pipe
+    expect(calories.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-cal');
+
+    const duration = el.querySelector('[data-record="longest-duration"]')!;
+    expect(duration.textContent).toContain('3h 5m'); // 185 minutes
+    expect(duration.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-dur');
   });
 
   it('defaults the year selector to the latest year with data', () => {
@@ -169,6 +212,13 @@ describe('Statistics', () => {
     for (const name of ['distance', 'elevation', 'rides', 'calories', 'year-totals']) {
       expect(fixture.debugElement.query(By.css(`[data-chart="${name}"] app-chart`))).not.toBeNull();
     }
+  });
+
+  it('renders a rides-by-year chart summing each year in Trends', () => {
+    const { fixture } = setup();
+
+    // 2025 had 1 ride; 2026 had 1 + 2 = 3.
+    expect(chartData(fixture, 'rides-by-year').datasets[0].data).toEqual([1, 3]);
   });
 
   it('paints the three longest routes on the background map when it opens', () => {

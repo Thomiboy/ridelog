@@ -17,6 +17,8 @@ const en = {
       longestRide: 'Longest ride',
       fastestAverage: 'Fastest average (≥ 30 km)',
       longestStreak: 'Longest streak',
+      mostCalories: 'Most calories',
+      longestDuration: 'Longest duration',
       days: '{{count}} days',
     },
     trends: {
@@ -27,6 +29,8 @@ const en = {
       rides: 'Rides',
       calories: 'Calories',
       yearTotals: 'Distance by year',
+      ridesByYear: 'Rides by year',
+      temperatureDistribution: 'Distance by temperature',
     },
     allTime: '· all-time',
     hrZones: { title: 'HR zones' },

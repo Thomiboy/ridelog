@@ -33,11 +33,27 @@ export interface StreakRecord {
   endDate: string;
 }
 
+/** The single ride that burned the most calories. */
+export interface MostCaloriesRecord {
+  id: string;
+  date: string;
+  calories: number;
+}
+
+/** The single ride with the greatest moving duration (minutes). */
+export interface LongestDurationRecord {
+  id: string;
+  date: string;
+  durationMinutes: number;
+}
+
 /** Personal records for the Records section. */
 export interface StatisticsRecords {
   longestRide?: LongestRideRecord | null;
   fastestAverage?: FastestAverageRecord | null;
   longestStreak?: StreakRecord | null;
+  mostCalories?: MostCaloriesRecord | null;
+  longestDuration?: LongestDurationRecord | null;
 }
 
 /** Distance ridden in one 5°C temperature band; open-ended bounds are null. */
@@ -61,6 +77,14 @@ export interface MonthlyTemperature {
   averageTemperatureCelsius: number;
 }
 
+/** Distance ridden in one 5°C band within one year, for the Trends year-filtered chart. */
+export interface YearlyTemperatureBand {
+  year: number;
+  fromCelsius: number | null;
+  toCelsius: number | null;
+  km: number;
+}
+
 /** The Statistics page's Temperature section. */
 export interface TemperatureStats {
   distribution: TemperatureBandSlice[];
@@ -69,6 +93,7 @@ export interface TemperatureStats {
   seasonMinCelsius: number | null;
   seasonMaxCelsius: number | null;
   monthlyAverage: MonthlyTemperature[];
+  yearlyDistribution: YearlyTemperatureBand[];
 }
 
 /** The Statistics page feed, mirroring the backend StatisticsResult DTO. */

@@ -17,11 +17,19 @@ public sealed record FastestAverageRecord(Guid Id, DateTimeOffset Date, double A
 /// <summary>The longest run of consecutive calendar days that each had at least one cycling ride.</summary>
 public sealed record StreakRecord(int Days, DateOnly StartDate, DateOnly EndDate);
 
+/// <summary>The single ride that burned the most calories; links back to that ride.</summary>
+public sealed record MostCaloriesRecord(Guid Id, DateTimeOffset Date, int Calories);
+
+/// <summary>The single ride with the greatest moving duration (minutes); links back to that ride.</summary>
+public sealed record LongestDurationRecord(Guid Id, DateTimeOffset Date, double DurationMinutes);
+
 /// <summary>Personal records for the Records section.</summary>
 public sealed record StatisticsRecords(
     LongestRideRecord? LongestRide,
     FastestAverageRecord? FastestAverage,
-    StreakRecord? LongestStreak)
+    StreakRecord? LongestStreak,
+    MostCaloriesRecord? MostCalories,
+    LongestDurationRecord? LongestDuration)
 {
     /// <summary>Minimum distance a ride must cover to qualify for the fastest-average record.</summary>
     public const double FastestAverageMinimumKm = 30.0;
