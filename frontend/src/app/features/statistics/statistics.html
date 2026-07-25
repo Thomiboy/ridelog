@@ -88,6 +88,20 @@
           <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
         </mat-card>
       }
+      @if (ridesByYearChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="rides-by-year">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.ridesByYear' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+      @if (yearTemperatureDistributionChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="temperature-by-year">
+          <mat-card-header>
+            <mat-card-title>{{ 'statistics.trends.temperatureDistribution' | transloco }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
     </div>
 
     @if (hrZoneChart(); as chart) {

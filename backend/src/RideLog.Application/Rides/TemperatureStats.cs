@@ -12,6 +12,9 @@ public sealed record TemperatureExtreme(Guid Id, DateTimeOffset Date, double Ave
 /// <summary>Average ridden temperature in one calendar month.</summary>
 public sealed record MonthlyTemperature(int Year, int Month, double AverageTemperatureCelsius);
 
+/// <summary>Distance ridden in one 5°C band within one year; the Trends year-filtered chart uses these.</summary>
+public sealed record YearlyTemperatureBand(int Year, int? FromCelsius, int? ToCelsius, double Km);
+
 /// <summary>The Statistics page's Temperature section; null when no ride carries temperature.</summary>
 public sealed record TemperatureStats(
     IReadOnlyList<TemperatureBandSlice> Distribution,
@@ -19,4 +22,5 @@ public sealed record TemperatureStats(
     TemperatureExtreme? Warmest,
     double? SeasonMinCelsius,
     double? SeasonMaxCelsius,
-    IReadOnlyList<MonthlyTemperature> MonthlyAverage);
+    IReadOnlyList<MonthlyTemperature> MonthlyAverage,
+    IReadOnlyList<YearlyTemperatureBand> YearlyDistribution);

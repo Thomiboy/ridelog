@@ -1,5 +1,10 @@
 import type { ChartData } from 'chart.js';
-import type { MonthlyAggregate, MonthlyTemperature, TemperatureBandSlice } from '../../core/api/statistics.models';
+import type {
+  MonthlyAggregate,
+  MonthlyTemperature,
+  TemperatureBandSlice,
+  YearlyTemperatureBand,
+} from '../../core/api/statistics.models';
 
 export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -44,6 +49,20 @@ export function buildYearTotalsChart(monthly: MonthlyAggregate[]): ChartData<'ba
   };
 }
 
+/** Total ride count per year across every year with data, as a single-series bar chart. */
+export function buildRidesByYearChart(monthly: MonthlyAggregate[]): ChartData<'bar'> {
+  const years = statisticsYears(monthly);
+  return {
+    labels: years.map(String),
+    datasets: [
+      {
+        label: 'rides',
+        data: years.map((year) => monthly.filter((m) => m.year === year).reduce((sum, m) => sum + m.rideCount, 0)),
+      },
+    ],
+  };
+}
+
 /** Human label for a temperature band: "<0°", "5–10°", "25°+". */
 export function bandLabel(band: TemperatureBandSlice): string {
   if (band.fromCelsius == null) {
@@ -75,6 +94,17 @@ export function buildTemperatureDistributionChart(bands: TemperatureBandSlice[])
     labels: bands.map(bandLabel),
     datasets: [{ label: 'km', data: bands.map((b) => b.km), backgroundColor: bands.map(bandColor) }],
   };
+}
+
+/** Distance per 5°C band for one year, colour-coded cold to hot (Trends year-filtered chart). */
+export function buildYearTemperatureDistributionChart(
+  yearly: YearlyTemperatureBand[],
+  year: number,
+): ChartData<'bar'> {
+  const bands: TemperatureBandSlice[] = yearly
+    .filter((band) => band.year === year)
+    .map(({ fromCelsius, toCelsius, km }) => ({ fromCelsius, toCelsius, km }));
+  return buildTemperatureDistributionChart(bands);
 }
 
 /** Average ridden temperature per month as a line chart. */

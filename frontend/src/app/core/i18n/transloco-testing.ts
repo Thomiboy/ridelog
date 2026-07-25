@@ -29,6 +29,8 @@ const en = {
       rides: 'Rides',
       calories: 'Calories',
       yearTotals: 'Distance by year',
+      ridesByYear: 'Rides by year',
+      temperatureDistribution: 'Distance by temperature',
     },
     allTime: '· all-time',
     hrZones: { title: 'HR zones' },

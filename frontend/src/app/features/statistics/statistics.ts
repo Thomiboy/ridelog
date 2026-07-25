@@ -11,8 +11,10 @@ import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
 import {
   buildMonthlyMetricChart,
+  buildRidesByYearChart,
   buildTemperatureDistributionChart,
   buildTemperatureTrendChart,
+  buildYearTemperatureDistributionChart,
   buildYearTotalsChart,
   statisticsYears,
 } from './statistics-charts';
@@ -57,6 +59,18 @@ export class Statistics implements OnDestroy {
   readonly yearTotalsChart = computed(() => {
     const stats = this.stats();
     return stats ? buildYearTotalsChart(stats.monthlyAggregates) : null;
+  });
+
+  readonly ridesByYearChart = computed(() => {
+    const stats = this.stats();
+    return stats ? buildRidesByYearChart(stats.monthlyAggregates) : null;
+  });
+
+  /** Distance by temperature for the selected year (Trends), unlike the all-time Temperature section. */
+  readonly yearTemperatureDistributionChart = computed(() => {
+    const temp = this.temperature();
+    const year = this.activeYear();
+    return temp && year !== null ? buildYearTemperatureDistributionChart(temp.yearlyDistribution, year) : null;
   });
 
   readonly records = computed(() => this.stats()?.records ?? null);

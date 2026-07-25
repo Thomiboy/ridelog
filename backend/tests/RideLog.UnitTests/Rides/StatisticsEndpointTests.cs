@@ -325,6 +325,37 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(0, dist.Single(b => b.FromCelsius == 5 && b.ToCelsius == 10).Km, 0.01);
     }
 
+    private sealed record YearlyBandDto(int Year, int? FromCelsius, int? ToCelsius, double Km);
+    private sealed record YearlyTempStatsDto(IReadOnlyList<YearlyBandDto> YearlyDistribution);
+    private sealed record YearlyTempResultDto(YearlyTempStatsDto? Temperature);
+
+    [Fact]
+    public async Task Aggregates_distance_per_temperature_band_by_year()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            await context.SaveChangesAsync();
+
+            var ride2025 = Ride(new DateTimeOffset(2025, 7, 5, 8, 0, 0, TimeSpan.Zero), km: 10, elevation: 100, avgSpeed: 30, calories: 500);
+            ride2025.MetricSeries = [new MetricSample(0, 0, null, null, 3), new MetricSample(10, 30, null, null, 3)]; // 10 km @ 0–5°C
+            var ride2026 = Ride(new DateTimeOffset(2026, 7, 6, 8, 0, 0, TimeSpan.Zero), km: 20, elevation: 100, avgSpeed: 30, calories: 500);
+            ride2026.MetricSeries = [new MetricSample(0, 0, null, null, 12), new MetricSample(20, 40, null, null, 12)]; // 20 km @ 10–15°C
+            context.Rides.AddRange(ride2025, ride2026);
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<YearlyTempResultDto>("/statistics");
+
+        var yearly = stats!.Temperature!.YearlyDistribution;
+        Assert.Equal(10, yearly.Single(b => b.Year == 2025 && b.FromCelsius == 0 && b.ToCelsius == 5).Km, 0.01);
+        Assert.Equal(20, yearly.Single(b => b.Year == 2026 && b.FromCelsius == 10 && b.ToCelsius == 15).Km, 0.01);
+        // Every band is present per year, even the empty ones, so the client renders a stable chart.
+        Assert.Equal(0, yearly.Single(b => b.Year == 2025 && b.FromCelsius == 10 && b.ToCelsius == 15).Km, 0.01);
+        Assert.Equal(14, yearly.Count); // 7 bands × 2 years
+    }
+
     [Fact]
     public async Task Temperature_stats_are_null_without_temperature_data()
     {
