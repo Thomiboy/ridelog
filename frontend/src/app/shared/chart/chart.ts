@@ -26,10 +26,13 @@ export class Chart {
 
   constructor() {
     // Axis text and gridlines follow the theme; re-render the chart when it changes.
+    // NB: only theme the scale grid/border here — overriding the global `borderColor` would
+    // defeat the ng2-charts Colors plugin, which auto-assigns series colours to any dataset that
+    // hasn't set an explicit colour.
     effect(() => {
       const { text, grid } = chartThemeColors(this.theme.resolved());
       ChartJs.defaults.color = text;
-      ChartJs.defaults.borderColor = grid;
+      ChartJs.defaults.scale.grid.color = grid;
       this.chart()?.chart?.update();
     });
   }
