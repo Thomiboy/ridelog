@@ -17,6 +17,8 @@ const en = {
       longestRide: 'Longest ride',
       fastestAverage: 'Fastest average (≥ 30 km)',
       longestStreak: 'Longest streak',
+      mostCalories: 'Most calories',
+      longestDuration: 'Longest duration',
       days: '{{count}} days',
     },
     trends: {

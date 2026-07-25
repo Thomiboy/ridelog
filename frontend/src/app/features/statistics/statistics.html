@@ -26,6 +26,20 @@
           <span class="range">{{ streak.startDate | date: 'mediumDate' }} – {{ streak.endDate | date: 'mediumDate' }}</span>
         </mat-card>
       }
+      @if (records()?.mostCalories; as mostCalories) {
+        <mat-card appearance="outlined" class="tile" data-record="most-calories">
+          <span class="label">{{ 'statistics.records.mostCalories' | transloco }}</span>
+          <span class="value">{{ mostCalories.calories | number: '1.0-0' }} kcal</span>
+          <a [routerLink]="['/rides', mostCalories.id]">{{ mostCalories.date | date: 'mediumDate' }}</a>
+        </mat-card>
+      }
+      @if (records()?.longestDuration; as longestDuration) {
+        <mat-card appearance="outlined" class="tile" data-record="longest-duration">
+          <span class="label">{{ 'statistics.records.longestDuration' | transloco }}</span>
+          <span class="value">{{ formatDuration(longestDuration.durationMinutes) }}</span>
+          <a [routerLink]="['/rides', longestDuration.id]">{{ longestDuration.date | date: 'mediumDate' }}</a>
+        </mat-card>
+      }
     </div>
 
     <!-- Trends -->

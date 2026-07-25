@@ -10,7 +10,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
     : IQueryHandler<GetStatisticsQuery, StatisticsResult>
 {
     private sealed record Row(
-        Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters,
+        Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters, TimeSpan Duration,
         double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh,
         IReadOnlyList<MetricSample>? MetricSeries,
         double? AverageTemperatureCelsius, double? MinTemperatureCelsius, double? MaxTemperatureCelsius);
@@ -27,7 +27,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
         // and at single-user scale the whole history is a handful of summary rows).
         var rows = await cycling
             .Select(ride => new Row(
-                ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters,
+                ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters, ride.Duration,
                 ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MetricSeries,
                 ride.AverageTemperatureCelsius, ride.MinTemperatureCelsius, ride.MaxTemperatureCelsius))
             .ToListAsync(cancellationToken);
@@ -139,7 +139,21 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Select(r => new FastestAverageRecord(r.Id, r.StartTime, Math.Round(r.AverageSpeedKmh!.Value, 1)))
             .FirstOrDefault();
 
-        return new StatisticsRecords(longest, fastest, LongestStreak(rows));
+        // Most calories: greatest single-ride burn; rides without a reading are ignored; ties → earlier.
+        var mostCalories = rows
+            .Where(r => r.Calories is > 0)
+            .OrderByDescending(r => r.Calories).ThenBy(r => r.StartTime)
+            .Select(r => new MostCaloriesRecord(r.Id, r.StartTime, r.Calories!.Value))
+            .FirstOrDefault();
+
+        // Longest duration: greatest moving time; zero-duration rides are ignored; ties → earlier.
+        var longestDuration = rows
+            .Where(r => r.Duration > TimeSpan.Zero)
+            .OrderByDescending(r => r.Duration).ThenBy(r => r.StartTime)
+            .Select(r => new LongestDurationRecord(r.Id, r.StartTime, Math.Round(r.Duration.TotalMinutes)))
+            .FirstOrDefault();
+
+        return new StatisticsRecords(longest, fastest, LongestStreak(rows), mostCalories, longestDuration);
     }
 
     private static StreakRecord? LongestStreak(IReadOnlyList<Row> rows)

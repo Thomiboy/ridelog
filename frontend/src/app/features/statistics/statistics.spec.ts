@@ -135,6 +135,24 @@ describe('Statistics', () => {
     expect(streak.textContent).toContain('3');
   });
 
+  it('renders the most-calories and longest-duration records, linking their rides', () => {
+    const { el } = setup({
+      records: {
+        ...stats.records,
+        mostCalories: { id: 'ride-cal', date: '2026-06-01T08:00:00+00:00', calories: 1500 },
+        longestDuration: { id: 'ride-dur', date: '2026-06-02T08:00:00+00:00', durationMinutes: 185 },
+      },
+    });
+
+    const calories = el.querySelector('[data-record="most-calories"]')!;
+    expect(calories.textContent).toContain('1,500'); // grouped by the decimal pipe
+    expect(calories.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-cal');
+
+    const duration = el.querySelector('[data-record="longest-duration"]')!;
+    expect(duration.textContent).toContain('3h 5m'); // 185 minutes
+    expect(duration.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-dur');
+  });
+
   it('defaults the year selector to the latest year with data', () => {
     const { el } = setup();
 

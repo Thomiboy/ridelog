@@ -152,6 +152,79 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(new DateOnly(2026, 6, 3), stats.Records.LongestStreak.EndDate);
     }
 
+    private sealed record MostCaloriesDto(Guid Id, DateTimeOffset Date, int Calories);
+    private sealed record LongestDurationDto(Guid Id, DateTimeOffset Date, double DurationMinutes);
+    private sealed record ExtraRecordsDto(MostCaloriesDto? MostCalories, LongestDurationDto? LongestDuration);
+    private sealed record ExtraRecordsStatsDto(ExtraRecordsDto Records);
+
+    private static Ride RideWith(DateTimeOffset start, int? calories, TimeSpan duration, string sport = "ROAD_BIKING") => new()
+    {
+        Id = Guid.NewGuid(),
+        UserId = "admin-1",
+        StartTime = start,
+        EndTime = start + duration,
+        Duration = duration,
+        DistanceMeters = 40_000,
+        AverageSpeedKmh = 30,
+        Calories = calories,
+        Sport = sport,
+        Source = RideSource.Polar,
+    };
+
+    [Fact]
+    public async Task Most_calories_record_is_the_greatest_single_ride_calories()
+    {
+        var winner = RideWith(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), calories: 1500, TimeSpan.FromHours(2));
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            await context.SaveChangesAsync();
+            context.Rides.AddRange(
+                winner,
+                RideWith(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero), calories: 800, TimeSpan.FromHours(2)),
+                // No calorie reading: excluded from the record.
+                RideWith(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero), calories: null, TimeSpan.FromHours(2)),
+                // Non-cycling ride with more calories must not win.
+                RideWith(new DateTimeOffset(2026, 6, 4, 8, 0, 0, TimeSpan.Zero), calories: 5000, TimeSpan.FromHours(2), sport: "RUNNING"));
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<ExtraRecordsStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.Records.MostCalories);
+        Assert.Equal(winner.Id, stats.Records.MostCalories!.Id);
+        Assert.Equal(1500, stats.Records.MostCalories.Calories);
+        Assert.Equal(winner.StartTime, stats.Records.MostCalories.Date);
+    }
+
+    [Fact]
+    public async Task Longest_duration_record_is_the_greatest_moving_time_and_breaks_ties_by_earlier_ride()
+    {
+        var winner = RideWith(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero), calories: 500, TimeSpan.FromHours(3));
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            await context.SaveChangesAsync();
+            context.Rides.AddRange(
+                // Same 3-hour duration as the winner but a day later: the tie resolves to the earlier ride.
+                RideWith(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero), calories: 500, TimeSpan.FromHours(3)),
+                winner,
+                RideWith(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), calories: 500, TimeSpan.FromHours(1)),
+                // Non-cycling ride that is longer must not win.
+                RideWith(new DateTimeOffset(2026, 6, 4, 8, 0, 0, TimeSpan.Zero), calories: 500, TimeSpan.FromHours(5), sport: "RUNNING"));
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<ExtraRecordsStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.Records.LongestDuration);
+        Assert.Equal(winner.Id, stats.Records.LongestDuration!.Id);
+        Assert.Equal(180, stats.Records.LongestDuration.DurationMinutes, 0.5);
+        Assert.Equal(winner.StartTime, stats.Records.LongestDuration.Date);
+    }
+
     private sealed record HrZoneSliceDto(int Zone, double Minutes);
     private sealed record ZonesStatsDto(IReadOnlyList<HrZoneSliceDto>? HrZones);
 
