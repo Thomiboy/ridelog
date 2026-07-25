@@ -76,11 +76,12 @@
     font: inherit;
     cursor: pointer;
 
-    // A high-contrast chip in both schemes: inverse-surface/on is the guaranteed contrast pair that
-    // also stands out against the primary-coloured bar (plain surface blended into it).
+    // Selected chip in the app's own accent: light container + blue text on light, dark-blue
+    // container + light text on dark. The primary-container/on pair is the guaranteed contrast pair
+    // that flips with the scheme exactly this way.
     &.active {
-      background: var(--mat-sys-inverse-surface);
-      color: var(--mat-sys-inverse-on-surface);
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
     }
   }
 }
