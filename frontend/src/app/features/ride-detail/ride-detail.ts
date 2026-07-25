@@ -2,7 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +10,7 @@ import type { ChartOptions } from 'chart.js';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { AuthService } from '../../core/auth/auth.service';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { formatDuration } from '../../core/format/duration';
 import { SourceChips } from '../../shared/source-chips/source-chips';
@@ -44,8 +45,20 @@ export class RideDetail {
   private readonly mapState = inject(MapState);
   private readonly sheetState = inject(SheetState);
   private readonly auth = inject(AuthService);
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageService);
 
   readonly isAdmin = this.auth.isAdmin;
+
+  /** Localized dataset labels for the elevation/HR/temperature graph; recomputes on language change. */
+  private readonly metricLabels = computed(() => {
+    this.language.current();
+    return {
+      elevation: this.transloco.translate('rideDetail.elevation'),
+      heartRate: this.transloco.translate('rideDetail.card.heartRate'),
+      temperature: this.transloco.translate('rideDetail.card.temperature'),
+    };
+  });
 
   readonly ride = signal<RideDetailDto | null>(null);
 
@@ -60,7 +73,7 @@ export class RideDetail {
 
   readonly metricChart = computed(() => {
     const series = this.ride()?.metricSeries;
-    return series && hasGraphableSeries(series) ? buildMetricSeriesChart(series, this.metricAxis()) : null;
+    return series && hasGraphableSeries(series) ? buildMetricSeriesChart(series, this.metricAxis(), this.metricLabels()) : null;
   });
 
   /** Per-metric comparison of the current ride against the selected one; null outside compare mode. */
@@ -79,7 +92,7 @@ export class RideDetail {
     const current = this.ride()?.metricSeries ?? [];
     const compare = other.metricSeries ?? [];
     return current.length > 0 || compare.length > 0
-      ? buildComparisonMetricChart(current, compare, this.metricAxis())
+      ? buildComparisonMetricChart(current, compare, this.metricAxis(), this.metricLabels())
       : null;
   });
 

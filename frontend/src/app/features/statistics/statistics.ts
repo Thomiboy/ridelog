@@ -1,11 +1,13 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatCardModule } from '@angular/material/card';
 import { StatisticsService } from '../../core/api/statistics.service';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
+import { LanguageService } from '../../core/i18n/language.service';
+import { monthLabels } from '../../core/i18n/month-labels';
 import { formatDuration } from '../../core/format/duration';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
@@ -30,6 +32,11 @@ export class Statistics implements OnDestroy {
   private readonly statisticsService = inject(StatisticsService);
   private readonly ridesService = inject(RidesService);
   private readonly mapState = inject(MapState);
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageService);
+
+  /** Localized short month names for chart axes; recomputes when the language changes. */
+  private readonly months = computed(() => monthLabels(this.language.current()));
 
   /** How many of the longest routes the background map paints behind the charts. */
   private static readonly BackgroundRouteCount = 3;
@@ -63,7 +70,8 @@ export class Statistics implements OnDestroy {
 
   readonly ridesByYearChart = computed(() => {
     const stats = this.stats();
-    return stats ? buildRidesByYearChart(stats.monthlyAggregates) : null;
+    this.language.current(); // re-localize the legend when the language changes
+    return stats ? buildRidesByYearChart(stats.monthlyAggregates, this.transloco.translate('statistics.trends.rides')) : null;
   });
 
   /** Distance by temperature for the selected year (Trends), unlike the all-time Temperature section. */
@@ -116,7 +124,7 @@ export class Statistics implements OnDestroy {
     return computed(() => {
       const stats = this.stats();
       const year = this.activeYear();
-      return stats && year !== null ? buildMonthlyMetricChart(stats.monthlyAggregates, year, metric) : null;
+      return stats && year !== null ? buildMonthlyMetricChart(stats.monthlyAggregates, year, metric, this.months()) : null;
     });
   }
 }

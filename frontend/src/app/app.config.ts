@@ -12,6 +12,7 @@ import { routes } from './app.routes';
 import { jwtInterceptor } from './core/auth/jwt.interceptor';
 import { AuthService } from './core/auth/auth.service';
 import { translocoProviders } from './core/i18n/transloco-providers';
+import { LanguageService } from './core/i18n/language.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,6 +21,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([jwtInterceptor])),
     provideCharts(withDefaultRegisterables()),
     translocoProviders,
+    // Apply the saved UI language (and preload it) before the first paint, so there's no flash.
+    provideAppInitializer(() => inject(LanguageService).init()),
     // Restore the logged-in profile on startup when a token is already present.
     provideAppInitializer(() => {
       const auth = inject(AuthService);

@@ -13,8 +13,20 @@
   </nav>
 
   <div class="session">
+    <div class="lang-switch" role="group" [attr.aria-label]="'nav.language' | transloco">
+      @for (lang of languages; track lang) {
+        <button
+          type="button"
+          [attr.data-lang]="lang"
+          [class.active]="lang === activeLanguage()"
+          (click)="useLanguage(lang)"
+        >
+          {{ lang | uppercase }}
+        </button>
+      }
+    </div>
     @if (isLoggedIn()) {
-      <button mat-button type="button" (click)="logout()">{{ 'nav.logout' | transloco }}</button>
+      <button mat-button type="button" data-logout (click)="logout()">{{ 'nav.logout' | transloco }}</button>
     } @else {
       <a mat-button routerLink="/login">{{ 'nav.login' | transloco }}</a>
     }

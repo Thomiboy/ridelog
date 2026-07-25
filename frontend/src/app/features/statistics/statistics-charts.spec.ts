@@ -45,6 +45,20 @@ describe('statistics chart builders', () => {
     expect(chart.datasets[0].data[0]).toBe(0); // January had no rides
   });
 
+  it('uses the provided (localized) month labels on the x-axis', () => {
+    const monthly = [aggregate(2026, 3, 100)];
+    const hu = ['jan', 'febr', 'márc', 'ápr', 'máj', 'jún', 'júl', 'aug', 'szept', 'okt', 'nov', 'dec'];
+
+    const chart = buildMonthlyMetricChart(monthly, 2026, 'distanceKm', hu);
+
+    expect(chart.labels).toEqual(hu);
+  });
+
+  it('uses the provided (localized) rides legend label', () => {
+    const chart = buildRidesByYearChart([aggregate(2026, 3, 100)], 'túrák');
+    expect(chart.datasets[0].label).toBe('túrák');
+  });
+
   it('reads whichever metric is asked for', () => {
     const monthly = [aggregate(2026, 3, 100)]; // elevation 1000, calories 500
 

@@ -1,20 +1,22 @@
 import type { ChartData, ChartOptions } from 'chart.js';
 import type { MonthlyAverageTemperature, MonthlyDistance, MonthlySpeed } from '../../core/api/dashboard.models';
-
-export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { MONTH_LABELS } from '../../core/i18n/month-labels';
 
 /** Monthly distance as a two-series bar chart: current year vs previous year, Jan–Dec. */
-export function buildMonthlyDistanceChart(monthly: MonthlyDistance[]): ChartData<'bar'> {
+export function buildMonthlyDistanceChart(
+  monthly: MonthlyDistance[],
+  months: readonly string[] = MONTH_LABELS,
+): ChartData<'bar'> {
   const years = [...new Set(monthly.map((m) => m.year))].sort();
 
   return {
-    labels: [...MONTH_LABELS],
+    labels: [...months],
     datasets: years
       .slice()
       .reverse() // current year first in the legend
       .map((year) => ({
         label: String(year),
-        data: MONTH_LABELS.map((_, index) => monthly.find((m) => m.year === year && m.month === index + 1)?.distanceKm ?? 0),
+        data: months.map((_, index) => monthly.find((m) => m.year === year && m.month === index + 1)?.distanceKm ?? 0),
       })),
   };
 }

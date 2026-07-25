@@ -9,6 +9,7 @@ const en = {
     admin: 'Admin',
     login: 'Log in',
     logout: 'Log out',
+    language: 'Language',
   },
   statistics: {
     title: 'Statistics',

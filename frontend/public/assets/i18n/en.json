@@ -8,7 +8,8 @@
     "admin": "Admin",
     "login": "Log in",
     "logout": "Log out",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "language": "Language"
   },
   "dashboard": {
     "title": "Dashboard",
