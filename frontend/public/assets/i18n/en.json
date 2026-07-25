@@ -172,6 +172,7 @@
       "elevation": "Climbing",
       "rides": "Rides",
       "calories": "Calories",
+      "byYear": "By year",
       "yearTotals": "Distance by year",
       "ridesByYear": "Rides by year",
       "temperatureDistribution": "Distance by temperature"

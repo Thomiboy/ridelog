@@ -57,6 +57,7 @@
       }
     </div>
 
+    <!-- Charts for the year picked above. -->
     <div class="charts">
       @if (distanceChart(); as chart) {
         <mat-card appearance="outlined" class="chart-card" data-chart="distance">
@@ -82,6 +83,19 @@
           <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
         </mat-card>
       }
+      @if (yearTemperatureDistributionChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="temperature-by-year">
+          <mat-card-header>
+            <mat-card-title>{{ 'statistics.trends.temperatureDistribution' | transloco }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    <!-- All-years totals, separated from the per-year charts above so it's clear they span every year. -->
+    <h3 class="trends-subhead">{{ 'statistics.trends.byYear' | transloco }}</h3>
+    <div class="charts">
       @if (yearTotalsChart(); as chart) {
         <mat-card appearance="outlined" class="chart-card" data-chart="year-totals">
           <mat-card-header><mat-card-title>{{ 'statistics.trends.yearTotals' | transloco }}</mat-card-title></mat-card-header>
@@ -91,14 +105,6 @@
       @if (ridesByYearChart(); as chart) {
         <mat-card appearance="outlined" class="chart-card" data-chart="rides-by-year">
           <mat-card-header><mat-card-title>{{ 'statistics.trends.ridesByYear' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      @if (yearTemperatureDistributionChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="temperature-by-year">
-          <mat-card-header>
-            <mat-card-title>{{ 'statistics.trends.temperatureDistribution' | transloco }}</mat-card-title>
-          </mat-card-header>
           <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
         </mat-card>
       }
