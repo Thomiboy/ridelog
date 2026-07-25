@@ -54,50 +54,52 @@
     button {
       color: var(--mat-sys-on-primary);
     }
-  }
-}
 
-.lang-switch,
-.theme-switch {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0.375rem;
-  overflow: hidden;
+    // The switches are nested here on purpose: the active-chip rule below must outrank
+    // `.session button` above, or its text/icon colour loses to on-primary and never changes.
+    .lang-switch,
+    .theme-switch {
+      display: inline-flex;
+      align-items: stretch;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 0.375rem;
+      overflow: hidden;
 
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 1.75rem;
-    border: 0;
-    background: none;
-    color: var(--mat-sys-on-primary);
-    font: inherit;
-    cursor: pointer;
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 1.75rem;
+        border: 0;
+        background: none;
+        color: var(--mat-sys-on-primary);
+        font: inherit;
+        cursor: pointer;
 
-    // Selected chip in the app's own accent: light container + blue text on light, dark-blue
-    // container + light text on dark. The primary-container/on pair is the guaranteed contrast pair
-    // that flips with the scheme exactly this way.
-    &.active {
-      background: var(--mat-sys-primary-container);
-      color: var(--mat-sys-on-primary-container);
+        // Selected chip in the app's own accent: light container + blue text on light, dark-blue
+        // container + light text on dark. The primary-container/on pair is the guaranteed contrast
+        // pair that flips with the scheme exactly this way.
+        &.active {
+          background: var(--mat-sys-primary-container);
+          color: var(--mat-sys-on-primary-container);
+        }
+      }
     }
-  }
-}
 
-.lang-switch button {
-  font-size: 0.75rem;
-  padding: 0 0.55rem;
-}
+    .lang-switch button {
+      font-size: 0.75rem;
+      padding: 0 0.55rem;
+    }
 
-.theme-switch button {
-  padding: 0 0.4rem;
+    .theme-switch button {
+      padding: 0 0.4rem;
 
-  mat-icon {
-    font-size: 1.1rem;
-    width: 1.1rem;
-    height: 1.1rem;
+      mat-icon {
+        font-size: 1.1rem;
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+    }
   }
 }
 
