@@ -14,6 +14,7 @@ import type {
   MonthlyTemperature,
   YearlyTemperatureBand,
 } from '../../core/api/statistics.models';
+import { MONTH_LABELS } from '../../core/i18n/month-labels';
 
 const aggregate = (year: number, month: number, distanceKm: number): MonthlyAggregate => ({
   year,
@@ -57,6 +58,20 @@ describe('statistics chart builders', () => {
   it('uses the provided (localized) rides legend label', () => {
     const chart = buildRidesByYearChart([aggregate(2026, 3, 100)], 'túrák');
     expect(chart.datasets[0].label).toBe('túrák');
+  });
+
+  it('adds a second zero-filled dataset for the comparison year, the primary year first', () => {
+    const monthly = [aggregate(2026, 3, 100), aggregate(2025, 3, 60), aggregate(2025, 7, 80)];
+
+    const chart = buildMonthlyMetricChart(monthly, 2026, 'distanceKm', MONTH_LABELS, 2025);
+
+    expect(chart.datasets).toHaveLength(2);
+    expect(chart.datasets[0].label).toBe('2026');
+    expect(chart.datasets[1].label).toBe('2025');
+    expect(chart.datasets[0].data[2]).toBe(100); // March 2026
+    expect(chart.datasets[1].data[2]).toBe(60); // March 2025
+    expect(chart.datasets[1].data[6]).toBe(80); // July 2025
+    expect(chart.datasets[1].data[0]).toBe(0); // January 2025 had no rides
   });
 
   it('reads whichever metric is asked for', () => {
@@ -135,6 +150,43 @@ describe('statistics chart builders', () => {
     expect(chart.labels).toEqual(['0–5°', '5–10°']);
     expect(chart.datasets[0].data).toEqual([3, 40]);
     expect(chart.datasets[0].backgroundColor).toEqual(['#1e88e5', '#4fc3f7']);
+  });
+
+  it('compares two years as grouped band datasets, fading the comparison year', () => {
+    const yearly: YearlyTemperatureBand[] = [
+      { year: 2025, fromCelsius: 0, toCelsius: 5, km: 10 },
+      { year: 2025, fromCelsius: 5, toCelsius: 10, km: 20 },
+      { year: 2026, fromCelsius: 0, toCelsius: 5, km: 3 },
+      { year: 2026, fromCelsius: 5, toCelsius: 10, km: 40 },
+    ];
+
+    const chart = buildYearTemperatureDistributionChart(yearly, 2026, 2025);
+
+    expect(chart.labels).toEqual(['0–5°', '5–10°']);
+    expect(chart.datasets).toHaveLength(2);
+    expect(chart.datasets[0].label).toBe('2026');
+    expect(chart.datasets[0].data).toEqual([3, 40]);
+    expect(chart.datasets[1].label).toBe('2025');
+    expect(chart.datasets[1].data).toEqual([10, 20]);
+    // Both years keep the cold→hot band colours; the comparison year is faded so they stay distinct.
+    expect(chart.datasets[0].backgroundColor).toEqual(['#1e88e5', '#4fc3f7']);
+    expect(chart.datasets[1].backgroundColor).toEqual(['#1e88e566', '#4fc3f766']);
+  });
+
+  it('aligns both compared years on the union of their bands, zero-filling the gaps', () => {
+    const yearly: YearlyTemperatureBand[] = [
+      { year: 2026, fromCelsius: 0, toCelsius: 5, km: 3 },
+      { year: 2025, fromCelsius: 5, toCelsius: 10, km: 20 },
+      { year: 2025, fromCelsius: null, toCelsius: 0, km: 7 },
+    ];
+
+    const chart = buildYearTemperatureDistributionChart(yearly, 2026, 2025);
+
+    // Every band either year rode, cold→hot; each year zero-filled where it has none, so the two
+    // datasets line up under the same labels.
+    expect(chart.labels).toEqual(['<0°', '0–5°', '5–10°']);
+    expect(chart.datasets[0].data).toEqual([0, 3, 0]);
+    expect(chart.datasets[1].data).toEqual([7, 0, 20]);
   });
 
   it('builds a monthly average-temperature line chart', () => {

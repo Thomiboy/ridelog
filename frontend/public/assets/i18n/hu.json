@@ -176,6 +176,8 @@
       "elevation": "Szintemelkedés",
       "rides": "Túrák",
       "calories": "Kalória",
+      "compareYear": "Összehasonlítás",
+      "compareNone": "Nincs",
       "byYear": "Évenként",
       "yearTotals": "Táv évenként",
       "ridesByYear": "Túrák évenként",

@@ -15,21 +15,25 @@ export function statisticsYears(monthly: MonthlyAggregate[]): number[] {
   return [...new Set(monthly.map((m) => m.year))].sort((a, b) => a - b);
 }
 
-/** One metric for the selected year as a single-series Jan–Dec bar chart, zero-filled. */
+/**
+ * One metric for the selected year as a Jan–Dec bar chart, zero-filled. With a `compareYear` it
+ * gains a second dataset for that year (primary first, so legend and auto-colours stay stable),
+ * rendering as grouped bars like the Dashboard's current-vs-previous chart.
+ */
 export function buildMonthlyMetricChart(
   monthly: MonthlyAggregate[],
   year: number,
   metric: MonthlyMetric,
   months: readonly string[] = MONTH_LABELS,
+  compareYear?: number | null,
 ): ChartData<'bar'> {
+  const series = (of: number) => ({
+    label: String(of),
+    data: months.map((_, index) => monthly.find((m) => m.year === of && m.month === index + 1)?.[metric] ?? 0),
+  });
   return {
     labels: [...months],
-    datasets: [
-      {
-        label: String(year),
-        data: months.map((_, index) => monthly.find((m) => m.year === year && m.month === index + 1)?.[metric] ?? 0),
-      },
-    ],
+    datasets: compareYear == null ? [series(year)] : [series(year), series(compareYear)],
   };
 }
 
@@ -96,15 +100,61 @@ export function buildTemperatureDistributionChart(bands: TemperatureBandSlice[])
   };
 }
 
-/** Distance per 5°C band for one year, colour-coded cold to hot (Trends year-filtered chart). */
+/** Alpha suffix (0.4) making the comparison year's bars translucent while keeping their band colour. */
+const COMPARE_ALPHA_HEX = '66';
+
+function bandsForYear(yearly: YearlyTemperatureBand[], year: number): TemperatureBandSlice[] {
+  return yearly
+    .filter((band) => band.year === year)
+    .map(({ fromCelsius, toCelsius, km }) => ({ fromCelsius, toCelsius, km }));
+}
+
+/**
+ * Distance per 5°C band for one year, colour-coded cold to hot (Trends year-filtered chart). With a
+ * `compareYear` both years are drawn as grouped bars, each keeping the cold→hot band colours, the
+ * comparison year translucent so the two years stay distinguishable.
+ */
 export function buildYearTemperatureDistributionChart(
   yearly: YearlyTemperatureBand[],
   year: number,
+  compareYear?: number | null,
 ): ChartData<'bar'> {
-  const bands: TemperatureBandSlice[] = yearly
-    .filter((band) => band.year === year)
-    .map(({ fromCelsius, toCelsius, km }) => ({ fromCelsius, toCelsius, km }));
-  return buildTemperatureDistributionChart(bands);
+  const bands = bandsForYear(yearly, year);
+  if (compareYear == null) {
+    return buildTemperatureDistributionChart(bands);
+  }
+
+  const compareBands = bandsForYear(yearly, compareYear);
+  // Both years share one band axis, so a band only one of them rode still lines up: take the union,
+  // cold→hot, and read each year's distance off it (0 where that year has none).
+  const axis = unionBands([...bands, ...compareBands]);
+  const kmIn = (from: TemperatureBandSlice[], band: TemperatureBandSlice) =>
+    from.find((b) => b.fromCelsius === band.fromCelsius && b.toCelsius === band.toCelsius)?.km ?? 0;
+
+  return {
+    labels: axis.map(bandLabel),
+    datasets: [
+      {
+        label: String(year),
+        data: axis.map((band) => kmIn(bands, band)),
+        backgroundColor: axis.map(bandColor),
+      },
+      {
+        label: String(compareYear),
+        data: axis.map((band) => kmIn(compareBands, band)),
+        backgroundColor: axis.map((band) => `${bandColor(band)}${COMPARE_ALPHA_HEX}`),
+      },
+    ],
+  };
+}
+
+/** The distinct bands across the given slices, ordered cold to hot (the open-ended low band first). */
+function unionBands(bands: TemperatureBandSlice[]): TemperatureBandSlice[] {
+  const byRange = new Map<string, TemperatureBandSlice>();
+  for (const band of bands) {
+    byRange.set(`${band.fromCelsius}-${band.toCelsius}`, band);
+  }
+  return [...byRange.values()].sort((a, b) => (a.fromCelsius ?? -Infinity) - (b.fromCelsius ?? -Infinity));
 }
 
 /** Average ridden temperature per month as a line chart. */
