@@ -55,6 +55,18 @@
           </select>
         </label>
       }
+      <!-- Nothing to compare against until a second year has data. -->
+      @if (years().length > 1) {
+        <label class="year-select">
+          <span>{{ 'statistics.trends.compareYear' | transloco }}</span>
+          <select data-testid="compare-select" (change)="selectCompareYear($any($event.target).value)">
+            <option value="" [selected]="activeCompareYear() === null">{{ 'statistics.trends.compareNone' | transloco }}</option>
+            @for (year of compareYearOptions(); track year) {
+              <option [value]="year" [selected]="year === activeCompareYear()">{{ year }}</option>
+            }
+          </select>
+        </label>
+      }
     </div>
 
     <!-- Charts for the year picked above. -->

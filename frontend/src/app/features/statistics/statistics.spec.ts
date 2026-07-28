@@ -206,6 +206,96 @@ describe('Statistics', () => {
     expect(distance.datasets[0].data[6]).toBe(80);
   });
 
+  it('overlays a comparison year on the monthly charts when one is picked', () => {
+    const { fixture, el } = setup();
+
+    // No comparison by default — a single series.
+    expect(chartData(fixture, 'distance').datasets).toHaveLength(1);
+
+    const compare = el.querySelector('[data-testid="compare-select"]') as HTMLSelectElement;
+    compare.value = '2025';
+    compare.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const distance = chartData(fixture, 'distance');
+    expect(distance.datasets).toHaveLength(2);
+    expect(distance.datasets[0].label).toBe('2026');
+    expect(distance.datasets[1].label).toBe('2025');
+    expect(distance.datasets[1].data[6]).toBe(80); // July 2025
+  });
+
+  it('offers only the non-primary years for comparison, plus a "none" option', () => {
+    const { el } = setup();
+
+    const compare = el.querySelector('[data-testid="compare-select"]') as HTMLSelectElement;
+    // 2026 is the primary year, so only 2025 is on offer; "none" carries an empty value.
+    expect([...compare.options].map((o) => o.value)).toEqual(['', '2025']);
+    expect(compare.value).toBe('');
+  });
+
+  it('hides the comparison selector when only one year has data', () => {
+    const { el } = setup({
+      monthlyAggregates: [{ year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500 }],
+    });
+
+    expect(el.querySelector('[data-testid="compare-select"]')).toBeNull();
+    expect(el.querySelector('[data-testid="year-select"]')).not.toBeNull();
+  });
+
+  it('drops the comparison when the primary year is moved onto it', () => {
+    const { fixture, el } = setup();
+
+    const compare = el.querySelector('[data-testid="compare-select"]') as HTMLSelectElement;
+    compare.value = '2025';
+    compare.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(chartData(fixture, 'distance').datasets).toHaveLength(2);
+
+    // Selecting 2025 as the primary year would compare it with itself, so the overlay falls away.
+    const year = el.querySelector('[data-testid="year-select"]') as HTMLSelectElement;
+    year.value = '2025';
+    year.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(chartData(fixture, 'distance').datasets).toHaveLength(1);
+    expect(chartData(fixture, 'distance').datasets[0].label).toBe('2025');
+  });
+
+  it('overlays the comparison on every per-year chart and clears it again on "none"', () => {
+    const perYearCharts = ['distance', 'elevation', 'rides', 'calories', 'temperature-by-year'];
+    const { fixture, el } = setup({
+      temperature: {
+        distribution: [],
+        coldest: null,
+        warmest: null,
+        seasonMinCelsius: null,
+        seasonMaxCelsius: null,
+        monthlyAverage: [],
+        yearlyDistribution: [
+          { year: 2025, fromCelsius: 0, toCelsius: 5, km: 99 },
+          { year: 2026, fromCelsius: 0, toCelsius: 5, km: 12 },
+        ],
+      },
+    });
+
+    const compare = el.querySelector('[data-testid="compare-select"]') as HTMLSelectElement;
+    compare.value = '2025';
+    compare.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    for (const name of perYearCharts) {
+      expect(chartData(fixture, name).datasets, name).toHaveLength(2);
+    }
+
+    compare.value = '';
+    compare.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    for (const name of perYearCharts) {
+      expect(chartData(fixture, name).datasets, name).toHaveLength(1);
+    }
+  });
+
   it('renders all four monthly metric charts plus the year-over-year totals chart', () => {
     const { fixture } = setup();
 

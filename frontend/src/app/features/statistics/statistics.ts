@@ -58,6 +58,21 @@ export class Statistics implements OnDestroy {
     return years.at(-1) ?? null;
   });
 
+  /** null = no comparison (the default on every visit; the choice isn't persisted). */
+  private readonly compareYear = signal<number | null>(null);
+
+  /** Years offered for comparison — never the primary year, so the same year can't be picked twice. */
+  readonly compareYearOptions = computed(() => this.years().filter((year) => year !== this.activeYear()));
+
+  /**
+   * The comparison year actually in force: it drops back to "none" if the primary year is moved onto
+   * it, or if the data no longer covers it.
+   */
+  readonly activeCompareYear = computed(() => {
+    const picked = this.compareYear();
+    return picked !== null && picked !== this.activeYear() && this.years().includes(picked) ? picked : null;
+  });
+
   readonly distanceChart = this.metricChart('distanceKm');
   readonly elevationChart = this.metricChart('elevationGainMeters');
   readonly ridesChart = this.metricChart('rideCount');
@@ -78,7 +93,9 @@ export class Statistics implements OnDestroy {
   readonly yearTemperatureDistributionChart = computed(() => {
     const temp = this.temperature();
     const year = this.activeYear();
-    return temp && year !== null ? buildYearTemperatureDistributionChart(temp.yearlyDistribution, year) : null;
+    return temp && year !== null
+      ? buildYearTemperatureDistributionChart(temp.yearlyDistribution, year, this.activeCompareYear())
+      : null;
   });
 
   readonly records = computed(() => this.stats()?.records ?? null);
@@ -117,11 +134,18 @@ export class Statistics implements OnDestroy {
     this.selectedYear.set(Number(value));
   }
 
+  /** The select's "none" option has an empty value, which clears the comparison. */
+  selectCompareYear(value: string): void {
+    this.compareYear.set(value === '' ? null : Number(value));
+  }
+
   private metricChart(metric: Parameters<typeof buildMonthlyMetricChart>[2]) {
     return computed(() => {
       const stats = this.stats();
       const year = this.activeYear();
-      return stats && year !== null ? buildMonthlyMetricChart(stats.monthlyAggregates, year, metric, this.months()) : null;
+      return stats && year !== null
+        ? buildMonthlyMetricChart(stats.monthlyAggregates, year, metric, this.months(), this.activeCompareYear())
+        : null;
     });
   }
 }
