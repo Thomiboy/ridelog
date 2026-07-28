@@ -1,7 +1,10 @@
+import { ModuleWithProviders } from '@angular/core';
 import { TranslocoTestingModule, TranslocoTestingOptions } from '@jsverse/transloco';
+import { translocoLocaleProviders } from './transloco-locale-providers';
 
 const en = {
   app: { title: 'RideLog' },
+  format: { durationHours: 'h', durationMinutes: 'm' },
   nav: {
     dashboard: 'Dashboard',
     rides: 'Rides',
@@ -179,12 +182,18 @@ const en = {
   },
 };
 
-/** Transloco set up with synchronous English translations for component tests. */
-export function translocoTesting(options: TranslocoTestingOptions = {}) {
-  return TranslocoTestingModule.forRoot({
+/**
+ * Transloco set up with synchronous English translations for component tests, plus the locale
+ * providers (en-US) so `translocoDate` / `translocoDecimal` render deterministically. The locale
+ * providers are folded into the module's providers (EnvironmentProviders aren't valid in `forRoot`
+ * options), keeping call sites as a single `imports` entry.
+ */
+export function translocoTesting(options: TranslocoTestingOptions = {}): ModuleWithProviders<TranslocoTestingModule> {
+  const base = TranslocoTestingModule.forRoot({
     langs: { en },
     translocoConfig: { availableLangs: ['en'], defaultLang: 'en' },
     preloadLangs: true,
     ...options,
   });
+  return { ngModule: base.ngModule, providers: [...(base.providers ?? []), translocoLocaleProviders] };
 }

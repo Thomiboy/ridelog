@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { TranslocoDecimalPipe } from '@jsverse/transloco-locale';
 import { Component, computed, inject, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatCardModule } from '@angular/material/card';
@@ -15,7 +15,7 @@ import {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Chart, TranslocoPipe, DecimalPipe, MatCardModule],
+  imports: [Chart, TranslocoPipe, TranslocoDecimalPipe, MatCardModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

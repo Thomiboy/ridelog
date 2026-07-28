@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { TranslocoDatePipe, TranslocoDecimalPipe } from '@jsverse/transloco-locale';
 import { Component, computed, input, output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,7 @@ import type { RideSummary } from '../../core/api/ride.models';
  */
 @Component({
   selector: 'app-ride-picker',
-  imports: [TranslocoPipe, DatePipe, DecimalPipe, MatButtonModule, MatIconModule],
+  imports: [TranslocoPipe, TranslocoDatePipe, TranslocoDecimalPipe, MatButtonModule, MatIconModule],
   templateUrl: './ride-picker.html',
   styleUrl: './ride-picker.scss',
 })

@@ -49,9 +49,9 @@
               [disabled]="day.rideCount === 0"
               (click)="openDay(day)"
             >
-              <span class="cal-date">{{ day.date | date: 'd' }}</span>
+              <span class="cal-date">{{ day.date | translocoDate: { day: 'numeric' } }}</span>
               @if (day.rideCount > 0) {
-                <span class="cal-km">{{ day.totalKm | number: '1.0-0' }} km</span>
+                <span class="cal-km">{{ day.totalKm | translocoDecimal: { maximumFractionDigits: 0 } }} km</span>
                 @if (day.rideCount > 1) {
                   <span class="cal-count">{{ day.rideCount }}×</span>
                 }
@@ -62,11 +62,11 @@
       </div>
       @if (selectedDay(); as day) {
         <div class="cal-day-panel" data-cal-day-rides>
-          <h3>{{ day.date | date: 'mediumDate' }}</h3>
+          <h3>{{ day.date | translocoDate: { dateStyle: 'medium' } }}</h3>
           <ul>
             @for (r of day.rides; track r.id) {
               <li>
-                <a [routerLink]="['/rides', r.id]">{{ r.distanceKm | number: '1.1-1' }} km · {{ formatDuration(r.durationMinutes) }}</a>
+                <a [routerLink]="['/rides', r.id]">{{ r.distanceKm | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 } }} km · {{ r.durationMinutes | duration }}</a>
               </li>
             }
           </ul>
@@ -92,11 +92,11 @@
         <tbody>
           @for (ride of page.items; track ride.id) {
             <tr data-ride (click)="open(ride)">
-              <td>{{ ride.startTime | date: 'mediumDate' }}</td>
-              <td>{{ ride.distanceKm | number: '1.1-1' }} km</td>
-              <td>{{ formatDuration(ride.durationMinutes) }}</td>
-              <td>{{ ride.averageSpeedKmh ? (ride.averageSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}</td>
-              <td>{{ ride.elevationGainMeters ? (ride.elevationGainMeters | number: '1.0-0') + ' m' : '—' }}</td>
+              <td>{{ ride.startTime | translocoDate: { dateStyle: 'medium' } }}</td>
+              <td>{{ ride.distanceKm | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 } }} km</td>
+              <td>{{ ride.durationMinutes | duration }}</td>
+              <td>{{ ride.averageSpeedKmh ? (ride.averageSpeedKmh | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km/h' : '—' }}</td>
+              <td>{{ ride.elevationGainMeters ? (ride.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 }) + ' m' : '—' }}</td>
               <td><app-source-chips [sources]="ride.sources" /></td>
               @if (isLoggedIn()) {
                 <td class="actions">

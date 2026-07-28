@@ -16,8 +16,8 @@
     @for (ride of filtered(); track ride.id) {
       <li>
         <button type="button" data-picker-row (click)="select(ride)">
-          <span class="date">{{ ride.startTime | date: 'mediumDate' }}</span>
-          <span class="distance">{{ ride.distanceKm | number: '1.1-1' }} km</span>
+          <span class="date">{{ ride.startTime | translocoDate: { dateStyle: 'medium' } }}</span>
+          <span class="distance">{{ ride.distanceKm | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 } }} km</span>
         </button>
       </li>
     } @empty {

@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { TranslocoDatePipe } from '@jsverse/transloco-locale';
 import { ActivatedRoute } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,7 @@ import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary } from '
 
 @Component({
   selector: 'app-admin',
-  imports: [TranslocoPipe, DatePipe, MatButtonModule, MatCardModule],
+  imports: [TranslocoPipe, TranslocoDatePipe, MatButtonModule, MatCardModule],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
 })
