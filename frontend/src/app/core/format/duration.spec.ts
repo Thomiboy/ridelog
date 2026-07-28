@@ -14,4 +14,11 @@ describe('formatDuration', () => {
     expect(formatDuration(45)).toBe('45m');
     expect(formatDuration(0)).toBe('0m');
   });
+
+  it('uses the given localized units and spacing (Hungarian)', () => {
+    const hu = { hours: 'ó', minutes: 'p', space: true };
+    expect(formatDuration(118, hu)).toBe('1 ó 58 p');
+    expect(formatDuration(60, hu)).toBe('1 ó');
+    expect(formatDuration(45, hu)).toBe('45 p');
+  });
 });

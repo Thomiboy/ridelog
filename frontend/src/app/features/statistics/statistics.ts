@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { TranslocoDatePipe, TranslocoDecimalPipe } from '@jsverse/transloco-locale';
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -8,7 +8,7 @@ import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { LanguageService } from '../../core/i18n/language.service';
 import { monthLabels } from '../../core/i18n/month-labels';
-import { formatDuration } from '../../core/format/duration';
+import { DurationPipe } from '../../core/format/duration.pipe';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
 import {
@@ -24,7 +24,7 @@ import { buildHrZoneChart } from '../ride-detail/hr-zone-chart';
 
 @Component({
   selector: 'app-statistics',
-  imports: [Chart, RouterLink, TranslocoPipe, DecimalPipe, DatePipe, MatCardModule],
+  imports: [Chart, RouterLink, TranslocoPipe, TranslocoDecimalPipe, TranslocoDatePipe, DurationPipe, MatCardModule],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
 })
@@ -82,9 +82,6 @@ export class Statistics implements OnDestroy {
   });
 
   readonly records = computed(() => this.stats()?.records ?? null);
-
-  /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
-  readonly formatDuration = formatDuration;
 
   readonly hrZoneChart = computed(() => {
     const zones = this.stats()?.hrZones;

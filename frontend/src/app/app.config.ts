@@ -12,6 +12,7 @@ import { routes } from './app.routes';
 import { jwtInterceptor } from './core/auth/jwt.interceptor';
 import { AuthService } from './core/auth/auth.service';
 import { translocoProviders } from './core/i18n/transloco-providers';
+import { translocoLocaleProviders } from './core/i18n/transloco-locale-providers';
 import { LanguageService } from './core/i18n/language.service';
 import { ThemeService } from './core/theme/theme.service';
 
@@ -22,6 +23,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([jwtInterceptor])),
     provideCharts(withDefaultRegisterables()),
     translocoProviders,
+    translocoLocaleProviders,
     // Apply the saved theme before the first paint (its constructor sets the root color-scheme).
     provideAppInitializer(() => {
       inject(ThemeService);

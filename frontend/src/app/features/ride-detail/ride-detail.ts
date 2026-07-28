@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { TranslocoDatePipe, TranslocoDecimalPipe } from '@jsverse/transloco-locale';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -12,7 +12,7 @@ import { MapState } from '../../core/map/map-state';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
-import { formatDuration } from '../../core/format/duration';
+import { DurationPipe } from '../../core/format/duration.pipe';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { Chart } from '../../shared/chart/chart';
 import { buildComparisonMetricChart, buildMetricSeriesChart, hasGraphableSeries, type MetricAxis } from './metric-series-chart';
@@ -25,8 +25,9 @@ import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ri
   selector: 'app-ride-detail',
   imports: [
     TranslocoPipe,
-    DatePipe,
-    DecimalPipe,
+    TranslocoDatePipe,
+    TranslocoDecimalPipe,
+    DurationPipe,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -35,6 +36,8 @@ import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ri
     Chart,
     RidePicker,
   ],
+  // DurationPipe is also injected (see displayMetric) to localize the comparison-panel duration.
+  providers: [DurationPipe],
   templateUrl: './ride-detail.html',
   styleUrl: './ride-detail.scss',
 })
@@ -47,6 +50,7 @@ export class RideDetail {
   private readonly auth = inject(AuthService);
   private readonly transloco = inject(TranslocoService);
   private readonly language = inject(LanguageService);
+  private readonly duration = inject(DurationPipe);
 
   readonly isAdmin = this.auth.isAdmin;
 
@@ -126,9 +130,6 @@ export class RideDetail {
     },
   };
 
-  /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
-  readonly formatDuration = formatDuration;
-
   /** Formats a comparison metric value with its unit (dash when absent). */
   displayMetric(key: string, value: number | null): string {
     if (value === null) {
@@ -138,7 +139,7 @@ export class RideDetail {
       case 'distance':
         return `${this.round(value, 1)} km`;
       case 'duration':
-        return formatDuration(value);
+        return this.duration.transform(value);
       case 'avgSpeed':
       case 'maxSpeed':
         return `${this.round(value, 1)} km/h`;

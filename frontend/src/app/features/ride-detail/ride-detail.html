@@ -1,7 +1,7 @@
 <section class="page">
   @if (ride(); as ride) {
     <header class="detail-header">
-      <h1>{{ ride.startTime | date: 'fullDate' }} · {{ ride.startTime | date: 'HH:mm' }}</h1>
+      <h1>{{ ride.startTime | translocoDate: { dateStyle: 'full' } }} · {{ ride.startTime | translocoDate: { hour: '2-digit', minute: '2-digit', hour12: false } }}</h1>
       <app-source-chips [sources]="ride.sources" />
     </header>
   }
@@ -55,7 +55,7 @@
     <mat-card appearance="outlined" class="compare-card" data-compare-table>
       <header class="compare-header">
         <span class="card-title">
-          {{ ride()?.startTime | date: 'mediumDate' }} · {{ compareRide()?.startTime | date: 'mediumDate' }}
+          {{ ride()!.startTime | translocoDate: { dateStyle: 'medium' } }} · {{ compareRide()!.startTime | translocoDate: { dateStyle: 'medium' } }}
         </span>
         <button mat-icon-button type="button" data-compare-exit [attr.aria-label]="'rideDetail.compare.exit' | transloco" (click)="exitCompare()">
           <mat-icon>close</mat-icon>
@@ -94,12 +94,12 @@
         <div class="metric">
           <mat-icon>straighten</mat-icon>
           <span class="metric-label">{{ 'rideDetail.distance' | transloco }}</span>
-          <span class="metric-value">{{ ride.distanceKm | number: '1.1-1' }} km</span>
+          <span class="metric-value">{{ ride.distanceKm | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 } }} km</span>
         </div>
         <div class="metric">
           <mat-icon>timer</mat-icon>
           <span class="metric-label">{{ 'rideDetail.duration' | transloco }}</span>
-          <span class="metric-value">{{ formatDuration(ride.durationMinutes) }}</span>
+          <span class="metric-value">{{ ride.durationMinutes | duration }}</span>
         </div>
       </mat-card>
 
@@ -109,14 +109,14 @@
           <mat-icon>speed</mat-icon>
           <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
           <span class="metric-value">
-            {{ ride.averageSpeedKmh != null ? (ride.averageSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}
+            {{ ride.averageSpeedKmh != null ? (ride.averageSpeedKmh | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km/h' : '—' }}
           </span>
         </div>
         <div class="metric">
           <mat-icon>bolt</mat-icon>
           <span class="metric-label">{{ 'rideDetail.max' | transloco }}</span>
           <span class="metric-value">
-            {{ ride.maximumSpeedKmh != null ? (ride.maximumSpeedKmh | number: '1.1-1') + ' km/h' : '—' }}
+            {{ ride.maximumSpeedKmh != null ? (ride.maximumSpeedKmh | translocoDecimal: { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' km/h' : '—' }}
           </span>
         </div>
       </mat-card>
@@ -141,13 +141,13 @@
           <mat-icon>terrain</mat-icon>
           <span class="metric-label">{{ 'rideDetail.elevation' | transloco }}</span>
           <span class="metric-value">
-            {{ ride.elevationGainMeters != null ? (ride.elevationGainMeters | number: '1.0-0') + ' m' : '—' }}
+            {{ ride.elevationGainMeters != null ? (ride.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 }) + ' m' : '—' }}
           </span>
         </div>
         <div class="metric">
           <mat-icon>local_fire_department</mat-icon>
           <span class="metric-label">{{ 'rideDetail.calories' | transloco }}</span>
-          <span class="metric-value">{{ ride.calories ? (ride.calories | number: '1.0-0') + ' kcal' : '—' }}</span>
+          <span class="metric-value">{{ ride.calories ? (ride.calories | translocoDecimal: { maximumFractionDigits: 0 }) + ' kcal' : '—' }}</span>
         </div>
       </mat-card>
 
@@ -157,20 +157,20 @@
           <div class="metric">
             <mat-icon>device_thermostat</mat-icon>
             <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
-            <span class="metric-value">{{ ride.averageTemperatureCelsius | number: '1.0-1' }} °C</span>
+            <span class="metric-value">{{ ride.averageTemperatureCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} °C</span>
           </div>
           <div class="metric">
             <mat-icon>ac_unit</mat-icon>
             <span class="metric-label">{{ 'rideDetail.min' | transloco }}</span>
             <span class="metric-value">
-              {{ ride.minTemperatureCelsius != null ? (ride.minTemperatureCelsius | number: '1.0-1') + ' °C' : '—' }}
+              {{ ride.minTemperatureCelsius != null ? (ride.minTemperatureCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' °C' : '—' }}
             </span>
           </div>
           <div class="metric">
             <mat-icon>local_fire_department</mat-icon>
             <span class="metric-label">{{ 'rideDetail.max' | transloco }}</span>
             <span class="metric-value">
-              {{ ride.maxTemperatureCelsius != null ? (ride.maxTemperatureCelsius | number: '1.0-1') + ' °C' : '—' }}
+              {{ ride.maxTemperatureCelsius != null ? (ride.maxTemperatureCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' °C' : '—' }}
             </span>
           </div>
         </mat-card>

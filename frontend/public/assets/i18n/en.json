@@ -2,6 +2,10 @@
   "app": {
     "title": "RideLog"
   },
+  "format": {
+    "durationHours": "h",
+    "durationMinutes": "m"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "rides": "Rides",

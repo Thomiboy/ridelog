@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { TranslocoDatePipe, TranslocoDecimalPipe } from '@jsverse/transloco-locale';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -9,7 +9,7 @@ import { MapState } from '../../core/map/map-state';
 import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
-import { formatDuration } from '../../core/format/duration';
+import { DurationPipe } from '../../core/format/duration.pipe';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { buildCalendarMonth, type CalendarDay } from './rides-calendar';
@@ -23,8 +23,9 @@ const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
   selector: 'app-rides',
   imports: [
     TranslocoPipe,
-    DatePipe,
-    DecimalPipe,
+    TranslocoDatePipe,
+    TranslocoDecimalPipe,
+    DurationPipe,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -47,9 +48,6 @@ export class Rides {
 
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly pageSize = computed(() => PAGE_SIZE[this.sheetState.current()] ?? 9);
-
-  /** Exposed for the template: renders `durationMinutes` as `1h 58m`. */
-  readonly formatDuration = formatDuration;
 
   readonly result = signal<Paged<RideSummary> | null>(null);
 

@@ -2,6 +2,10 @@
   "app": {
     "title": "RideLog"
   },
+  "format": {
+    "durationHours": "ó",
+    "durationMinutes": "p"
+  },
   "nav": {
     "dashboard": "Áttekintés",
     "rides": "Túrák",
