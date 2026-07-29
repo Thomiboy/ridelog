@@ -1,4 +1,11 @@
-import { buildComparisonMetricChart, buildMetricSeriesChart, hasGraphableSeries } from './metric-series-chart';
+import {
+  availableChannels,
+  buildComparisonMetricChart,
+  buildMetricSeriesChart,
+  defaultChannels,
+  hasGraphableSeries,
+  toggleChannel,
+} from './metric-series-chart';
 import type { MetricSample } from '../../core/api/ride.models';
 
 const sample = (
@@ -7,29 +14,31 @@ const sample = (
   elevationMeters?: number | null,
   heartRate?: number | null,
   temperatureCelsius?: number | null,
+  speedKmh?: number | null,
 ): MetricSample => ({
   distanceKm,
   elapsedMinutes,
   elevationMeters,
   heartRate,
   temperatureCelsius,
+  speedKmh,
 });
 
 describe('metric series chart', () => {
   const series = [sample(0, 0, 100, 120), sample(1.5, 10, 150, 140), sample(3.0, 20, 120, 130)];
 
   it('labels the x-axis by distance when asked', () => {
-    const chart = buildMetricSeriesChart(series, 'distance');
+    const chart = buildMetricSeriesChart(series, 'distance', ['elevation', 'heartRate']);
     expect(chart.labels).toEqual([0, 1.5, 3.0]);
   });
 
   it('labels the x-axis by elapsed time when asked', () => {
-    const chart = buildMetricSeriesChart(series, 'time');
+    const chart = buildMetricSeriesChart(series, 'time', ['elevation', 'heartRate']);
     expect(chart.labels).toEqual([0, 10, 20]);
   });
 
   it('plots elevation and heart rate as two datasets', () => {
-    const chart = buildMetricSeriesChart(series, 'distance');
+    const chart = buildMetricSeriesChart(series, 'distance', ['elevation', 'heartRate']);
 
     const elevation = chart.datasets.find((d) => d.yAxisID === 'elevation')!;
     const hr = chart.datasets.find((d) => d.yAxisID === 'hr')!;
@@ -38,7 +47,12 @@ describe('metric series chart', () => {
   });
 
   it('uses the provided (localized) dataset labels', () => {
-    const chart = buildMetricSeriesChart(series, 'distance', { elevation: 'Szint', heartRate: 'Pulzus', temperature: 'Hő' });
+    const chart = buildMetricSeriesChart(series, 'distance', ['elevation', 'heartRate'], {
+      elevation: 'Szint',
+      heartRate: 'Pulzus',
+      temperature: 'Hő',
+      speed: 'Sebesség',
+    });
 
     expect(chart.datasets.find((d) => d.yAxisID === 'elevation')!.label).toBe('Szint');
     expect(chart.datasets.find((d) => d.yAxisID === 'hr')!.label).toBe('Pulzus');
@@ -46,15 +60,25 @@ describe('metric series chart', () => {
 
   it('omits a dataset the series never recorded', () => {
     const elevationOnly = [sample(0, 0, 100, null), sample(1, 5, 120, null)];
-    const chart = buildMetricSeriesChart(elevationOnly, 'distance');
+    const chart = buildMetricSeriesChart(elevationOnly, 'distance', ['elevation', 'heartRate']);
 
     expect(chart.datasets).toHaveLength(1);
     expect(chart.datasets[0].yAxisID).toBe('elevation');
   });
 
+  it('plots only the channels asked for, each on its own axis, in the order given', () => {
+    const withAll = [sample(0, 0, 100, 120, 8, 22), sample(1, 5, 120, 130, 12, 25)];
+
+    const chart = buildMetricSeriesChart(withAll, 'distance', ['heartRate', 'speed']);
+
+    expect(chart.datasets.map((d) => d.yAxisID)).toEqual(['hr', 'speed']);
+    expect(chart.datasets.find((d) => d.yAxisID === 'speed')!.data).toEqual([22, 25]);
+    expect(chart.datasets.find((d) => d.yAxisID === 'hr')!.data).toEqual([120, 130]);
+  });
+
   it('plots temperature as its own dataset when present', () => {
     const withTemp = [sample(0, 0, 100, 120, 8), sample(1, 5, 120, 130, 12)];
-    const chart = buildMetricSeriesChart(withTemp, 'distance');
+    const chart = buildMetricSeriesChart(withTemp, 'distance', ['temperature']);
 
     const temperature = chart.datasets.find((d) => d.yAxisID === 'temperature')!;
     expect(temperature).toBeTruthy();
@@ -85,6 +109,19 @@ describe('metric series chart', () => {
     expect((elevations[1].data as { x: number; y: number }[]).at(-1)).toEqual({ x: 12, y: 120 });
   });
 
+  it('overlays only the chosen channels for both rides, dashing the compared one', () => {
+    const current = [sample(0, 0, 100, 120, null, 22), sample(5, 10, 150, 150, null, 28)];
+    const compare = [sample(0, 0, 80, 110, null, 20), sample(8, 12, 120, 140, null, 26)];
+
+    const chart = buildComparisonMetricChart(current, compare, 'distance', ['speed']);
+
+    const speeds = chart.datasets.filter((d) => d.yAxisID === 'speed');
+    expect(speeds).toHaveLength(2); // one line per ride
+    expect(chart.datasets.filter((d) => d.yAxisID === 'elevation')).toHaveLength(0);
+    expect(speeds[0].borderDash).toBeUndefined(); // this ride solid
+    expect(speeds[1].borderDash).toEqual([6, 4]); // the compared ride dashed
+  });
+
   it('drops a channel a ride never recorded from the overlay', () => {
     const current = [sample(0, 0, 100, 120), sample(5, 10, 150, 150)];
     const compareNoHr = [sample(0, 0, 80, null), sample(8, 12, 120, null)];
@@ -93,6 +130,30 @@ describe('metric series chart', () => {
 
     // Only the current ride contributes a heart-rate line.
     expect(chart.datasets.filter((d) => d.yAxisID === 'hr')).toHaveLength(1);
+  });
+
+  it('picks a second channel, then swaps out the oldest rather than crowding the plot', () => {
+    expect(toggleChannel(['elevation'], 'speed')).toEqual(['elevation', 'speed']);
+    expect(toggleChannel(['elevation', 'heartRate'], 'speed')).toEqual(['heartRate', 'speed']);
+  });
+
+  it('deselects a shown channel but never the last one, so the plot is never empty', () => {
+    expect(toggleChannel(['elevation', 'heartRate'], 'elevation')).toEqual(['heartRate']);
+    expect(toggleChannel(['heartRate'], 'heartRate')).toEqual(['heartRate']);
+  });
+
+  it('opens on heart rate and speed, falling back to what the ride recorded', () => {
+    expect(defaultChannels(['elevation', 'heartRate', 'temperature', 'speed'])).toEqual(['heartRate', 'speed']);
+    // No heart rate on this ride: speed leads and the next available channel fills the second slot.
+    expect(defaultChannels(['elevation', 'speed'])).toEqual(['speed', 'elevation']);
+    expect(defaultChannels(['elevation'])).toEqual(['elevation']);
+    expect(defaultChannels([])).toEqual([]);
+  });
+
+  it('lists the channels a series actually recorded, in picker order', () => {
+    const noTemp = [sample(0, 0, 100, 120, null, 22), sample(1, 5, 120, 130, null, 25)];
+
+    expect(availableChannels(noTemp)).toEqual(['elevation', 'heartRate', 'speed']);
   });
 
   it('reports whether a series has anything to graph', () => {

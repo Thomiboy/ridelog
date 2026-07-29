@@ -15,7 +15,17 @@ import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { DurationPipe } from '../../core/format/duration.pipe';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { Chart } from '../../shared/chart/chart';
-import { buildComparisonMetricChart, buildMetricSeriesChart, hasGraphableSeries, type MetricAxis } from './metric-series-chart';
+import {
+  availableChannels,
+  buildComparisonMetricChart,
+  buildMetricSeriesChart,
+  channelAxisId,
+  defaultChannels,
+  hasGraphableSeries,
+  toggleChannel,
+  type MetricAxis,
+  type MetricChannel,
+} from './metric-series-chart';
 import { buildHrZoneChart } from './hr-zone-chart';
 import { compareRides, type MetricDelta } from './ride-comparison';
 import { RidePicker } from './ride-picker';
@@ -61,6 +71,7 @@ export class RideDetail {
       elevation: this.transloco.translate('rideDetail.elevation'),
       heartRate: this.transloco.translate('rideDetail.card.heartRate'),
       temperature: this.transloco.translate('rideDetail.card.temperature'),
+      speed: this.transloco.translate('rideDetail.card.speed'),
     };
   });
 
@@ -72,13 +83,44 @@ export class RideDetail {
   /** All cycling rides for the compare picker; null until first opened. */
   readonly allRides = signal<RideSummary[] | null>(null);
 
-  /** X-axis of the elevation/HR graph: cumulative distance or elapsed time. */
+  /** X-axis of the metric graph: cumulative distance or elapsed time. */
   readonly metricAxis = signal<MetricAxis>('distance');
+
+  /** The channels this ride actually recorded — the only ones worth offering in the picker. */
+  readonly channelOptions = computed(() => availableChannels(this.ride()?.metricSeries ?? []));
+
+  /** The user's picks, or null before they touch it (then the default pair for this ride applies). */
+  private readonly pickedChannels = signal<MetricChannel[] | null>(null);
+
+  /**
+   * The two channels on the plot. Every ride opens on the default pair — the choice isn't carried
+   * across rides — and a pick that this ride can't offer falls back to what it recorded.
+   */
+  readonly shownChannels = computed(() => {
+    const options = this.channelOptions();
+    const picked = this.pickedChannels()?.filter((channel) => options.includes(channel)) ?? [];
+    return picked.length > 0 ? picked : defaultChannels(options);
+  });
 
   readonly metricChart = computed(() => {
     const series = this.ride()?.metricSeries;
-    return series && hasGraphableSeries(series) ? buildMetricSeriesChart(series, this.metricAxis(), this.metricLabels()) : null;
+    return series && hasGraphableSeries(series)
+      ? buildMetricSeriesChart(series, this.metricAxis(), this.shownChannels(), this.metricLabels())
+      : null;
   });
+
+  /** Labels the picker buttons, so the toggle reads in the active language. */
+  channelLabel(channel: MetricChannel): string {
+    return this.metricLabels()[channel];
+  }
+
+  isChannelShown(channel: MetricChannel): boolean {
+    return this.shownChannels().includes(channel);
+  }
+
+  toggleChannel(channel: MetricChannel): void {
+    this.pickedChannels.set(toggleChannel(this.shownChannels(), channel));
+  }
 
   /** Per-metric comparison of the current ride against the selected one; null outside compare mode. */
   readonly deltas = computed<MetricDelta[] | null>(() => {
@@ -96,7 +138,7 @@ export class RideDetail {
     const current = this.ride()?.metricSeries ?? [];
     const compare = other.metricSeries ?? [];
     return current.length > 0 || compare.length > 0
-      ? buildComparisonMetricChart(current, compare, this.metricAxis(), this.metricLabels())
+      ? buildComparisonMetricChart(current, compare, this.metricAxis(), this.shownChannels(), this.metricLabels())
       : null;
   });
 
@@ -105,30 +147,35 @@ export class RideDetail {
     return zones && zones.some((z) => z.minutes > 0) ? buildHrZoneChart(zones) : null;
   });
 
-  // Elevation on the left axis, heart rate on the right, so the two share one plot.
-  readonly graphOptions: ChartOptions<'line'> = {
+  /**
+   * One y-axis per selected channel — the first on the left, the second on the right — so each line
+   * is read in its own units rather than sharing a scale with an unrelated metric.
+   */
+  private channelScales(): NonNullable<ChartOptions<'line'>['scales']> {
+    return Object.fromEntries(
+      this.shownChannels().map((channel, index) => [
+        channelAxisId(channel),
+        index === 0
+          ? { type: 'linear' as const, position: 'left' as const }
+          : { type: 'linear' as const, position: 'right' as const, grid: { drawOnChartArea: false } },
+      ]),
+    );
+  }
+
+  readonly graphOptions = computed<ChartOptions<'line'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'index' },
-    scales: {
-      elevation: { type: 'linear', position: 'left' },
-      hr: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
-      // Scales the temperature line without adding a third visible axis.
-      temperature: { type: 'linear', position: 'right', display: false },
-    },
-  };
+    scales: this.channelScales(),
+  }));
 
   // Comparison overlay uses a real-value linear x-axis so rides of different length keep their ranges.
-  readonly comparisonGraphOptions: ChartOptions<'line'> = {
+  readonly comparisonGraphOptions = computed<ChartOptions<'line'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'nearest' },
-    scales: {
-      x: { type: 'linear' },
-      elevation: { type: 'linear', position: 'left' },
-      hr: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
-    },
-  };
+    scales: { x: { type: 'linear' }, ...this.channelScales() },
+  }));
 
   /** Formats a comparison metric value with its unit (dash when absent). */
   displayMetric(key: string, value: number | null): string {

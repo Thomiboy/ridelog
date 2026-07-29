@@ -201,8 +201,21 @@
             </button>
           </span>
         </div>
+        <!-- Up to two channels share the plot, one per y-axis; only what this ride recorded is offered. -->
+        <span class="channel-toggle">
+          @for (channel of channelOptions(); track channel) {
+            <button
+              type="button"
+              [attr.data-channel]="channel"
+              [class.active]="isChannelShown(channel)"
+              (click)="toggleChannel(channel)"
+            >
+              {{ channelLabel(channel) }}
+            </button>
+          }
+        </span>
         <div class="graph-host">
-          <app-chart type="line" [data]="chart" [options]="compareRide() ? comparisonGraphOptions : graphOptions" />
+          <app-chart type="line" [data]="chart" [options]="compareRide() ? comparisonGraphOptions() : graphOptions()" />
         </div>
       </mat-card>
     }

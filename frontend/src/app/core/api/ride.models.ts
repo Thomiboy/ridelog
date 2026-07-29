@@ -41,6 +41,8 @@ export interface MetricSample {
   elevationMeters?: number | null;
   heartRate?: number | null;
   temperatureCelsius?: number | null;
+  /** The device's reading where the source had one, otherwise derived from distance over time. */
+  speedKmh?: number | null;
 }
 
 /** Time spent in one HR zone (1–5), mirroring the backend HrZoneSlice. */
