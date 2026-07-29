@@ -14,7 +14,12 @@
     "logout": "Kijelentkezés",
     "statistics": "Statisztika",
     "language": "Nyelv",
-    "theme": { "label": "Téma", "system": "Rendszer", "light": "Világos", "dark": "Sötét" }
+    "theme": {
+      "label": "Téma",
+      "system": "Rendszer",
+      "light": "Világos",
+      "dark": "Sötét"
+    }
   },
   "dashboard": {
     "title": "Áttekintés",
@@ -43,8 +48,10 @@
     "prev": "Előző",
     "delete": "Túra törlése",
     "deleteConfirm": "Törlöd ezt a túrát és a tárolt fájljait? Ez nem vonható vissza.",
-    "view": { "list": "Lista", "map": "Térkép", "calendar": "Naptár" },
-    "mapEmpty": "Még nincs megjeleníthető útvonal.",
+    "view": {
+      "list": "Lista",
+      "calendar": "Naptár"
+    },
     "columns": {
       "date": "Dátum",
       "distance": "Táv",

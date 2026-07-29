@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
-/** Which Rides view is showing: the paged list, the all-routes coverage map, or the calendar. */
-export type RidesView = 'list' | 'map' | 'calendar';
+/** Which Rides view is showing: the paged list or the calendar (every route is on the background map). */
+export type RidesView = 'list' | 'calendar';
 
 /**
  * The Rides page's current view, held outside the component so it survives navigating to a ride's

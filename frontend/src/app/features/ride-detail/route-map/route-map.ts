@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, effect, inject, input, viewChild } from '@angular/core';
 import type * as L from 'leaflet';
-import { createRouteMap, drawRestStops, drawRoutes, setTileLayer } from './leaflet-map';
+import { createRouteMap, drawRestStops, drawRoutes, setTileLayer, shouldFitView } from './leaflet-map';
 import type { RestStop } from '../../../core/api/ride.models';
 import { ThemeService } from '../../../core/theme/theme.service';
 
@@ -30,13 +30,6 @@ export class RouteMap implements OnDestroy {
   private map?: L.Map;
   private tile?: L.TileLayer;
   private layers: L.Layer[] = [];
-  private lastRoutesKey = '';
-
-  /**
-   * Above this obscured fraction the sheet is essentially full and the visible strip is too small to
-   * be worth fitting into — the route would shrink to a dot. At/above it we keep the current view.
-   */
-  private static readonly FULL_OBSCURED_THRESHOLD = 0.85;
 
   constructor() {
     // Swap the basemap tiles when the theme changes (light OSM ⇄ dark CARTO).
@@ -64,12 +57,7 @@ export class RouteMap implements OnDestroy {
       }
       this.layers.forEach((layer) => layer.remove());
       const bottomPaddingPx = obscuredBottomFraction * map.getSize().y;
-      // Refit on first draw and whenever the displayed routes change (a newly opened ride), but not
-      // when the sheet is merely dragged fully open over the same route — that would shrink it to a dot.
-      const routesKey = routes.join('|');
-      const routesChanged = routesKey !== this.lastRoutesKey;
-      this.lastRoutesKey = routesKey;
-      const fit = created || routesChanged || obscuredBottomFraction < RouteMap.FULL_OBSCURED_THRESHOLD;
+      const fit = shouldFitView(created, obscuredBottomFraction);
       const layers = drawRoutes(map, routes, undefined, { bottomPaddingPx, coverage, fit });
       // Rest markers belong to a single highlighted route, not the coverage or multi-route views.
       if (!coverage && routes.length === 1 && restStops.length > 0) {

@@ -53,6 +53,22 @@ export interface DrawOptions {
 /** Breathing room around the fitted routes so tracks aren't flush against the map edges. */
 const EDGE_PADDING_PX = 24;
 
+/**
+ * Above this obscured fraction the content sheet is essentially full and the visible strip is too
+ * small to fit into — routes would shrink to a meaningless sliver.
+ */
+const FULL_OBSCURED_THRESHOLD = 0.85;
+
+/**
+ * Whether to fit the view to the routes: always on the first draw, and afterwards only while the
+ * sheet leaves enough of the map visible. Changing the displayed routes deliberately does *not*
+ * force a fit — opening Rides swaps the background to every route beneath a full-height calendar,
+ * and dragging the sheet down fits them once there's room.
+ */
+export function shouldFitView(created: boolean, obscuredBottomFraction: number): boolean {
+  return created || obscuredBottomFraction < FULL_OBSCURED_THRESHOLD;
+}
+
 /** Track opacity for the coverage overview, so overlapping routes visibly build up. */
 const COVERAGE_OPACITY = 0.35;
 

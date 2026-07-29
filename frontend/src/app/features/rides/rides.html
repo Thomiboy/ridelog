@@ -5,24 +5,13 @@
       <button type="button" data-view="list" [class.active]="view() === 'list'" (click)="setView('list')">
         {{ 'rides.view.list' | transloco }}
       </button>
-      <button type="button" data-view="map" [class.active]="view() === 'map'" (click)="setView('map')">
-        {{ 'rides.view.map' | transloco }}
-      </button>
       <button type="button" data-view="calendar" [class.active]="view() === 'calendar'" (click)="setView('calendar')">
         {{ 'rides.view.calendar' | transloco }}
       </button>
     </div>
   </header>
 
-  @if (view() === 'map') {
-    @if (mapRoutes(); as routes) {
-      @if (routes.length > 0) {
-        <div class="coverage-host"><app-route-map [routes]="routes" [coverage]="true" /></div>
-      } @else {
-        <p class="empty" data-map-empty>{{ 'rides.mapEmpty' | transloco }}</p>
-      }
-    }
-  } @else if (view() === 'calendar') {
+  @if (view() === 'calendar') {
     @if (calendar(); as cal) {
       <nav class="cal-nav">
         <button mat-icon-button type="button" data-cal-prev [attr.aria-label]="'rides.prev' | transloco" (click)="prevMonth()">

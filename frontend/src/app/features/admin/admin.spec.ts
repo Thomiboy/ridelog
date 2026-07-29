@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { Admin } from './admin';
 import { AdminService } from '../../core/api/admin.service';
+import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
@@ -23,10 +24,12 @@ describe('Admin', () => {
       ...overrides,
     };
     const navigator = { navigate: vi.fn() };
+    const mapState = { invalidate: vi.fn() };
     TestBed.configureTestingModule({
       imports: [Admin, translocoTesting()],
       providers: [
         { provide: AdminService, useValue: adminService },
+        { provide: MapState, useValue: mapState },
         { provide: ExternalNavigator, useValue: navigator },
         {
           provide: ActivatedRoute,
@@ -38,8 +41,36 @@ describe('Admin', () => {
     });
     const fixture = TestBed.createComponent(Admin);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator };
+    return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator, mapState };
   }
+
+  // The Rides coverage map and the latest-ride background are cached for the session, so every
+  // operation that adds, rebuilds or removes rides has to drop those caches.
+  it('drops the cached background maps after a sync', () => {
+    const { el, mapState } = setup();
+
+    (el.querySelector('[data-sync]') as HTMLButtonElement).click();
+
+    expect(mapState.invalidate).toHaveBeenCalled();
+  });
+
+  it('drops the cached background maps after a reprocess', () => {
+    const { el, mapState } = setup();
+
+    (el.querySelector('[data-reprocess]') as HTMLButtonElement).click();
+
+    expect(mapState.invalidate).toHaveBeenCalled();
+  });
+
+  it('drops the cached background maps after deleting every ride', () => {
+    const { el, mapState } = setup();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    (el.querySelector('[data-delete-all]') as HTMLButtonElement).click();
+
+    expect(mapState.invalidate).toHaveBeenCalled();
+    confirm.mockRestore();
+  });
 
   it('shows the configured max heart rate and saves an update', () => {
     const { el, adminService } = setup();

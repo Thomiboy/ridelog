@@ -1,12 +1,11 @@
 import { TranslocoDatePipe, TranslocoDecimalPipe } from '@jsverse/transloco-locale';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
-import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { DurationPipe } from '../../core/format/duration.pipe';
@@ -30,12 +29,11 @@ const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
     MatButtonModule,
     MatIconModule,
     SourceChips,
-    RouteMap,
   ],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',
 })
-export class Rides {
+export class Rides implements OnDestroy {
   private readonly ridesService = inject(RidesService);
   private readonly mapState = inject(MapState);
   private readonly router = inject(Router);
@@ -51,11 +49,8 @@ export class Rides {
 
   readonly result = signal<Paged<RideSummary> | null>(null);
 
-  /** List (paged table), the all-routes coverage map, or the monthly calendar; kept across navigation. */
+  /** List (paged table) or the monthly calendar; kept across navigation. */
   readonly view = this.viewState.view;
-
-  /** Every route's polyline for the coverage map; null until the map view is first opened. */
-  readonly mapRoutes = signal<string[] | null>(null);
 
   /** Every ride for the calendar; null until the calendar view is first opened. */
   readonly allRides = signal<RideSummary[] | null>(null);
@@ -104,8 +99,8 @@ export class Rides {
   });
 
   constructor() {
-    // Returning to the list swaps the background map back to the latest ride.
-    this.mapState.reset();
+    // The whole page sits over a coverage map of every route ridden — the "where have I been" view.
+    this.mapState.showAllRoutes();
     // Restore the page from the URL so returning from a ride's detail keeps your place.
     this.load(this.pageFromUrl());
     // Apply the remembered view (calendar by default), loading its data and sizing the sheet.
@@ -123,6 +118,12 @@ export class Rides {
     });
   }
 
+  ngOnDestroy(): void {
+    // Leaving Rides hands the background back to the latest ride, so the coverage layer doesn't
+    // linger on the Dashboard.
+    this.mapState.reset();
+  }
+
   private pageFromUrl(): number {
     const raw = Number(this.route.snapshot.queryParamMap.get('page'));
     return Number.isInteger(raw) && raw > 0 ? raw : 1;
@@ -133,17 +134,14 @@ export class Rides {
     this.applyView(view);
   }
 
-  /** Runs a view's side effects: the map/calendar expand the sheet and load their data once. */
+  /** Runs a view's side effects: the calendar expands the sheet and loads its rides once. */
   private applyView(view: RidesView): void {
     if (view === 'list') {
       this.sheetState.request('half');
       return;
     }
     this.sheetState.request('full');
-    if (view === 'map' && this.mapRoutes() === null) {
-      this.ridesService.getAllRoutes().subscribe((routes) => this.mapRoutes.set(routes.map((r) => r.routePolyline)));
-    }
-    if (view === 'calendar' && this.allRides() === null) {
+    if (this.allRides() === null) {
       this.ridesService.getAllRides().subscribe((rides) => this.allRides.set(rides));
     }
   }
