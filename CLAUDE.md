@@ -66,8 +66,6 @@ The container ships **Node 22.22.2**, but the Angular CLI's `SUPPORTED_NODE_VERS
 ### Current status (2026-07-29)
 - **Phase 1 and Phase 2 are both complete; the GitHub issue list is empty.** Everything through PR #116 is merged to `main`.
 - Phase 2 delivered: statistics records and charts, the calendar view, ride comparison, rest markers, dark mode, Hungarian translation, locale-sensitive number/date/duration formatting (#104), two-year comparison on the Trends charts (#110), the Rides coverage backdrop (#113), and the four-channel ride graph with speed (#114).
-- **Outstanding manual actions:**
-  - Run the admin **"Reprocess all"** so existing rides gain the stored per-point **speed** added in #114 — new syncs already carry it. It burns F1 CPU minutes, so run it after the daily reset (~00:00 UTC).
-  - **Import the lost Polar exercise `498528704`** (2026-07-23) via Polar Flow export → admin Import, if it hasn't been done yet (Polar won't re-serve a committed exercise).
+- **No outstanding manual actions.** The admin **"Reprocess all"** has been run in production, so existing rides carry the per-point **speed** added in #114 (new syncs bring it in already), and every ride lost to a failed sync — including the Polar exercise `498528704` from 2026-07-23 — has been imported by hand via Polar Flow export → admin Import.
 - Test suite: **169 backend** (unit + endpoint tests in `RideLog.UnitTests`) and **257 frontend** (Vitest, 36 files).
 - Working agreement with the owner: develop on `develop`, TDD via `/tdd #N`, and **only push and open a PR (develop → main) when the owner says so** — they merge it themselves.
