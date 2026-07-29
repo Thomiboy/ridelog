@@ -1,5 +1,13 @@
 import { vi, type Mock } from 'vitest';
-import { createRouteMap, drawRestStops, drawRoutes, ROUTE_COLORS, setTileLayer, type LeafletApi } from './leaflet-map';
+import {
+  createRouteMap,
+  drawRestStops,
+  drawRoutes,
+  ROUTE_COLORS,
+  setTileLayer,
+  shouldFitView,
+  type LeafletApi,
+} from './leaflet-map';
 
 const ENCODED = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 
@@ -145,6 +153,20 @@ describe('leaflet-map', () => {
     const union = (api.latLngBounds as unknown as Mock).mock.calls[0][0] as unknown[];
     expect(union.length).toBeGreaterThan(2); // more points than a single route contributes
     expect(map.fitBounds).toHaveBeenCalledTimes(1);
+  });
+
+  it('fits on the first draw no matter how much the sheet covers', () => {
+    expect(shouldFitView(true, 0.92)).toBe(true);
+  });
+
+  it('fits whenever enough of the map is visible', () => {
+    expect(shouldFitView(false, 0.55)).toBe(true);
+  });
+
+  it('keeps the view once the sheet is essentially full, rather than squeezing routes into a sliver', () => {
+    // Opening Rides swaps the background to every route while the calendar covers 92% — refitting
+    // there would cram them into the remaining strip. Dragging the sheet down fits them properly.
+    expect(shouldFitView(false, 0.92)).toBe(false);
   });
 
   it('still draws the tracks but skips fitting the view when fit is false', () => {

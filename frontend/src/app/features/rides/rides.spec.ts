@@ -1,34 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { Component, input, signal } from '@angular/core';
-import { By } from '@angular/platform-browser';
+import { signal } from '@angular/core';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { Rides } from './rides';
 import { RidesService } from '../../core/api/rides.service';
 import { MapState } from '../../core/map/map-state';
 import { RidesViewState, type RidesView } from './rides-view-state';
-import { RouteMap } from '../ride-detail/route-map/route-map';
 import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import type { SnapState } from '../../layout/bottom-sheet/snap';
-import type { Paged, RideRoute, RideSummary } from '../../core/api/ride.models';
+import type { Paged, RideSummary } from '../../core/api/ride.models';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
-// Leaflet needs a real canvas; stub the map so the coverage view renders in jsdom.
-@Component({ selector: 'app-route-map', template: '' })
-class RouteMapStub {
-  readonly routes = input<string[]>([]);
-  readonly coverage = input<boolean>(false);
-  readonly obscuredBottomFraction = input<number>(0);
-}
-
 describe('Rides', () => {
-  const routeList: RideRoute[] = [
-    { id: 'r1', routePolyline: 'poly-1' },
-    { id: 'r2', routePolyline: 'poly-2' },
-  ];
-
   // A ride on a given day of the *current* month, so it lands in the calendar's default month.
   const calRide = (id: string, distanceKm: number, day = 15): RideSummary => {
     const now = new Date();
@@ -44,7 +29,6 @@ describe('Rides', () => {
     loggedIn = false,
     queryParams: Record<string, string> = {},
     snap: SnapState = 'half',
-    mapRoutes: RideRoute[] = routeList,
     calendarRides: RideSummary[] = [calRide('c1', 42)],
     // The real default is 'calendar'; most tests exercise the list, so default the setup to 'list'.
     startView: RidesView = 'list',
@@ -52,10 +36,9 @@ describe('Rides', () => {
     const ridesService = {
       getRides: vi.fn().mockReturnValue(of(paged)),
       deleteRide: vi.fn().mockReturnValue(of(void 0)),
-      getAllRoutes: vi.fn().mockReturnValue(of(mapRoutes)),
       getAllRides: vi.fn().mockReturnValue(of(calendarRides)),
     };
-    const mapState = { reset: vi.fn(), invalidate: vi.fn() };
+    const mapState = { reset: vi.fn(), invalidate: vi.fn(), showAllRoutes: vi.fn() };
     const authService = { isLoggedIn: signal(loggedIn) };
     const sheetState = { current: signal<SnapState>(snap), request: vi.fn() };
     const route = { snapshot: { queryParamMap: convertToParamMap(queryParams) } };
@@ -69,9 +52,6 @@ describe('Rides', () => {
         { provide: SheetState, useValue: sheetState },
         { provide: ActivatedRoute, useValue: route },
       ],
-    }).overrideComponent(Rides, {
-      remove: { imports: [RouteMap] },
-      add: { imports: [RouteMapStub] },
     });
     const viewState = TestBed.inject(RidesViewState);
     viewState.view.set(startView);
@@ -79,11 +59,6 @@ describe('Rides', () => {
     const fixture = TestBed.createComponent(Rides);
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, authService, sheetState, viewState, router };
-  }
-
-  function showMap(ctx: ReturnType<typeof setup>) {
-    (ctx.el.querySelector('[data-view="map"]') as HTMLButtonElement).click();
-    ctx.fixture.detectChanges();
   }
 
   function showCalendar(ctx: ReturnType<typeof setup>) {
@@ -131,8 +106,19 @@ describe('Rides', () => {
     expect(el.querySelector('[data-ride]')?.textContent).toContain('Jun 1, 2026');
   });
 
-  it('restores the latest-ride background map on entry', () => {
+  it('paints every route on the background map on entry', () => {
     const { mapState } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    // The Rides page is the "where have I been" overview, so its backdrop is every route at once,
+    // not the latest ride.
+    expect(mapState.showAllRoutes).toHaveBeenCalled();
+    expect(mapState.reset).not.toHaveBeenCalled();
+  });
+
+  it('restores the default background when leaving the page', () => {
+    const { fixture, mapState } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    fixture.destroy();
 
     expect(mapState.reset).toHaveBeenCalled();
   });
@@ -258,12 +244,21 @@ describe('Rides', () => {
     const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
 
     expect(el.querySelector('table.rides')).not.toBeNull();
-    expect(el.querySelector('app-route-map')).toBeNull();
+  });
+
+  it('offers only the list and calendar views — routes live on the background map', () => {
+    const { el } = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
+
+    expect([...el.querySelectorAll('[data-view]')].map((b) => b.getAttribute('data-view'))).toEqual([
+      'list',
+      'calendar',
+    ]);
+    expect(el.querySelector('app-route-map')).toBeNull(); // no map embedded in the page
   });
 
   it('defaults to the calendar view', () => {
     // Fresh RidesViewState (no override) → the calendar is the default view.
-    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 }, false, {}, 'half', routeList, [calRide('c1', 42)], 'calendar');
+    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 }, false, {}, 'half', [calRide('c1', 42)], 'calendar');
 
     expect(ctx.el.querySelector('[data-cal-day]')).not.toBeNull();
     expect(ctx.el.querySelector('table.rides')).toBeNull();
@@ -274,46 +269,15 @@ describe('Rides', () => {
     const paged = { items: [ride('r1')], page: 1, pageSize: 20, total: 1 };
     const ctx = setup(paged); // starts on the list
 
-    // Switch to the map, then leave and come back (a new component, same shared view state).
-    showMap(ctx);
+    // Switch to the calendar, then leave and come back (a new component, same shared view state).
+    showCalendar(ctx);
     ctx.fixture.destroy();
     const returned = TestBed.createComponent(Rides);
     returned.detectChanges();
 
     const el = returned.nativeElement as HTMLElement;
-    expect(el.querySelector('app-route-map')).not.toBeNull();
+    expect(el.querySelector('[data-cal-day]')).not.toBeNull();
     expect(el.querySelector('table.rides')).toBeNull();
-  });
-
-  it('switches to a coverage map of every route polyline', () => {
-    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
-
-    showMap(ctx);
-
-    expect(ctx.ridesService.getAllRoutes).toHaveBeenCalled();
-    const map = ctx.fixture.debugElement.query(By.css('app-route-map'));
-    expect(map).not.toBeNull();
-    expect((map.componentInstance as RouteMapStub).routes()).toEqual(['poly-1', 'poly-2']);
-    expect((map.componentInstance as RouteMapStub).coverage()).toBe(true);
-    // The list is replaced by the map.
-    expect(ctx.el.querySelector('table.rides')).toBeNull();
-  });
-
-  it('expands the sheet to full when showing the map', () => {
-    const ctx = setup({ items: [ride('r1')], page: 1, pageSize: 20, total: 1 });
-
-    showMap(ctx);
-
-    expect(ctx.sheetState.request).toHaveBeenCalledWith('full');
-  });
-
-  it('shows an empty state in the map view when there are no routes', () => {
-    const ctx = setup({ items: [], page: 1, pageSize: 20, total: 0 }, false, {}, 'half', []);
-
-    showMap(ctx);
-
-    expect(ctx.el.querySelector('[data-map-empty]')).not.toBeNull();
-    expect(ctx.fixture.debugElement.query(By.css('app-route-map'))).toBeNull();
   });
 
   it('switches to a calendar grid built from all rides', () => {
@@ -358,7 +322,6 @@ describe('Rides', () => {
       false,
       {},
       'half',
-      routeList,
       [calRide('c1', 30), calRide('c2', 20)],
     );
     showCalendar(ctx);

@@ -18,25 +18,68 @@ export class MapState {
   /** Rest markers for the single displayed route; cleared for multi-route and default backgrounds. */
   readonly restStops = signal<RestStop[]>([]);
 
+  /**
+   * Whether the routes are one translucent coverage layer (the Rides "where have I been" backdrop)
+   * rather than distinct coloured tracks. Route count can't imply this — Statistics deliberately
+   * draws three routes in distinct colours — so the intent travels with the state.
+   */
+  readonly coverage = signal(false);
+
   private latest: string | null = null;
   private latestLoaded = false;
+
+  private allRoutes: string[] = [];
+  private allRoutesLoaded = false;
 
   /** Shows a single route (or clears the map when there's none), with optional rest markers. */
   showRoute(polyline: string | null | undefined, restStops: RestStop[] = []): void {
     this.routes.set(polyline ? [polyline] : []);
     this.restStops.set(polyline ? restStops : []);
+    this.coverage.set(false);
   }
 
-  /** Shows several routes at once; empty entries are dropped so no blank track is drawn. */
+  /** Shows several routes at once as distinct tracks; empty entries are dropped so no blank track is drawn. */
   showRoutes(polylines: string[]): void {
     this.routes.set(polylines.filter((p) => p.length > 0));
     this.restStops.set([]);
+    this.coverage.set(false);
   }
 
-  /** Drops the cached latest route so the next reset refetches — call after a ride is deleted. */
+  /** Shows every route as one translucent coverage layer, so frequently-ridden roads darken. */
+  showCoverage(polylines: string[]): void {
+    this.showRoutes(polylines);
+    this.coverage.set(true);
+  }
+
+  /**
+   * Paints every ride's route as the coverage backdrop (the Rides page). The route list is the
+   * largest payload in the app and Rides ⇄ ride detail is a frequent round trip, so it's fetched
+   * once per session and reused until invalidate().
+   */
+  showAllRoutes(): void {
+    if (this.allRoutesLoaded) {
+      this.showCoverage(this.allRoutes);
+      return;
+    }
+    this.ridesService.getAllRoutes().subscribe({
+      next: (routes) => {
+        this.allRoutes = routes.map((route) => route.routePolyline);
+        this.allRoutesLoaded = true;
+        this.showCoverage(this.allRoutes);
+      },
+      error: () => this.showCoverage([]),
+    });
+  }
+
+  /**
+   * Drops both cached backgrounds so the next reset / showAllRoutes refetches — call whenever the
+   * set of rides changes (a delete, but also an import, a sync or a delete-all).
+   */
   invalidate(): void {
     this.latest = null;
     this.latestLoaded = false;
+    this.allRoutes = [];
+    this.allRoutesLoaded = false;
   }
 
   /** Restores the default (latest ride) route, from cache when already loaded. */

@@ -86,6 +86,57 @@ describe('MapState', () => {
     expect(state.routes()).toEqual(['a', 'c']);
   });
 
+  it('showCoverage marks the routes as one coverage layer', () => {
+    state.showCoverage(['a', 'b']);
+
+    expect(state.routes()).toEqual(['a', 'b']);
+    expect(state.coverage()).toBe(true);
+  });
+
+  it('showRoute and showRoutes draw distinct tracks, never coverage', () => {
+    state.showCoverage(['a', 'b']);
+    state.showRoutes(['x', 'y']);
+    expect(state.coverage()).toBe(false);
+
+    state.showCoverage(['a', 'b']);
+    state.showRoute('single');
+    expect(state.coverage()).toBe(false);
+  });
+
+  it('showAllRoutes paints every route as coverage, fetching them only once', () => {
+    state.showAllRoutes();
+    http.expectOne(`${environment.apiBaseUrl}/rides/routes`).flush([
+      { id: 'r1', routePolyline: 'poly-1' },
+      { id: 'r2', routePolyline: 'poly-2' },
+    ]);
+
+    expect(state.routes()).toEqual(['poly-1', 'poly-2']);
+    expect(state.coverage()).toBe(true);
+
+    // Leaving and returning to Rides must reuse the cache — this is the largest payload in the app.
+    state.showRoute('a-single-ride');
+    state.showAllRoutes();
+
+    expect(state.routes()).toEqual(['poly-1', 'poly-2']);
+    expect(state.coverage()).toBe(true);
+    http.verify(); // no second request
+  });
+
+  it('invalidate makes showAllRoutes refetch, so imported rides appear', () => {
+    state.showAllRoutes();
+    http.expectOne(`${environment.apiBaseUrl}/rides/routes`).flush([{ id: 'r1', routePolyline: 'poly-1' }]);
+    expect(state.routes()).toEqual(['poly-1']);
+
+    state.invalidate();
+    state.showAllRoutes();
+
+    http.expectOne(`${environment.apiBaseUrl}/rides/routes`).flush([
+      { id: 'r1', routePolyline: 'poly-1' },
+      { id: 'r2', routePolyline: 'poly-2' },
+    ]);
+    expect(state.routes()).toEqual(['poly-1', 'poly-2']);
+  });
+
   it('reset restores the latest route from cache without refetching', () => {
     state.loadLatest();
     http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=1`).flush({

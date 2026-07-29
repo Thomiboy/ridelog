@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { TranslocoService } from '@jsverse/transloco';
 import { AdminService } from '../../core/api/admin.service';
+import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary } from '../../core/api/admin.models';
 
@@ -20,6 +21,7 @@ export class Admin {
   private readonly navigator = inject(ExternalNavigator);
   private readonly route = inject(ActivatedRoute);
   private readonly transloco = inject(TranslocoService);
+  private readonly mapState = inject(MapState);
 
   readonly status = signal<PolarStatus | null>(null);
   readonly selectedFiles = signal<File[]>([]);
@@ -83,6 +85,7 @@ export class Admin {
       this.adminService.importRides(files).subscribe({
         next: (result) => {
           this.importResult.set(result);
+          this.ridesChanged();
           this.busy.set(false);
         },
         error: () => this.fail(),
@@ -95,6 +98,7 @@ export class Admin {
       this.adminService.sync().subscribe({
         next: (result) => {
           this.syncResult.set(result);
+          this.ridesChanged();
           this.busy.set(false);
           this.loadStatus();
         },
@@ -108,6 +112,7 @@ export class Admin {
       this.adminService.reprocess().subscribe({
         next: (result) => {
           this.reprocessResult.set(result);
+          this.ridesChanged();
           this.busy.set(false);
         },
         error: () => this.fail(),
@@ -128,11 +133,20 @@ export class Admin {
       this.adminService.deleteAllRides().subscribe({
         next: (result) => {
           this.deletedCount.set(result.deleted);
+          this.ridesChanged();
           this.busy.set(false);
         },
         error: () => this.fail(),
       }),
     );
+  }
+
+  /**
+   * The background maps (the Rides coverage layer and the latest-ride default) are cached for the
+   * session, so every operation that adds, rebuilds or removes rides has to drop those caches.
+   */
+  private ridesChanged(): void {
+    this.mapState.invalidate();
   }
 
   private loadStatus(): void {
