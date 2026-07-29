@@ -103,13 +103,17 @@ internal sealed class FitActivityParser : IActivityFileParser
         }
 
         var time = record.GetTimestamp();
+        // FIT records speed in metres per second; devices that don't write it leave the series
+        // builder to derive speed from position and time.
+        var speed = record.GetSpeed();
         return new GeoPoint(
             lat.Value * SemicircleToDegrees,
             lon.Value * SemicircleToDegrees,
             record.GetAltitude(),
             time is null ? null : ToDateTimeOffset(time),
             record.GetHeartRate(),
-            record.GetTemperature());
+            record.GetTemperature(),
+            speed is null ? null : speed.Value * 3.6);
     }
 
     private static DateTimeOffset ToDateTimeOffset(Dynastream.Fit.DateTime time) =>

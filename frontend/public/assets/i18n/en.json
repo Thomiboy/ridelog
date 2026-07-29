@@ -85,7 +85,7 @@
       "temperature": "Temperature"
     },
     "graph": {
-      "title": "Elevation & heart rate",
+      "title": "Metrics",
       "byDistance": "Distance",
       "byTime": "Time"
     },

@@ -62,6 +62,47 @@ public class TcxActivityParserTests
         Assert.True(new TcxActivityParser().CanParse("Evening Ride.TCX"));
 
     [Fact]
+    public void Reads_the_per_trackpoint_speed_the_device_recorded()
+    {
+        // Garmin's TPX extension carries Speed in metres per second: 8 m/s = 28.8 km/h.
+        const string withSpeed = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+              <Activities>
+                <Activity Sport="Biking">
+                  <Id>2026-06-02T07:00:00Z</Id>
+                  <Lap StartTime="2026-06-02T07:00:00Z">
+                    <DistanceMeters>30000</DistanceMeters>
+                    <Track>
+                      <Trackpoint>
+                        <Time>2026-06-02T07:00:00Z</Time>
+                        <Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.0</LongitudeDegrees></Position>
+                        <Extensions>
+                          <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+                            <Speed>8.0</Speed>
+                          </TPX>
+                        </Extensions>
+                      </Trackpoint>
+                      <Trackpoint>
+                        <Time>2026-06-02T07:30:00Z</Time>
+                        <Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.01</LongitudeDegrees></Position>
+                      </Trackpoint>
+                    </Track>
+                  </Lap>
+                </Activity>
+              </Activities>
+            </TrainingCenterDatabase>
+            """;
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(withSpeed));
+        var activity = new TcxActivityParser().Parse(stream, "ride.tcx");
+
+        Assert.Equal(28.8, activity.RoutePoints[0].SpeedKmh!.Value, 0.01);
+        // The second point carries no TPX, so the parser leaves it for the series builder to derive.
+        Assert.Null(activity.RoutePoints[1].SpeedKmh);
+    }
+
+    [Fact]
     public void Reads_sport_time_bounds_and_route()
     {
         var activity = Parse();

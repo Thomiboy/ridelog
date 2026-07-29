@@ -15,7 +15,8 @@ public sealed class FitActivityParserTests
         (System.DateTime Time, double Lat, double Lon, float Altitude, sbyte Temperature, byte HeartRate)[] records,
         Sport sport = Sport.Cycling,
         float totalDistanceMeters = 25000f,
-        float totalTimerSeconds = 3600f)
+        float totalTimerSeconds = 3600f,
+        float? speedMps = null)
     {
         using var stream = new MemoryStream();
         var encoder = new Encode(ProtocolVersion.V20);
@@ -35,6 +36,11 @@ public sealed class FitActivityParserTests
             record.SetAltitude(r.Altitude);
             record.SetTemperature(r.Temperature);
             record.SetHeartRate(r.HeartRate);
+            if (speedMps is { } speed)
+            {
+                record.SetSpeed(speed);
+            }
+
             encoder.Write(record);
         }
 
@@ -82,6 +88,23 @@ public sealed class FitActivityParserTests
         Assert.Equal(3, parsed.RoutePoints.Count);
         Assert.Equal(47.50, parsed.RoutePoints[0].Latitude, 0.001);
         Assert.Equal("Cycling", parsed.Sport);
+    }
+
+    [Fact]
+    public void Keeps_the_per_record_speed_the_device_recorded()
+    {
+        // FIT records speed in metres per second: 7.5 m/s = 27 km/h.
+        var bytes = BuildFit(
+            [
+                (T0, 47.50, 19.00, 100f, (sbyte)10, (byte)120),
+                (T0.AddMinutes(30), 47.55, 19.05, 150f, (sbyte)20, (byte)140),
+            ],
+            speedMps: 7.5f);
+
+        using var content = new MemoryStream(bytes);
+        var parsed = new FitActivityParser().Parse(content, "ride.fit");
+
+        Assert.Equal(27.0, parsed.RoutePoints[0].SpeedKmh!.Value, 0.01);
     }
 
     [Fact]

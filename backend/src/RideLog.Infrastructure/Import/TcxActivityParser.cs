@@ -148,13 +148,17 @@ internal sealed class TcxActivityParser : IActivityFileParser
         var time = Child(trackpoint, "Time");
         var hrElement = Descendant(trackpoint, "HeartRateBpm");
         var hr = hrElement is null ? null : Child(hrElement, "Value");
+        // Garmin's TPX extension records Speed in metres per second; not every device writes it, and
+        // the series builder derives the rest from position and time.
+        var speed = Descendant(trackpoint, "Speed")?.Value;
 
         return new GeoPoint(
             lat,
             lon,
             ele is null ? null : double.Parse(ele, CultureInfo.InvariantCulture),
             time is null ? null : DateTimeOffset.Parse(time, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
-            hr is null ? null : (int)Math.Round(double.Parse(hr, CultureInfo.InvariantCulture)));
+            hr is null ? null : (int)Math.Round(double.Parse(hr, CultureInfo.InvariantCulture)),
+            SpeedKmh: speed is null ? null : double.Parse(speed, CultureInfo.InvariantCulture) * 3.6);
     }
 
     private static string? Child(XElement element, string localName) =>

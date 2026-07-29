@@ -55,6 +55,41 @@ public sealed class MetricSeriesBuilderTests
     }
 
     [Fact]
+    public void Derives_speed_from_distance_and_time_when_the_source_records_none()
+    {
+        // 0.01° of latitude ≈ 1.11 km; covered in 30 minutes → ≈ 2.22 km/h. The expected value comes
+        // from the coordinates and the clock, not from the builder.
+        var points = new List<GeoPoint>
+        {
+            new(47.50, 19.0, Time: T0),
+            new(47.51, 19.0, Time: T0.AddMinutes(30)),
+        };
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Equal(2.22, series[1].SpeedKmh!.Value, 0.15);
+        // The first sample has no preceding interval, so it takes the first one's speed rather than a
+        // fake zero that would dip the chart at the start.
+        Assert.Equal(2.22, series[0].SpeedKmh!.Value, 0.15);
+    }
+
+    [Fact]
+    public void Prefers_the_speed_the_device_recorded_over_the_derived_one()
+    {
+        // Geometry would give ≈ 2.22 km/h for this pair, so the recorded values can only come from
+        // the source — the device reading wins where it exists.
+        var points = new List<GeoPoint>
+        {
+            new(47.50, 19.0, Time: T0, SpeedKmh: 25),
+            new(47.51, 19.0, Time: T0.AddMinutes(30), SpeedKmh: 28),
+        };
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Equal([25.0, 28.0], series.Select(s => s.SpeedKmh));
+    }
+
+    [Fact]
     public void Returns_empty_for_no_points()
     {
         Assert.Empty(MetricSeriesBuilder.Build([]));
@@ -115,12 +150,27 @@ public sealed class MetricSeriesBuilderTests
     }
 
     [Fact]
-    public void Storable_series_is_null_when_no_point_has_elevation_or_heart_rate()
+    public void Storable_series_is_kept_when_only_speed_can_be_derived()
     {
-        var barePoints = new List<GeoPoint>
+        // A plain GPX track: no elevation, heart rate or temperature — but position and time give a
+        // speed graph, which is worth keeping.
+        var points = new List<GeoPoint>
         {
             new(47.50, 19.0, Time: T0),
             new(47.51, 19.0, Time: T0.AddMinutes(30)),
+        };
+
+        Assert.NotNull(MetricSeriesBuilder.BuildStorable(points));
+    }
+
+    [Fact]
+    public void Storable_series_is_null_when_there_is_nothing_to_graph()
+    {
+        // Without timestamps not even speed can be derived, so the series carries no channel at all.
+        var barePoints = new List<GeoPoint>
+        {
+            new(47.50, 19.0),
+            new(47.51, 19.0),
         };
 
         Assert.Null(MetricSeriesBuilder.BuildStorable(barePoints));

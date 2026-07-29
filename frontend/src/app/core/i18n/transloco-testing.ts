@@ -108,7 +108,7 @@ const en = {
       climbingEnergy: 'Climbing & energy',
       temperature: 'Temperature',
     },
-    graph: { title: 'Elevation & heart rate', byDistance: 'Distance', byTime: 'Time' },
+    graph: { title: 'Metrics', byDistance: 'Distance', byTime: 'Time' },
     hrZones: { title: 'Time in HR zones' },
     compare: {
       action: 'Compare',

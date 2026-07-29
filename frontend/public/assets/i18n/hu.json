@@ -85,7 +85,7 @@
       "temperature": "Hőmérséklet"
     },
     "graph": {
-      "title": "Szint és pulzus",
+      "title": "Mérések",
       "byDistance": "Táv",
       "byTime": "Idő"
     },

@@ -108,12 +108,52 @@ describe('RideDetail', () => {
     return node ? (node.componentInstance as ChartStub) : null;
   }
 
+  /** The y-axis each plotted line is bound to, in dataset order. */
+  function axisIds(chart: ChartStub): (string | undefined)[] {
+    return (chart.data().datasets as { yAxisID?: string }[]).map((d) => d.yAxisID);
+  }
+
   it('shows the elevation/HR graph, x-axis by distance, when a series is present', () => {
     const { fixture } = setup(withSeries());
 
     const chart = graphChart(fixture);
     expect(chart).not.toBeNull();
     expect(chart!.data().labels).toEqual([0, 2]); // distance km
+  });
+
+  const withSpeedSeries = (): RideDetailDto => ({
+    ...detail,
+    metricSeries: [
+      { distanceKm: 0, elapsedMinutes: 0, elevationMeters: 100, heartRate: 120, speedKmh: 22 },
+      { distanceKm: 2, elapsedMinutes: 10, elevationMeters: 140, heartRate: 150, speedKmh: 28 },
+    ],
+  });
+
+  it('offers only the channels the ride recorded and swaps which two are plotted', () => {
+    const { fixture, el } = setup(withSpeedSeries());
+
+    // This ride has no temperature, so it isn't offered at all.
+    expect([...el.querySelectorAll('[data-channel]')].map((b) => b.getAttribute('data-channel'))).toEqual([
+      'elevation',
+      'heartRate',
+      'speed',
+    ]);
+
+    // It opens on heart rate and speed.
+    expect(axisIds(graphChart(fixture)!)).toEqual(['hr', 'speed']);
+
+    // Picking a third channel drops the one selected longest ago (heart rate).
+    (el.querySelector('[data-channel="elevation"]') as HTMLElement).click();
+    fixture.detectChanges();
+
+    expect(axisIds(graphChart(fixture)!)).toEqual(['speed', 'elevation']);
+  });
+
+  it('gives each selected channel its own y-axis, so both read in their own units', () => {
+    const { fixture } = setup(withSpeedSeries());
+
+    // Only the two shown channels get an axis — no leftover axis for a hidden metric.
+    expect(Object.keys(graphChart(fixture)!.options()!.scales!).sort()).toEqual(['hr', 'speed']);
   });
 
   it('switches the graph x-axis from distance to elapsed time', () => {

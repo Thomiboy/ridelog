@@ -36,20 +36,54 @@ public static class MetricSeriesBuilder
                 Math.Round(elapsed, 3),
                 points[i].ElevationMeters,
                 points[i].HeartRate,
-                points[i].TemperatureCelsius));
+                points[i].TemperatureCelsius,
+                SpeedAt(points, i)));
         }
 
         return Downsample(samples);
     }
 
     /// <summary>
-    /// Builds the series for storage, returning null when it carries none of elevation, heart rate
-    /// or temperature — such a series has nothing to graph, so there's no point keeping it.
+    /// Speed at a point: the device's own reading when the source recorded one, otherwise derived
+    /// from the distance and time to the previous point. Deriving happens on the full track, before
+    /// downsampling, so it isn't smeared across the stride. The first point has no preceding
+    /// interval, so it borrows the first one's speed rather than reading as a standstill.
+    /// </summary>
+    private static double? SpeedAt(IReadOnlyList<GeoPoint> points, int index)
+    {
+        if (points[index].SpeedKmh is { } recorded)
+        {
+            return Math.Round(recorded, 2);
+        }
+
+        var (from, to) = index == 0 ? (0, 1) : (index - 1, index);
+        if (to >= points.Count || points[from].Time is not { } start || points[to].Time is not { } end)
+        {
+            return null;
+        }
+
+        var hours = (end - start).TotalHours;
+        if (hours <= 0)
+        {
+            return null;
+        }
+
+        var km = GeoMath.DistanceMeters(points[from], points[to]) / 1000.0;
+        return Math.Round(km / hours, 2);
+    }
+
+    /// <summary>
+    /// Builds the series for storage, returning null when it carries none of elevation, heart rate,
+    /// temperature or speed — such a series has nothing to graph, so there's no point keeping it.
     /// </summary>
     public static IReadOnlyList<MetricSample>? BuildStorable(IReadOnlyList<GeoPoint> points)
     {
         var series = Build(points);
-        return series.Any(s => s.ElevationMeters is not null || s.HeartRate is not null || s.TemperatureCelsius is not null)
+        return series.Any(s =>
+            s.ElevationMeters is not null
+            || s.HeartRate is not null
+            || s.TemperatureCelsius is not null
+            || s.SpeedKmh is not null)
             ? series
             : null;
     }
