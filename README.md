@@ -107,5 +107,11 @@ Cors__AllowedOrigins__0        = <Static Web App origin, set once the frontend i
 ## Roadmap
 
 - **Phase 1 (MVP) ✅:** Polar sync, historical import, ride list + detail with map, basic dashboard, public read-only + admin login, CI/CD
-- **Phase 2 (in progress):** Bryton FIT upload + merge, temperature stats, HR zones, personal records, all-routes map, Hungarian translation
-- **Backlog:** multi-user mode, other sports, Google/Microsoft login, containerization (Container Apps), MapLibre, interactive analysis view (linked map + elevation + HR), Azure Blob Storage for raw files, weather enrichment
+- **Phase 2 (feature-complete, polishing):** Bryton FIT upload + merge, temperature stats, HR zones, personal records, calendar view, ride comparison, rest markers, the all-routes coverage backdrop, dark mode, Hungarian translation with locale-aware number/date formatting, per-point metric graph (elevation, heart rate, temperature, speed) with a two-channel picker, and year-over-year comparison on the Trends charts
+- **Phase 3 (planned):**
+  - **Interactive analysis view** — link the ride graph and the map: scrubbing the chart moves a marker along the route, and vice versa
+  - **Weather enrichment** — per-ride wind, precipitation and conditions from a free historical weather API, cached alongside the ride
+  - **Other sports** — surface the non-cycling activities that are already stored, instead of filtering them out of the UI
+  - **MapLibre** — swap the map engine behind the existing map component seam
+  - **Multi-user mode + Google/Microsoft login** — open the single-admin app up to registered users (the data model already carries `UserId` throughout)
+- **Backlog:** containerization (Container Apps), Azure Blob Storage for raw files — both deferred while the zero-cost hosting setup is working
