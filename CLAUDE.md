@@ -28,7 +28,8 @@ npm run build
 - **No generic repository over EF Core.** The query side uses EF Core projections directly to DTOs behind interfaces defined in Application. Mapping is manual or via Mapperly (no AutoMapper).
 - **Data sources:** Polar AccessLink is the primary, automatic source (only delivers sessions created after client registration — historical rides come from one-time GPX/TCX bulk upload). Bryton has **no public API**; its FIT files are uploaded manually and must be **merged into the matching Polar ride** (matched by time overlap), never stored as duplicate rides. All sports are stored raw; the UI shows cycling only.
 - **Auth:** ASP.NET Core Identity + JWT bearer (frontend and API are on different origins — no cookies). One seeded admin user. Read endpoints are public.
-- **Frontend:** the Leaflet map lives behind a dedicated Angular component so the map engine can be swapped later (MapLibre is on the backlog). Charts use Chart.js via ng2-charts. UI strings go through Transloco (English now, Hungarian later).
+- **Per-point metric series:** every ride stores a downsampled `MetricSample[]` (≤500 points) built by `MetricSeriesBuilder` — cumulative distance, elapsed minutes, elevation, heart rate, temperature and speed. It is a **JSON column**, not a child table, so adding a channel needs **no EF migration** (old rows deserialize with the new field null) but does need an admin **Reprocess all** to backfill. Speed is source-first: the device's reading (TCX `TPX/Speed`, FIT per-record speed) where the file has one, otherwise derived from position and time on the full track before downsampling.
+- **Frontend:** the Leaflet map lives behind a dedicated Angular component so the map engine can be swapped later (MapLibre is on the backlog). There is **one map** — the global background map behind the bottom sheet, driven by `MapState`; pages set what it shows (`showRoute` / `showRoutes` / `showCoverage`) and `reset()` on leaving. Charts use Chart.js via ng2-charts behind a shared `Chart` component. UI strings go through Transloco (English + Hungarian), and numbers/dates through `@jsverse/transloco-locale` (`en-US` / `hu-HU`). Light/dark/system theming via `ThemeService` + Material `light-dark()` tokens.
 
 ## Hosting (all zero-cost tiers — keep it that way)
 
@@ -46,7 +47,7 @@ Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `read
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`. **Neither exists yet** — the domain model and decisions currently live in this file and in the issue history; create them when the first one is actually needed.
 
 ## Operational notes (learned the hard way)
 
@@ -59,7 +60,14 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 - **GPX/TCX downloads need the file media type in `Accept`** — `application/gpx+xml` / `application/vnd.garmin.tcx+xml`. Sending `application/json` (the default for the JSON endpoints) → **HTTP 406** on the file sub-resources, so every GPS-ride sync failed at download. This was the real reason "sync ran but no ride appeared" (the visible rides had all come from manual import).
 - A failed exercise is **logged at error level** (`PolarSyncService`) and the last sync's imported/skipped/failed counts show on the admin Sync card. The transaction is **committed even on failure**, so a lost exercise is **not re-served** — recover it via Polar Flow export → admin Import.
 
-### Current status (2026-07-23)
-- PR #75 (Polar 406 `Accept`-header fix) is **merged and deployed live** (the backend deploy was re-run successfully after the F1 quota reset). The full stack now runs the latest code, so the daily/manual Polar sync should import GPS rides.
-- Still to do manually: **import the lost Polar exercise `498528704`** (2026-07-23) via Polar Flow export → admin Import (Polar won't re-serve a committed exercise).
-- Phase 1 is complete. Phase 2 backlog lives in the **"Phase 2 - Enrichment"** milestone: #44 (dashboard: 3 longest routes), #60 (elevation/HR graph — needs a stored per-point series, currently only the encoded lat/lng polyline is kept), #61 (compare with an earlier ride), #63 (dark mode).
+### Dev container quirk
+The container ships **Node 22.22.2**, but the Angular CLI's `SUPPORTED_NODE_VERSIONS` starts at `^22.22.3`, so `ng test` / `ng build` refuse to run after a fresh `npm install`. Workaround: relax the range in `frontend/node_modules/@angular/cli/src/utilities/node-version.js` (`'^22.22.3 ...'` → `'^22.22.2 ...'`). `node_modules` is gitignored, so this must be re-applied whenever dependencies are reinstalled.
+
+### Current status (2026-07-29)
+- **Phase 1 and Phase 2 are both complete; the GitHub issue list is empty.** Everything through PR #116 is merged to `main`.
+- Phase 2 delivered: statistics records and charts, the calendar view, ride comparison, rest markers, dark mode, Hungarian translation, locale-sensitive number/date/duration formatting (#104), two-year comparison on the Trends charts (#110), the Rides coverage backdrop (#113), and the four-channel ride graph with speed (#114).
+- **Outstanding manual actions:**
+  - Run the admin **"Reprocess all"** so existing rides gain the stored per-point **speed** added in #114 — new syncs already carry it. It burns F1 CPU minutes, so run it after the daily reset (~00:00 UTC).
+  - **Import the lost Polar exercise `498528704`** (2026-07-23) via Polar Flow export → admin Import, if it hasn't been done yet (Polar won't re-serve a committed exercise).
+- Test suite: **169 backend** (unit + endpoint tests in `RideLog.UnitTests`) and **257 frontend** (Vitest, 36 files).
+- Working agreement with the owner: develop on `develop`, TDD via `/tdd #N`, and **only push and open a PR (develop → main) when the owner says so** — they merge it themselves.
