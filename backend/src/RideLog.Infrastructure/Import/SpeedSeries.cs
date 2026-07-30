@@ -22,6 +22,13 @@ public static class SpeedSeries
     private const double MaxRiseKmhPerSecond = 15.0;
 
     /// <summary>
+    /// The most a bicycle's speed can fall in a second (km/h). Braking is far more abrupt than
+    /// accelerating — this is around the limit of tyre grip — so it only rules out drops no brake
+    /// produces. Used solely to judge a track's opening reading, which has nothing before it.
+    /// </summary>
+    private const double MaxFallKmhPerSecond = 30.0;
+
+    /// <summary>
     /// Each point's speed in km/h, or null where the track offers none or the reading was rejected.
     /// A rejected reading is left empty rather than replaced, exactly as if the device had never
     /// written one — the graph spans the gap and the maximum ignores it.
@@ -31,6 +38,7 @@ public static class SpeedSeries
         var resolved = new double?[points.Count];
         double? lastAccepted = null;
         var lastAcceptedIndex = 0;
+        int? provisionalIndex = null;
 
         for (var i = 0; i < points.Count; i++)
         {
@@ -40,17 +48,38 @@ public static class SpeedSeries
                 continue;
             }
 
-            // The first reading has nothing before it to be judged against — a recording can start
-            // with the rider already moving — so it sets the baseline. After that, each reading is
-            // measured against the last *accepted* one: were it measured against the previous
-            // sample, the first reading of a wider spike would become the baseline and the rest of
-            // the spike would pass as a plausible continuation.
-            if (lastAccepted is not { } baseline || IsPlausibleRise(points, lastAcceptedIndex, i, kmh - baseline))
+            if (lastAccepted is not { } baseline)
+            {
+                // A recording can start with the rider already moving, so the opening reading has to
+                // be allowed to be any speed. It's held provisionally: nothing precedes it to judge
+                // it against, but the reading that follows can still expose it (see below).
+                resolved[i] = kmh;
+                lastAccepted = kmh;
+                lastAcceptedIndex = i;
+                provisionalIndex = i;
+                continue;
+            }
+
+            var change = kmh - baseline;
+
+            // While the baseline is still the provisional opening reading, a drop no brake could
+            // have produced is what exposes that opening reading as the glitch.
+            if (provisionalIndex is { } opening && !IsPlausibleFall(points, opening, i, -change))
+            {
+                resolved[opening] = null;
+            }
+
+            // Each reading is measured against the last *accepted* one. Were it measured against the
+            // previous sample, the first reading of a wider spike would become the baseline and the
+            // rest of the spike would pass as a plausible continuation.
+            if (IsPlausibleRise(points, lastAcceptedIndex, i, change))
             {
                 resolved[i] = kmh;
                 lastAccepted = kmh;
                 lastAcceptedIndex = i;
             }
+
+            provisionalIndex = null;
         }
 
         return resolved;
@@ -68,9 +97,21 @@ public static class SpeedSeries
     /// between were rejected — is judged as leniently as its own resolution warrants; with no usable
     /// interval there's nothing to judge against, so the reading stands.
     /// </summary>
-    private static bool IsPlausibleRise(IReadOnlyList<GeoPoint> points, int from, int to, double riseKmh)
+    private static bool IsPlausibleRise(IReadOnlyList<GeoPoint> points, int from, int to, double riseKmh) =>
+        FitsInTheInterval(points, from, to, riseKmh, MaxRiseKmhPerSecond);
+
+    /// <summary>
+    /// Whether a drop of <paramref name="fallKmh"/> is one a brake could have produced over the time
+    /// between the two points. Only asked of a track's opening reading: everywhere else the rise
+    /// bound already has a trustworthy baseline to work from.
+    /// </summary>
+    private static bool IsPlausibleFall(IReadOnlyList<GeoPoint> points, int from, int to, double fallKmh) =>
+        FitsInTheInterval(points, from, to, fallKmh, MaxFallKmhPerSecond);
+
+    private static bool FitsInTheInterval(
+        IReadOnlyList<GeoPoint> points, int from, int to, double changeKmh, double maxKmhPerSecond)
     {
-        if (riseKmh <= 0)
+        if (changeKmh <= 0)
         {
             return true;
         }
@@ -81,7 +122,7 @@ public static class SpeedSeries
         }
 
         var seconds = (end - start).TotalSeconds;
-        return seconds <= 0 || riseKmh <= MaxRiseKmhPerSecond * seconds;
+        return seconds <= 0 || changeKmh <= maxKmhPerSecond * seconds;
     }
 
     /// <summary>

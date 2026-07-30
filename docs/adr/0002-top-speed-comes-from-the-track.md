@@ -44,6 +44,11 @@ GPX rides gain a maximum for the first time — GPX records no speed at all, so 
 none. Their speed is derived from position and time, which is noisier than a wheel sensor; the same
 filter is what makes that acceptable.
 
-The filter cannot judge the very first reading of a track, because there is nothing before it to
-measure against. A ride whose opening sample is already a glitch keeps it. This is inherent to a
-rule expressed as a rate of change, and is accepted rather than worked around.
+A track's opening reading has nothing before it, so the rise bound cannot judge it. We first
+accepted that as a limit; the first ride imported afterwards opened on a 421 km/h GPS fix, so it
+isn't one we can live with. The opening reading is now held provisionally and judged by what comes
+next: a drop of more than 30 km/h per second — beyond the limit of tyre grip, never mind brakes — is
+not deceleration, and condemns the reading it fell from. The bound is deliberately far looser than
+the 15 km/h rise bound, because braking genuinely is more abrupt than accelerating; it only rules
+out drops no brake produces. A ride that truly opens at speed and then brakes hard keeps its
+reading.

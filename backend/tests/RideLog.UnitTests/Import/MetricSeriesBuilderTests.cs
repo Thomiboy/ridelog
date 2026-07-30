@@ -205,4 +205,37 @@ public sealed class MetricSeriesBuilderTests
         Assert.Equal(30, series[4].SpeedKmh);
         Assert.Equal(30, series[6].SpeedKmh);
     }
+
+    [Fact]
+    public void Rejects_a_glitch_in_the_very_first_reading()
+    {
+        // A GPS fix landing 117 m away from the true start reads as 421 km/h. Nothing precedes it,
+        // so the rise bound can't judge it — but dropping to 30 km/h the next second is a
+        // deceleration no brake produces either, and that gives it away.
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        var points = Enumerable.Range(0, 10)
+            .Select(i => new GeoPoint(0, i * 0.0000749, 100, start.AddSeconds(i), 140, null, i == 0 ? 421.6 : 30))
+            .ToList();
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Null(series[0].SpeedKmh);
+        Assert.Equal(30, series[1].SpeedKmh);
+    }
+
+    [Fact]
+    public void Keeps_a_genuinely_fast_start_followed_by_hard_braking()
+    {
+        // Rolling downhill onto the route at 45 km/h, then braking to 25 in a second — 20 km/h per
+        // second, hard but within what brakes do. The opening reading has to survive that.
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        double[] speeds = [45, 25, 26, 27, 28];
+        var points = speeds
+            .Select((kmh, i) => new GeoPoint(0, i * 0.0000749, 100, start.AddSeconds(i), 140, null, kmh))
+            .ToList();
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Equal(45, series[0].SpeedKmh);
+    }
 }
