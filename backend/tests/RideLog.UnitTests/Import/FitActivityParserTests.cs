@@ -108,6 +108,22 @@ public sealed class FitActivityParserTests
     }
 
     [Fact]
+    public void Duration_is_the_session_timer_not_the_elapsed_span()
+    {
+        // Records span a full hour, but the session's timer says 45 minutes of moving time.
+        var bytes = BuildFit(
+            [
+                (T0, 47.50, 19.00, 100f, (sbyte)10, (byte)120),
+                (T0.AddHours(1), 47.55, 19.05, 150f, (sbyte)20, (byte)140),
+            ],
+            totalTimerSeconds: 2700f);
+
+        using var content = new MemoryStream(bytes);
+
+        Assert.Equal(TimeSpan.FromMinutes(45), new FitActivityParser().Parse(content, "ride.fit").Duration);
+    }
+
+    [Fact]
     public void Keeps_per_point_heart_rate_on_the_route()
     {
         var bytes = BuildFit(

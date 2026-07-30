@@ -159,7 +159,8 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Select(r => new MostCaloriesRecord(r.Id, r.StartTime, r.Calories!.Value))
             .FirstOrDefault();
 
-        // Longest duration: greatest moving time; zero-duration rides are ignored; ties → earlier.
+        // Longest duration: greatest moving time (docs/adr/0001 — the device's timer where the source
+        // has one, elapsed otherwise); zero-duration rides are ignored; ties → earlier.
         var longestDuration = rows
             .Where(r => r.Duration > TimeSpan.Zero)
             .OrderByDescending(r => r.Duration).ThenBy(r => r.StartTime)

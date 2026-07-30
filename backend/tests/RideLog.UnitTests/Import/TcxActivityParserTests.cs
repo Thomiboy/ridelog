@@ -114,6 +114,47 @@ public class TcxActivityParserTests
     }
 
     [Fact]
+    public void Duration_is_the_moving_time_the_device_recorded_not_the_elapsed_span()
+    {
+        // The fixture's trackpoints span 07:00–08:00 (60 minutes elapsed), but the lap's
+        // TotalTimeSeconds is 3000 — 50 minutes of moving time, the ten-minute difference being stops.
+        Assert.Equal(TimeSpan.FromMinutes(50), Parse().Duration);
+    }
+
+    [Fact]
+    public void Duration_falls_back_to_the_elapsed_span_when_the_file_records_no_timer()
+    {
+        // No TotalTimeSeconds anywhere, so there is no moving time to prefer: 07:00–07:45 is all we know.
+        const string noTimer = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+              <Activities>
+                <Activity Sport="Biking">
+                  <Id>2026-06-02T07:00:00Z</Id>
+                  <Lap StartTime="2026-06-02T07:00:00Z">
+                    <DistanceMeters>20000</DistanceMeters>
+                    <Track>
+                      <Trackpoint>
+                        <Time>2026-06-02T07:00:00Z</Time>
+                        <Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.0</LongitudeDegrees></Position>
+                      </Trackpoint>
+                      <Trackpoint>
+                        <Time>2026-06-02T07:45:00Z</Time>
+                        <Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.01</LongitudeDegrees></Position>
+                      </Trackpoint>
+                    </Track>
+                  </Lap>
+                </Activity>
+              </Activities>
+            </TrainingCenterDatabase>
+            """;
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(noTimer));
+
+        Assert.Equal(TimeSpan.FromMinutes(45), new TcxActivityParser().Parse(stream, "ride.tcx").Duration);
+    }
+
+    [Fact]
     public void Takes_distance_from_the_lap_total()
     {
         Assert.Equal(30000, Parse().DistanceMeters, 0.001);

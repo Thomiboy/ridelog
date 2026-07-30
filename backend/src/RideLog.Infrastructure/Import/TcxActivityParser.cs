@@ -80,7 +80,9 @@ internal sealed class TcxActivityParser : IActivityFileParser
             }
         }
 
-        var duration = end - start;
+        // A ride's duration is its moving time (see docs/adr/0001): the laps' own timer where TCX
+        // records one, falling back to the elapsed span when it doesn't.
+        var duration = MovingTime(laps) ?? end - start;
 
         return new ParsedActivity
         {
@@ -159,6 +161,19 @@ internal sealed class TcxActivityParser : IActivityFileParser
             time is null ? null : DateTimeOffset.Parse(time, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
             hr is null ? null : (int)Math.Round(double.Parse(hr, CultureInfo.InvariantCulture)),
             SpeedKmh: speed is null ? null : double.Parse(speed, CultureInfo.InvariantCulture) * 3.6);
+    }
+
+    /// <summary>
+    /// The summed lap timer, which excludes stops — null when no lap reports one, leaving the caller
+    /// to fall back to the elapsed span.
+    /// </summary>
+    private static TimeSpan? MovingTime(IReadOnlyList<XElement> laps)
+    {
+        var seconds = laps
+            .Select(lap => Child(lap, "TotalTimeSeconds"))
+            .Where(t => t is not null)
+            .Sum(t => double.Parse(t!, CultureInfo.InvariantCulture));
+        return seconds > 0 ? TimeSpan.FromSeconds(seconds) : null;
     }
 
     private static string? Child(XElement element, string localName) =>
