@@ -10,6 +10,8 @@ export interface MonthlyAggregate {
   elevationGainMeters: number;
   rideCount: number;
   calories: number;
+  /** Moving time ridden that month, in minutes; the time chart renders it as hours. */
+  durationMinutes: number;
 }
 
 /** The single ride with the greatest distance. */

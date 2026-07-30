@@ -23,6 +23,7 @@ const aggregate = (year: number, month: number, distanceKm: number): MonthlyAggr
   elevationGainMeters: distanceKm * 10,
   rideCount: 1,
   calories: distanceKm * 5,
+  durationMinutes: 120,
 });
 
 describe('statistics chart builders', () => {
@@ -74,6 +75,15 @@ describe('statistics chart builders', () => {
     expect(chart.datasets[1].data[0]).toBe(0); // January 2025 had no rides
   });
 
+  it('plots time ridden in hours, though the aggregate carries minutes', () => {
+    // A month of 600 minutes on the bike is 10 hours — the axis speaks hours, storage stays in minutes.
+    const monthly = [{ ...aggregate(2026, 3, 100), durationMinutes: 600 }];
+
+    const chart = buildMonthlyMetricChart(monthly, 2026, 'durationMinutes');
+
+    expect(chart.datasets[0].data[2]).toBe(10);
+  });
+
   it('reads whichever metric is asked for', () => {
     const monthly = [aggregate(2026, 3, 100)]; // elevation 1000, calories 500
 
@@ -95,9 +105,9 @@ describe('statistics chart builders', () => {
 
   it('builds a rides-by-year chart summing every month of each year', () => {
     const monthly = [
-      { year: 2024, month: 5, distanceKm: 50, elevationGainMeters: 500, rideCount: 2, calories: 250 },
-      { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 1000, rideCount: 4, calories: 500 },
-      { year: 2026, month: 7, distanceKm: 40, elevationGainMeters: 400, rideCount: 3, calories: 200 },
+      { year: 2024, month: 5, distanceKm: 50, elevationGainMeters: 500, rideCount: 2, calories: 250, durationMinutes: 120 },
+      { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 1000, rideCount: 4, calories: 500, durationMinutes: 120 },
+      { year: 2026, month: 7, distanceKm: 40, elevationGainMeters: 400, rideCount: 3, calories: 200, durationMinutes: 120 },
     ];
 
     const chart = buildRidesByYearChart(monthly);

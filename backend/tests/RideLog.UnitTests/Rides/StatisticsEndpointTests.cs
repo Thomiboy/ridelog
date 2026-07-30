@@ -292,6 +292,31 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(6, stats.Records.BestMonthRides!.Month);
     }
 
+    private sealed record DurationAggregateDto(int Year, int Month, double DurationMinutes);
+    private sealed record DurationStatsDto(IReadOnlyList<DurationAggregateDto> MonthlyAggregates);
+
+    [Fact]
+    public async Task Monthly_aggregates_sum_the_moving_time_ridden_in_each_month()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            context.Rides.AddRange(
+                RideWith(new DateTimeOffset(2026, 6, 5, 8, 0, 0, TimeSpan.Zero), 500, TimeSpan.FromMinutes(90)),
+                RideWith(new DateTimeOffset(2026, 6, 20, 8, 0, 0, TimeSpan.Zero), 500, TimeSpan.FromMinutes(45)),
+                // A different month, so it must not leak into June's total.
+                RideWith(new DateTimeOffset(2026, 7, 2, 8, 0, 0, TimeSpan.Zero), 500, TimeSpan.FromMinutes(30)));
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<DurationStatsDto>("/statistics");
+
+        // 90 + 45 minutes ridden in June; July keeps its own 30.
+        Assert.Equal(135, stats!.MonthlyAggregates.Single(m => m.Year == 2026 && m.Month == 6).DurationMinutes, 0.01);
+        Assert.Equal(30, stats.MonthlyAggregates.Single(m => m.Year == 2026 && m.Month == 7).DurationMinutes, 0.01);
+    }
+
     private sealed record MostCaloriesDto(Guid Id, DateTimeOffset Date, int Calories);
     private sealed record LongestDurationDto(Guid Id, DateTimeOffset Date, double DurationMinutes);
     private sealed record ExtraRecordsDto(MostCaloriesDto? MostCalories, LongestDurationDto? LongestDuration);

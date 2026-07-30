@@ -18,7 +18,7 @@ describe('StatisticsService', () => {
     const request = http.expectOne(`${environment.apiBaseUrl}/statistics`);
     expect(request.request.method).toBe('GET');
     request.flush({
-      monthlyAggregates: [{ year: 2026, month: 7, distanceKm: 100, elevationGainMeters: 600, rideCount: 2, calories: 1300 }],
+      monthlyAggregates: [{ year: 2026, month: 7, distanceKm: 100, elevationGainMeters: 600, rideCount: 2, calories: 1300, durationMinutes: 120 }],
       records: { longestRide: null, fastestAverage: null, longestStreak: null },
     });
 

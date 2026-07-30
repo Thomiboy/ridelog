@@ -25,9 +25,9 @@ class ChartStub {
 describe('Statistics', () => {
   const stats: StatisticsResult = {
     monthlyAggregates: [
-      { year: 2025, month: 7, distanceKm: 80, elevationGainMeters: 300, rideCount: 1, calories: 1000 },
-      { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500 },
-      { year: 2026, month: 7, distanceKm: 100, elevationGainMeters: 600, rideCount: 2, calories: 1300 },
+      { year: 2025, month: 7, distanceKm: 80, elevationGainMeters: 300, rideCount: 1, calories: 1000, durationMinutes: 120 },
+      { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500, durationMinutes: 120 },
+      { year: 2026, month: 7, distanceKm: 100, elevationGainMeters: 600, rideCount: 2, calories: 1300, durationMinutes: 120 },
     ],
     records: {
       longestRide: { id: 'ride-1', date: '2026-06-01T08:00:00+00:00', distanceKm: 120 },
@@ -264,7 +264,7 @@ describe('Statistics', () => {
 
   it('hides the comparison selector when only one year has data', () => {
     const { el } = setup({
-      monthlyAggregates: [{ year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500 }],
+      monthlyAggregates: [{ year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500, durationMinutes: 120 }],
     });
 
     expect(el.querySelector('[data-testid="compare-select"]')).toBeNull();
@@ -323,6 +323,21 @@ describe('Statistics', () => {
     for (const name of perYearCharts) {
       expect(chartData(fixture, name).datasets, name).toHaveLength(1);
     }
+  });
+
+  it('renders a time-ridden chart in the per-year group, in hours', () => {
+    const { fixture, el } = setup({
+      monthlyAggregates: [
+        { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500, durationMinutes: 300 },
+      ],
+    });
+
+    // The card sits with the other per-year charts, right after Distance.
+    const perYear = [...el.querySelectorAll('.charts')][0];
+    expect([...perYear.querySelectorAll('[data-chart]')].map((c) => c.getAttribute('data-chart'))[1]).toBe('duration');
+
+    // 300 minutes ridden in March reads as 5 hours.
+    expect(chartData(fixture, 'duration').datasets[0].data[2]).toBe(5);
   });
 
   it('renders all four monthly metric charts plus the year-over-year totals chart', () => {

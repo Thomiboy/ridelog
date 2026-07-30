@@ -98,6 +98,13 @@
           <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
         </mat-card>
       }
+      <!-- Time sits next to distance: the two "how much did I ride" measures. -->
+      @if (durationChart(); as chart) {
+        <mat-card appearance="outlined" class="chart-card" data-chart="duration">
+          <mat-card-header><mat-card-title>{{ 'statistics.trends.duration' | transloco }}</mat-card-title></mat-card-header>
+          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+        </mat-card>
+      }
       @if (elevationChart(); as chart) {
         <mat-card appearance="outlined" class="chart-card" data-chart="elevation">
           <mat-card-header><mat-card-title>{{ 'statistics.trends.elevation' | transloco }}</mat-card-title></mat-card-header>
