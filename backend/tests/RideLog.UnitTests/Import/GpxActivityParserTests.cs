@@ -39,6 +39,7 @@ public class GpxActivityParserTests
         Assert.Equal(3, activity.RoutePoints.Count);
         Assert.Equal(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), activity.StartTime);
         Assert.Equal(new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero), activity.EndTime);
+        // GPX carries no timer, so the elapsed span *is* the moving time we can know (docs/adr/0001).
         Assert.Equal(TimeSpan.FromHours(1), activity.Duration);
     }
 

@@ -47,7 +47,7 @@ Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `read
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`. **Neither exists yet** — the domain model and decisions currently live in this file and in the issue history; create them when the first one is actually needed.
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`. `CONTEXT.md` is a **glossary only** — the canonical term for each concept, with the rejected synonyms listed under `_Avoid_`; keep implementation detail out of it. ADRs are added sparingly, only for decisions that are hard to reverse, surprising without context, and the result of a real trade-off.
 
 ## Operational notes (learned the hard way)
 
