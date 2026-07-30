@@ -84,7 +84,10 @@ internal sealed class FitActivityParser : IActivityFileParser
             DistanceMeters = distance,
             Sport = session?.GetSport()?.ToString() ?? "Cycling",
             AverageSpeedKmh = session?.GetAvgSpeed() is { } avg ? avg * 3.6 : SpeedFrom(distance, duration),
-            MaximumSpeedKmh = session?.GetMaxSpeed() is { } max ? max * 3.6 : null,
+            // The track wins over the device's own summary, which carries GPS spikes (docs/adr/0002);
+            // the summary is only a fallback for a ride whose track offers no usable speed at all.
+            MaximumSpeedKmh = SpeedSeries.MaxKmh(points)
+                ?? (session?.GetMaxSpeed() is { } max ? max * 3.6 : null),
             AverageHeartRate = session?.GetAvgHeartRate(),
             MaximumHeartRate = session?.GetMaxHeartRate(),
             ElevationGainMeters = elevationGain,

@@ -51,6 +51,11 @@ _Avoid_: Metric, series, field
 The path a ride took, as positions. Distinct from the metric series, which carries no positions.
 _Avoid_: Track, path, polyline
 
+**Top speed**:
+The fastest a ride went, as its own track tells it — not as the recording device summarised it. A
+reading the track cannot physically have produced is not part of the ride.
+_Avoid_: Max speed, peak speed
+
 ### Aggregates
 
 **Record**:

@@ -187,4 +187,22 @@ public sealed class MetricSeriesBuilderTests
 
         Assert.NotNull(MetricSeriesBuilder.BuildStorable(points));
     }
+
+    [Fact]
+    public void Leaves_the_speed_empty_where_the_reading_was_rejected()
+    {
+        // The graph and the ride's maximum read the same resolved speeds, so a sample the filter
+        // rejects must be missing from the plotted series too — otherwise the line would show a
+        // spike the headline number denies. `spanGaps` bridges it, so no hole appears.
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        var points = Enumerable.Range(0, 10)
+            .Select(i => new GeoPoint(0, i * 0.0000749, 100, start.AddSeconds(i), 140, null, i == 5 ? 85 : 30))
+            .ToList();
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Null(series[5].SpeedKmh);
+        Assert.Equal(30, series[4].SpeedKmh);
+        Assert.Equal(30, series[6].SpeedKmh);
+    }
 }

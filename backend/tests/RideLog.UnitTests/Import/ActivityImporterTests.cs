@@ -190,7 +190,8 @@ public sealed class ActivityImporterTests : IDisposable
         {
             var ride = await verify.Rides.SingleAsync();
             Assert.Equal(620, ride.Calories);
-            Assert.Equal(59.4, ride.MaximumSpeedKmh!.Value, 0.01); // 16.5 m/s × 3.6
+            // Not the lap's 16.5 m/s summary — the maximum comes from the track (docs/adr/0002).
+            Assert.Equal(13.42, ride.MaximumSpeedKmh!.Value, 0.01);
         }
     }
 
