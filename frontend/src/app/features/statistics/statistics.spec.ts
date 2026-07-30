@@ -207,6 +207,24 @@ describe('Statistics', () => {
     expect(duration.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-dur');
   });
 
+  it('renders the top-speed and biggest-climb records, linking their rides', () => {
+    const { el } = setup({
+      records: {
+        ...stats.records,
+        maxSpeed: { id: 'ride-fast', date: '2026-06-03T08:00:00+00:00', maxSpeedKmh: 68.9 },
+        biggestClimb: { id: 'ride-hill', date: '2026-06-04T08:00:00+00:00', elevationGainMeters: 1450 },
+      },
+    });
+
+    const maxSpeed = el.querySelector('[data-record="max-speed"]')!;
+    expect(maxSpeed.textContent).toContain('68.9');
+    expect(maxSpeed.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-fast');
+
+    const climb = el.querySelector('[data-record="biggest-climb"]')!;
+    expect(climb.textContent).toContain('1,450'); // grouped by the decimal pipe
+    expect(climb.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-hill');
+  });
+
   it('defaults the year selector to the latest year with data', () => {
     const { el } = setup();
 

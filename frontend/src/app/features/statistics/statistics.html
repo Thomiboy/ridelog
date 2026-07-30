@@ -19,6 +19,20 @@
           <a [routerLink]="['/rides', fastest.id]">{{ fastest.date | translocoDate: { dateStyle: 'medium' } }}</a>
         </mat-card>
       }
+      @if (records()?.maxSpeed; as maxSpeed) {
+        <mat-card appearance="outlined" class="tile" data-record="max-speed">
+          <span class="label">{{ 'statistics.records.maxSpeed' | transloco }}</span>
+          <span class="value">{{ maxSpeed.maxSpeedKmh | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km/h</span>
+          <a [routerLink]="['/rides', maxSpeed.id]">{{ maxSpeed.date | translocoDate: { dateStyle: 'medium' } }}</a>
+        </mat-card>
+      }
+      @if (records()?.biggestClimb; as biggestClimb) {
+        <mat-card appearance="outlined" class="tile" data-record="biggest-climb">
+          <span class="label">{{ 'statistics.records.biggestClimb' | transloco }}</span>
+          <span class="value">{{ biggestClimb.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 } }} m</span>
+          <a [routerLink]="['/rides', biggestClimb.id]">{{ biggestClimb.date | translocoDate: { dateStyle: 'medium' } }}</a>
+        </mat-card>
+      }
       @if (records()?.longestStreak; as streak) {
         <mat-card appearance="outlined" class="tile" data-record="longest-streak">
           <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>

@@ -33,6 +33,12 @@ public sealed record BestMonthDistanceRecord(int Year, int Month, double Distanc
 /// <summary>The calendar month with the most rides; year and month are numbers, as above.</summary>
 public sealed record BestMonthRidesRecord(int Year, int Month, int RideCount);
 
+/// <summary>The single ride that reached the highest speed; links back to that ride.</summary>
+public sealed record MaxSpeedRecord(Guid Id, DateTimeOffset Date, double MaxSpeedKmh);
+
+/// <summary>The single ride with the greatest elevation gain; links back to that ride.</summary>
+public sealed record BiggestClimbRecord(Guid Id, DateTimeOffset Date, double ElevationGainMeters);
+
 /// <summary>Personal records for the Records section.</summary>
 public sealed record StatisticsRecords(
     LongestRideRecord? LongestRide,
@@ -41,7 +47,9 @@ public sealed record StatisticsRecords(
     MostCaloriesRecord? MostCalories,
     LongestDurationRecord? LongestDuration,
     BestMonthDistanceRecord? BestMonthDistance,
-    BestMonthRidesRecord? BestMonthRides)
+    BestMonthRidesRecord? BestMonthRides,
+    MaxSpeedRecord? MaxSpeed,
+    BiggestClimbRecord? BiggestClimb)
 {
     /// <summary>Minimum distance a ride must cover to qualify for the fastest-average record.</summary>
     public const double FastestAverageMinimumKm = 30.0;

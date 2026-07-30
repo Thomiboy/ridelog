@@ -26,6 +26,8 @@ const en = {
       longestDuration: 'Longest duration',
       bestMonthDistance: 'Best month',
       bestMonthRides: 'Most rides in a month',
+      maxSpeed: 'Top speed',
+      biggestClimb: 'Biggest climb',
       days: '{{count}} days',
     },
     trends: {

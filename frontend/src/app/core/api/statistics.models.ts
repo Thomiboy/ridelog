@@ -68,6 +68,20 @@ export interface BestMonthRidesRecord {
   rideCount: number;
 }
 
+/** The single ride that reached the highest speed. */
+export interface MaxSpeedRecord {
+  id: string;
+  date: string;
+  maxSpeedKmh: number;
+}
+
+/** The single ride with the greatest elevation gain. */
+export interface BiggestClimbRecord {
+  id: string;
+  date: string;
+  elevationGainMeters: number;
+}
+
 /** Personal records for the Records section. */
 export interface StatisticsRecords {
   longestRide?: LongestRideRecord | null;
@@ -77,6 +91,8 @@ export interface StatisticsRecords {
   longestDuration?: LongestDurationRecord | null;
   bestMonthDistance?: BestMonthDistanceRecord | null;
   bestMonthRides?: BestMonthRidesRecord | null;
+  maxSpeed?: MaxSpeedRecord | null;
+  biggestClimb?: BiggestClimbRecord | null;
 }
 
 /** Distance ridden in one 5°C temperature band; open-ended bounds are null. */

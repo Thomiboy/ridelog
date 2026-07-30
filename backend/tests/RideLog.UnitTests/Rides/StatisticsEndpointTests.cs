@@ -317,6 +317,72 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(30, stats.MonthlyAggregates.Single(m => m.Year == 2026 && m.Month == 7).DurationMinutes, 0.01);
     }
 
+    private sealed record MaxSpeedDto(Guid Id, DateTimeOffset Date, double MaxSpeedKmh);
+    private sealed record SpeedRecordsDto(MaxSpeedDto? MaxSpeed);
+    private sealed record SpeedRecordsStatsDto(SpeedRecordsDto Records);
+
+    [Fact]
+    public async Task Top_speed_record_is_the_fastest_a_ride_ever_reached()
+    {
+        Guid fastest;
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+
+            var slower = Ride(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), 100, 500, 30, 800);
+            slower.MaximumSpeedKmh = 52.4;
+            var peak = Ride(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero), 40, 200, 25, 400);
+            peak.MaximumSpeedKmh = 68.9;
+            fastest = peak.Id;
+            // A ride that never recorded a top speed must not win by being null.
+            var unrecorded = Ride(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero), 90, 400, 28, 700);
+
+            context.Rides.AddRange(slower, peak, unrecorded);
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<SpeedRecordsStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.Records.MaxSpeed);
+        Assert.Equal(fastest, stats.Records.MaxSpeed!.Id);
+        Assert.Equal(68.9, stats.Records.MaxSpeed.MaxSpeedKmh, 0.01);
+    }
+
+    private sealed record BiggestClimbDto(Guid Id, DateTimeOffset Date, double ElevationGainMeters);
+    private sealed record ClimbRecordsDto(BiggestClimbDto? BiggestClimb);
+    private sealed record ClimbRecordsStatsDto(ClimbRecordsDto Records);
+
+    [Fact]
+    public async Task Biggest_climb_record_is_the_greatest_elevation_gain_in_one_ride()
+    {
+        Guid climber;
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+
+            // The longest ride is deliberately not the hilliest, so distance can't stand in for climbing.
+            var flatButLong = Ride(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), 180, 320, 30, 900);
+            var hilly = Ride(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero), 60, 1450, 22, 600);
+            climber = hilly.Id;
+            // A ride with no elevation reading must not win by being null.
+            var unrecorded = Ride(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero), 90, 400, 28, 700);
+            unrecorded.ElevationGainMeters = null;
+
+            context.Rides.AddRange(flatButLong, hilly, unrecorded);
+            await context.SaveChangesAsync();
+        }
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<ClimbRecordsStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.Records.BiggestClimb);
+        Assert.Equal(climber, stats.Records.BiggestClimb!.Id);
+        Assert.Equal(1450, stats.Records.BiggestClimb.ElevationGainMeters, 0.01);
+    }
+
     private sealed record MostCaloriesDto(Guid Id, DateTimeOffset Date, int Calories);
     private sealed record LongestDurationDto(Guid Id, DateTimeOffset Date, double DurationMinutes);
     private sealed record ExtraRecordsDto(MostCaloriesDto? MostCalories, LongestDurationDto? LongestDuration);
