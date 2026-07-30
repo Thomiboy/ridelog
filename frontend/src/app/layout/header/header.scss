@@ -62,14 +62,15 @@
       display: inline-flex;
       align-items: stretch;
       border: 1px solid var(--mat-sys-outline-variant);
-      border-radius: 0.375rem;
+      border-radius: 0.3rem;
       overflow: hidden;
 
       button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        height: 1.75rem;
+        // Sized to sit at about the weight of the ~1rem nav text beside it, rather than towering over it.
+        height: 1.4rem;
         border: 0;
         background: none;
         color: var(--mat-sys-on-primary);
@@ -87,17 +88,17 @@
     }
 
     .lang-switch button {
-      font-size: 0.75rem;
-      padding: 0 0.55rem;
+      font-size: 0.7rem;
+      padding: 0 0.45rem;
     }
 
     .theme-switch button {
-      padding: 0 0.4rem;
+      padding: 0 0.3rem;
 
       mat-icon {
-        font-size: 1.1rem;
-        width: 1.1rem;
-        height: 1.1rem;
+        font-size: 0.95rem;
+        width: 0.95rem;
+        height: 0.95rem;
       }
     }
   }
