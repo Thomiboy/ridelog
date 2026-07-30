@@ -28,14 +28,19 @@
     @if (stats.lastYear; as lastYear) {
       @if (lastYear.rideCount > 0) {
         <div class="tiles last-year">
-          @if (stats.lastYearBestMonth; as best) {
-            <mat-card appearance="outlined" class="tile" data-tile="best-month-distance">
-              <span class="label">{{ 'dashboard.tiles.bestMonthDistance' | transloco: { month: monthLabel(best.month) } }}</span>
-              <span class="value">{{ best.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
+          <!-- The same month a year ago, for a like-for-like comparison with "this month" above. -->
+          @if (stats.sameMonthLastYear; as sameMonth) {
+            <mat-card appearance="outlined" class="tile" data-tile="same-month-last-year-distance">
+              <span class="label">
+                {{ 'dashboard.tiles.sameMonthLastYearDistance' | transloco: { month: sameMonthLabel() } }}
+              </span>
+              <span class="value">{{ sameMonth.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
             </mat-card>
-            <mat-card appearance="outlined" class="tile" data-tile="best-month-rides">
-              <span class="label">{{ 'dashboard.tiles.bestMonthRides' | transloco: { month: monthLabel(best.month) } }}</span>
-              <span class="value">{{ best.rideCount }}</span>
+            <mat-card appearance="outlined" class="tile" data-tile="same-month-last-year-rides">
+              <span class="label">
+                {{ 'dashboard.tiles.sameMonthLastYearRides' | transloco: { month: sameMonthLabel() } }}
+              </span>
+              <span class="value">{{ sameMonth.rideCount }}</span>
             </mat-card>
           }
           <mat-card appearance="outlined" class="tile" data-tile="last-year-distance">

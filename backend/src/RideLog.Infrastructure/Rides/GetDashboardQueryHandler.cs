@@ -38,12 +38,14 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
 
         var lastYearRides = relevant.Where(r => r.StartTime.Year == currentYear - 1).ToList();
         var lastYear = Period(lastYearRides);
-        var lastYearBestMonth = lastYearRides
-            .GroupBy(r => r.StartTime.Month)
-            .Select(g => new BestMonth(g.Key, Math.Round(g.Sum(r => r.DistanceMeters) / 1000.0, 1), g.Count()))
-            // Highest distance wins; ties resolve to the earlier month.
-            .OrderByDescending(m => m.DistanceKm).ThenBy(m => m.Month)
-            .FirstOrDefault();
+        // The same calendar month a year ago, for a like-for-like comparison with "this month". Always
+        // produced — a month with no rides reads as 0 km / 0 rides rather than vanishing from the grid.
+        var sameMonthRides = lastYearRides.Where(r => r.StartTime.Month == now.Month).ToList();
+        var sameMonthLastYear = new SameMonthLastYear(
+            currentYear - 1,
+            now.Month,
+            Math.Round(sameMonthRides.Sum(r => r.DistanceMeters) / 1000.0, 1),
+            sameMonthRides.Count);
 
         var monthlyDistance = new List<MonthlyDistance>(24);
         foreach (var year in new[] { currentYear - 1, currentYear })
@@ -74,7 +76,7 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
         }
 
         return new DashboardStats(
-            thisMonth, thisYear, lastYear, lastYearBestMonth, monthlyDistance, speedTrend, temperatureTrend);
+            thisMonth, thisYear, lastYear, sameMonthLastYear, monthlyDistance, speedTrend, temperatureTrend);
     }
 
     private static PeriodStats Period(IEnumerable<Row> rides)
