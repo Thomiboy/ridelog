@@ -176,7 +176,9 @@
       "longestDuration": "Leghosszabb időtartam",
       "days": "{{count}} nap",
       "bestMonthDistance": "Legjobb hónap",
-      "bestMonthRides": "Legtöbb túra egy hónapban"
+      "bestMonthRides": "Legtöbb túra egy hónapban",
+      "maxSpeed": "Csúcssebesség",
+      "biggestClimb": "Legnagyobb szintemelkedés"
     },
     "trends": {
       "title": "Trendek",

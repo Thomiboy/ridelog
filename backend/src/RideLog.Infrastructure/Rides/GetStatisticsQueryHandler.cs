@@ -11,7 +11,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
 {
     private sealed record Row(
         Guid Id, string UserId, DateTimeOffset StartTime, double DistanceMeters, TimeSpan Duration,
-        double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh,
+        double? ElevationGainMeters, int? Calories, double? AverageSpeedKmh, double? MaximumSpeedKmh,
         IReadOnlyList<MetricSample>? MetricSeries,
         double? AverageTemperatureCelsius, double? MinTemperatureCelsius, double? MaxTemperatureCelsius);
 
@@ -28,7 +28,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
         var rows = await cycling
             .Select(ride => new Row(
                 ride.Id, ride.UserId, ride.StartTime, ride.DistanceMeters, ride.Duration,
-                ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MetricSeries,
+                ride.ElevationGainMeters, ride.Calories, ride.AverageSpeedKmh, ride.MaximumSpeedKmh, ride.MetricSeries,
                 ride.AverageTemperatureCelsius, ride.MinTemperatureCelsius, ride.MaxTemperatureCelsius))
             .ToListAsync(cancellationToken);
 
@@ -146,6 +146,20 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Select(r => new LongestRideRecord(r.Id, r.StartTime, Math.Round(r.DistanceMeters / 1000.0, 1)))
             .FirstOrDefault();
 
+        // Top speed: the highest a ride ever reached; rides that recorded none can't win. Ties → earlier.
+        var maxSpeed = rows
+            .Where(r => r.MaximumSpeedKmh.HasValue)
+            .OrderByDescending(r => r.MaximumSpeedKmh).ThenBy(r => r.StartTime)
+            .Select(r => new MaxSpeedRecord(r.Id, r.StartTime, Math.Round(r.MaximumSpeedKmh!.Value, 1)))
+            .FirstOrDefault();
+
+        // Biggest climb: greatest elevation gain in one ride; rides without a reading can't win. Ties → earlier.
+        var biggestClimb = rows
+            .Where(r => r.ElevationGainMeters.HasValue)
+            .OrderByDescending(r => r.ElevationGainMeters).ThenBy(r => r.StartTime)
+            .Select(r => new BiggestClimbRecord(r.Id, r.StartTime, Math.Round(r.ElevationGainMeters!.Value)))
+            .FirstOrDefault();
+
         // Fastest average speed, but only among rides long enough not to skew the record.
         var fastest = rows
             .Where(r => r.AverageSpeedKmh.HasValue
@@ -193,7 +207,8 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .FirstOrDefault();
 
         return new StatisticsRecords(
-            longest, fastest, LongestStreak(rows), mostCalories, longestDuration, bestMonthDistance, bestMonthRides);
+            longest, fastest, LongestStreak(rows), mostCalories, longestDuration, bestMonthDistance, bestMonthRides,
+            maxSpeed, biggestClimb);
     }
 
     private static StreakRecord? LongestStreak(IReadOnlyList<Row> rows)
