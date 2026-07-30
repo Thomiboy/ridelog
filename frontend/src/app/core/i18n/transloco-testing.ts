@@ -24,6 +24,8 @@ const en = {
       longestStreak: 'Longest streak',
       mostCalories: 'Most calories',
       longestDuration: 'Longest duration',
+      bestMonthDistance: 'Best month',
+      bestMonthRides: 'Most rides in a month',
       days: '{{count}} days',
     },
     trends: {

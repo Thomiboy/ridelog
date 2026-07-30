@@ -23,7 +23,10 @@
         <mat-card appearance="outlined" class="tile" data-record="longest-streak">
           <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>
           <span class="value">{{ 'statistics.records.days' | transloco: { count: streak.days } }}</span>
-          <span class="range">{{ streak.startDate | translocoDate: { dateStyle: 'medium' } }} – {{ streak.endDate | translocoDate: { dateStyle: 'medium' } }}</span>
+          <span class="range">
+            {{ streak.startDate | translocoDate: { dateStyle: 'medium' } }} – {{ streak.endDate | translocoDate: { dateStyle: 'medium' } }}
+            · {{ streak.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km
+          </span>
         </mat-card>
       }
       @if (records()?.mostCalories; as mostCalories) {
@@ -31,6 +34,24 @@
           <span class="label">{{ 'statistics.records.mostCalories' | transloco }}</span>
           <span class="value">{{ mostCalories.calories | translocoDecimal: { maximumFractionDigits: 0 } }} kcal</span>
           <a [routerLink]="['/rides', mostCalories.id]">{{ mostCalories.date | translocoDate: { dateStyle: 'medium' } }}</a>
+        </mat-card>
+      }
+      @if (records()?.bestMonthDistance; as bestMonthDistance) {
+        <mat-card appearance="outlined" class="tile" data-record="best-month-distance">
+          <span class="label">{{ 'statistics.records.bestMonthDistance' | transloco }}</span>
+          <span class="value">{{ bestMonthDistance.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km</span>
+          <span class="range">
+            {{ monthDate(bestMonthDistance.year, bestMonthDistance.month) | translocoDate: { month: 'long', year: 'numeric' } }}
+          </span>
+        </mat-card>
+      }
+      @if (records()?.bestMonthRides; as bestMonthRides) {
+        <mat-card appearance="outlined" class="tile" data-record="best-month-rides">
+          <span class="label">{{ 'statistics.records.bestMonthRides' | transloco }}</span>
+          <span class="value">{{ bestMonthRides.rideCount }}</span>
+          <span class="range">
+            {{ monthDate(bestMonthRides.year, bestMonthRides.month) | translocoDate: { month: 'long', year: 'numeric' } }}
+          </span>
         </mat-card>
       }
       @if (records()?.longestDuration; as longestDuration) {

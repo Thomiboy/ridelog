@@ -174,7 +174,9 @@
       "longestStreak": "Longest streak",
       "mostCalories": "Most calories",
       "longestDuration": "Longest duration",
-      "days": "{{count}} days"
+      "days": "{{count}} days",
+      "bestMonthDistance": "Best month",
+      "bestMonthRides": "Most rides in a month"
     },
     "trends": {
       "title": "Trends",

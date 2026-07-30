@@ -97,7 +97,12 @@ export function drawRoutes(
 ): Leaflet.Layer[] {
   const routes = encoded.map((e) => (e ? decodePolyline(e) : [])).filter((coords) => coords.length > 0);
   if (routes.length === 0) {
-    map.setView([0, 0], 2);
+    // Falling back to the world view is itself a reframe, so it obeys `fit` too — otherwise a
+    // transient empty state (a page swapping what the background shows) discards the current view
+    // even when the sheet is open far enough that we promised to leave it alone.
+    if (options.fit ?? true) {
+      map.setView([0, 0], 2);
+    }
     return [];
   }
 

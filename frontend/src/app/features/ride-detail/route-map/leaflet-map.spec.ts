@@ -188,4 +188,14 @@ describe('leaflet-map', () => {
     expect(map.setView).toHaveBeenCalled();
     expect(tracks).toEqual([]);
   });
+
+  it('keeps the current view when there is nothing to draw and fitting is off', () => {
+    const { api, map } = fakeLeaflet();
+
+    drawRoutes(map as never, [], api, { fit: false });
+
+    // Reframing to the world view is still a reframe: with the sheet essentially full the view has
+    // to be left alone, or a transient empty state (e.g. mid-navigation) throws it away.
+    expect(map.setView).not.toHaveBeenCalled();
+  });
 });

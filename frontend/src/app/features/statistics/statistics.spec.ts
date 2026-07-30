@@ -32,7 +32,7 @@ describe('Statistics', () => {
     records: {
       longestRide: { id: 'ride-1', date: '2026-06-01T08:00:00+00:00', distanceKm: 120 },
       fastestAverage: { id: 'ride-2', date: '2026-06-02T08:00:00+00:00', averageSpeedKmh: 35 },
-      longestStreak: { days: 3, startDate: '2026-06-01', endDate: '2026-06-03' },
+      longestStreak: { days: 3, startDate: '2026-06-01', endDate: '2026-06-03', distanceKm: 180 },
     },
   };
 
@@ -158,6 +158,35 @@ describe('Statistics', () => {
 
     const streak = el.querySelector('[data-record="longest-streak"]')!;
     expect(streak.textContent).toContain('3');
+  });
+
+  it('shows the distance ridden across the longest streak', () => {
+    const { el } = setup({
+      records: { ...stats.records, longestStreak: { days: 4, startDate: '2026-06-01', endDate: '2026-06-04', distanceKm: 240 } },
+    });
+
+    const streak = el.querySelector('[data-record="longest-streak"]')!;
+    expect(streak.textContent).toContain('4'); // the day count stays the headline
+    expect(streak.textContent).toContain('240'); // and the distance explains why it won
+  });
+
+  it('renders the best-month records with the value and a localized month label', () => {
+    const { el } = setup({
+      records: {
+        ...stats.records,
+        bestMonthDistance: { year: 2026, month: 7, distanceKm: 412 },
+        bestMonthRides: { year: 2026, month: 5, rideCount: 18 },
+      },
+    });
+
+    const distance = el.querySelector('[data-record="best-month-distance"]')!;
+    expect(distance.textContent).toContain('412');
+    // The record carries numbers; the month name is formatted in the active language.
+    expect(distance.textContent).toContain('July 2026');
+
+    const rides = el.querySelector('[data-record="best-month-rides"]')!;
+    expect(rides.textContent).toContain('18');
+    expect(rides.textContent).toContain('May 2026');
   });
 
   it('renders the most-calories and longest-duration records, linking their rides', () => {

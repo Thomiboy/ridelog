@@ -31,6 +31,8 @@ export interface StreakRecord {
   days: number;
   startDate: string;
   endDate: string;
+  /** Distance ridden across the streak's days — also what breaks ties between equal-length streaks. */
+  distanceKm: number;
 }
 
 /** The single ride that burned the most calories. */
@@ -47,6 +49,23 @@ export interface LongestDurationRecord {
   durationMinutes: number;
 }
 
+/**
+ * The best calendar month for a metric. Year and month are numbers so the month name can be
+ * formatted in the active language rather than fixed by the backend.
+ */
+export interface BestMonthDistanceRecord {
+  year: number;
+  month: number;
+  distanceKm: number;
+}
+
+/** The calendar month with the most rides; year and month are numbers, as above. */
+export interface BestMonthRidesRecord {
+  year: number;
+  month: number;
+  rideCount: number;
+}
+
 /** Personal records for the Records section. */
 export interface StatisticsRecords {
   longestRide?: LongestRideRecord | null;
@@ -54,6 +73,8 @@ export interface StatisticsRecords {
   longestStreak?: StreakRecord | null;
   mostCalories?: MostCaloriesRecord | null;
   longestDuration?: LongestDurationRecord | null;
+  bestMonthDistance?: BestMonthDistanceRecord | null;
+  bestMonthRides?: BestMonthRidesRecord | null;
 }
 
 /** Distance ridden in one 5°C temperature band; open-ended bounds are null. */

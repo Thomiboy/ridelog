@@ -166,7 +166,31 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Select(r => new LongestDurationRecord(r.Id, r.StartTime, Math.Round(r.Duration.TotalMinutes)))
             .FirstOrDefault();
 
-        return new StatisticsRecords(longest, fastest, LongestStreak(rows), mostCalories, longestDuration);
+        // Best calendar month by distance and by ride count. The month in progress competes like any
+        // other; ties resolve to the more recent month, matching the streak record.
+        var months = rows
+            .GroupBy(r => (r.StartTime.Year, r.StartTime.Month))
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                DistanceKm = Math.Round(g.Sum(r => r.DistanceMeters) / 1000.0, 1),
+                RideCount = g.Count(),
+            })
+            .ToList();
+
+        var bestMonthDistance = months
+            .OrderByDescending(m => m.DistanceKm).ThenByDescending(m => m.Year).ThenByDescending(m => m.Month)
+            .Select(m => new BestMonthDistanceRecord(m.Year, m.Month, m.DistanceKm))
+            .FirstOrDefault();
+
+        var bestMonthRides = months
+            .OrderByDescending(m => m.RideCount).ThenByDescending(m => m.Year).ThenByDescending(m => m.Month)
+            .Select(m => new BestMonthRidesRecord(m.Year, m.Month, m.RideCount))
+            .FirstOrDefault();
+
+        return new StatisticsRecords(
+            longest, fastest, LongestStreak(rows), mostCalories, longestDuration, bestMonthDistance, bestMonthRides);
     }
 
     private static StreakRecord? LongestStreak(IReadOnlyList<Row> rows)
@@ -183,31 +207,46 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             return null;
         }
 
-        var bestStart = days[0];
-        var bestEnd = days[0];
+        // Collect every run, then pick a winner: longest wins, and among equally long ones the one
+        // covering more distance, with the more recent breaking any remaining tie.
+        var runs = new List<(DateOnly Start, DateOnly End)>();
         var runStart = days[0];
 
         for (var i = 1; i <= days.Count; i++)
         {
-            var continues = i < days.Count && days[i] == days[i - 1].AddDays(1);
-            if (continues)
+            if (i < days.Count && days[i] == days[i - 1].AddDays(1))
             {
                 continue;
             }
 
-            var runEnd = days[i - 1];
-            if (runEnd.DayNumber - runStart.DayNumber > bestEnd.DayNumber - bestStart.DayNumber)
-            {
-                bestStart = runStart;
-                bestEnd = runEnd;
-            }
-
+            runs.Add((runStart, days[i - 1]));
             if (i < days.Count)
             {
                 runStart = days[i];
             }
         }
 
-        return new StreakRecord(bestEnd.DayNumber - bestStart.DayNumber + 1, bestStart, bestEnd);
+        var best = runs
+            .Select(run => new
+            {
+                run.Start,
+                run.End,
+                Days = run.End.DayNumber - run.Start.DayNumber + 1,
+                DistanceKm = DistanceInRange(rows, run.Start, run.End),
+            })
+            .OrderByDescending(run => run.Days)
+            .ThenByDescending(run => run.DistanceKm)
+            .ThenByDescending(run => run.End)
+            .First();
+
+        return new StreakRecord(best.Days, best.Start, best.End, best.DistanceKm);
     }
+
+    /// <summary>Total ridden distance over the inclusive day range, in km.</summary>
+    private static double DistanceInRange(IReadOnlyList<Row> rows, DateOnly start, DateOnly end) =>
+        Math.Round(
+            rows
+                .Where(r => DateOnly.FromDateTime(r.StartTime.Date) >= start && DateOnly.FromDateTime(r.StartTime.Date) <= end)
+                .Sum(r => r.DistanceMeters) / 1000.0,
+            1);
 }
