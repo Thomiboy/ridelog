@@ -12,31 +12,60 @@ namespace RideLog.Infrastructure.Rides;
 /// </summary>
 public static class RestStopDetector
 {
-    /// <summary>A pause counts once elapsed time jumps by more than this (minutes) between samples.</summary>
+    /// <summary>How long the rider has to be stalled (minutes) before it counts as a rest.</summary>
     private const double PauseMinutes = 1.0;
 
-    /// <summary>…while cumulative distance advances by less than this (km) — i.e. the rider barely moved.</summary>
-    private const double MovementKm = 0.05;
+    /// <summary>
+    /// Below this average speed (km/h) over a gap the rider counts as stalled rather than riding —
+    /// slower than walking, so it survives the GPS jitter of a stationary bike.
+    /// </summary>
+    private const double StalledSpeedKmh = 3.0;
 
     /// <summary>
-    /// The cumulative distances (km) at which the rider rested. Consecutive paused samples collapse
-    /// into one rest, recorded at the distance where the pause began.
+    /// The cumulative distances (km) at which the rider rested. A rest is a stretch of the ride
+    /// spent going nowhere for longer than <see cref="PauseMinutes"/>, recorded at the distance
+    /// where it began; consecutive stalled samples collapse into one rest.
     /// </summary>
+    /// <remarks>
+    /// The stall is measured as a *rate* and accumulated across samples on purpose. The series this
+    /// runs on is downsampled to <see cref="Import.MetricSeriesBuilder.MaxSamples"/> points, so
+    /// neighbouring samples sit however far apart the ride's length makes them — a couple of hours
+    /// lands them ~15 s apart. Asking any single gap to exceed a whole minute would mean no normal
+    /// ride could ever report a rest.
+    /// </remarks>
     public static IReadOnlyList<double> DetectRestDistancesKm(IReadOnlyList<MetricSample> series)
     {
         var rests = new List<double>();
-        var inRest = false;
+        var stalledMinutes = 0.0;
+        var stallStartKm = 0.0;
+        var hasRidden = false;
+
         for (var i = 1; i < series.Count; i++)
         {
             var elapsedGap = series[i].ElapsedMinutes - series[i - 1].ElapsedMinutes;
             var distanceGap = series[i].DistanceKm - series[i - 1].DistanceKm;
-            var isRestGap = elapsedGap > PauseMinutes && distanceGap < MovementKm;
+            var stalled = elapsedGap > 0 && distanceGap / (elapsedGap / 60.0) < StalledSpeedKmh;
 
-            if (isRestGap && !inRest)
+            if (stalled)
             {
-                rests.Add(series[i - 1].DistanceKm);
+                if (stalledMinutes == 0)
+                {
+                    stallStartKm = series[i - 1].DistanceKm;
+                }
+                stalledMinutes += elapsedGap;
+                continue;
             }
-            inRest = isRestGap;
+
+            // A stall only becomes a rest once the rider sets off again. That's what makes it a pause
+            // *within* the ride: standing around before the first pedal stroke, or leaving the
+            // recording running afterwards, never gets closed off and so never marks the map.
+            if (hasRidden && stalledMinutes > PauseMinutes)
+            {
+                rests.Add(stallStartKm);
+            }
+
+            stalledMinutes = 0;
+            hasRidden = true;
         }
 
         return rests;
