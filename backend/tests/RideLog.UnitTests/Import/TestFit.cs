@@ -6,7 +6,12 @@ namespace RideLog.UnitTests.Import;
 /// <summary>Builds valid FIT byte payloads with the SDK encoder for importer/parser tests.</summary>
 internal static class TestFit
 {
-    public static byte[] Build((System.DateTime Time, sbyte Temp)[] samples, double lat = 47.5, double lon = 19.0)
+    /// <param name="unpositionedPrefix">
+    /// How many leading records carry no lat/lon — what a device logs while it is switched on but
+    /// still waiting for a GPS fix.
+    /// </param>
+    public static byte[] Build(
+        (System.DateTime Time, sbyte Temp)[] samples, double lat = 47.5, double lon = 19.0, int unpositionedPrefix = 0)
     {
         using var stream = new MemoryStream();
         var encoder = new Encode(ProtocolVersion.V20);
@@ -17,12 +22,16 @@ internal static class TestFit
         fileId.SetTimeCreated(new Dynastream.Fit.DateTime(samples[0].Time));
         encoder.Write(fileId);
 
-        foreach (var (time, temp) in samples)
+        for (var i = 0; i < samples.Length; i++)
         {
+            var (time, temp) = samples[i];
             var record = new RecordMesg();
             record.SetTimestamp(new Dynastream.Fit.DateTime(time));
-            record.SetPositionLat((int)(lat / 180.0 * int.MaxValue));
-            record.SetPositionLong((int)(lon / 180.0 * int.MaxValue));
+            if (i >= unpositionedPrefix)
+            {
+                record.SetPositionLat((int)(lat / 180.0 * int.MaxValue));
+                record.SetPositionLong((int)(lon / 180.0 * int.MaxValue));
+            }
             record.SetAltitude(100f);
             record.SetTemperature(temp);
             encoder.Write(record);

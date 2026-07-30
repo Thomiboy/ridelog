@@ -16,7 +16,9 @@ public sealed class FitActivityParserTests
         Sport sport = Sport.Cycling,
         float totalDistanceMeters = 25000f,
         float totalTimerSeconds = 3600f,
-        float? speedMps = null)
+        float? speedMps = null,
+        float[]? recordSpeedsMps = null,
+        float? sessionMaxSpeedMps = null)
     {
         using var stream = new MemoryStream();
         var encoder = new Encode(ProtocolVersion.V20);
@@ -27,8 +29,9 @@ public sealed class FitActivityParserTests
         fileId.SetTimeCreated(new Dynastream.Fit.DateTime(records[0].Time));
         encoder.Write(fileId);
 
-        foreach (var r in records)
+        for (var i = 0; i < records.Length; i++)
         {
+            var r = records[i];
             var record = new RecordMesg();
             record.SetTimestamp(new Dynastream.Fit.DateTime(r.Time));
             record.SetPositionLat(Semicircles(r.Lat));
@@ -36,7 +39,11 @@ public sealed class FitActivityParserTests
             record.SetAltitude(r.Altitude);
             record.SetTemperature(r.Temperature);
             record.SetHeartRate(r.HeartRate);
-            if (speedMps is { } speed)
+            if (recordSpeedsMps is { } perRecord)
+            {
+                record.SetSpeed(perRecord[i]);
+            }
+            else if (speedMps is { } speed)
             {
                 record.SetSpeed(speed);
             }
@@ -49,6 +56,10 @@ public sealed class FitActivityParserTests
         session.SetSport(sport);
         session.SetTotalDistance(totalDistanceMeters);
         session.SetTotalTimerTime(totalTimerSeconds);
+        if (sessionMaxSpeedMps is { } sessionMax)
+        {
+            session.SetMaxSpeed(sessionMax);
+        }
         encoder.Write(session);
 
         encoder.Close();
@@ -149,5 +160,44 @@ public sealed class FitActivityParserTests
         var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
 
         Assert.Equal([8.0, 17.0], parsed.RoutePoints.Select(p => p.TemperatureCelsius));
+    }
+
+    [Fact]
+    public void Summarises_temperature_from_the_same_records_the_route_is_built_from()
+    {
+        // A device switched on before it has a GPS fix logs records with no position, and the
+        // temperature sensor reads its power-on default until it settles. Those records are dropped
+        // from the route, so the graph never shows the bogus reading — but they must not reach the
+        // ride's min/avg/max either, or a July ride reports a 0 °C low that appears nowhere on it.
+        var start = new System.DateTime(2026, 7, 28, 6, 0, 0, DateTimeKind.Utc);
+        var samples = Enumerable.Range(0, 60)
+            .Select(i => (Time: start.AddSeconds(i), Temp: (sbyte)(i < 5 ? 0 : 26)))
+            .ToArray();
+        var bytes = TestFit.Build(samples, unpositionedPrefix: 5);
+
+        var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
+
+        // The route only ever saw 26 °C, so the summary must agree with it.
+        Assert.All(parsed.RoutePoints, p => Assert.Equal(26, p.TemperatureCelsius));
+        Assert.Equal(26, parsed.MinTemperatureCelsius);
+        Assert.Equal(26, parsed.AverageTemperatureCelsius);
+    }
+
+    [Fact]
+    public void A_speed_spike_does_not_become_the_rides_maximum()
+    {
+        // Riding a steady 30 km/h (8.333 m/s) with one sample glitched to 85 km/h (23.6 m/s). The
+        // device's own summary repeats the glitch, which is exactly what used to be stored.
+        var speeds = Enumerable.Repeat(8.333f, 30).ToArray();
+        speeds[15] = 23.6f;
+        var records = Enumerable.Range(0, 30)
+            .Select(i => (T0.AddSeconds(i), 47.50 + i * 0.0001, 19.00, 100f, (sbyte)20, (byte)140))
+            .ToArray();
+        var bytes = BuildFit(records, recordSpeedsMps: speeds, sessionMaxSpeedMps: 23.6f);
+
+        var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
+
+        // Going from 30 to 85 km/h in one second is not something a bicycle does.
+        Assert.Equal(30.0, parsed.MaximumSpeedKmh!.Value, 0.1);
     }
 }

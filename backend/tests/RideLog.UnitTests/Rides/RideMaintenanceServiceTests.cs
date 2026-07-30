@@ -172,7 +172,7 @@ public sealed class RideMaintenanceServiceTests : IDisposable
             var reloaded = await verify.Rides.Include(r => r.RawFiles).SingleAsync();
             // Metrics now come from the stored TCX.
             Assert.Equal(36.0, reloaded.AverageSpeedKmh!.Value, 0.01); // LX AvgSpeed 10 m/s
-            Assert.Equal(59.4, reloaded.MaximumSpeedKmh!.Value, 0.01); // MaximumSpeed 16.5 m/s
+            Assert.Equal(13.42, reloaded.MaximumSpeedKmh!.Value, 0.01); // from the track, not the lap summary
             Assert.Equal(620, reloaded.Calories);
             Assert.Equal(140, reloaded.AverageHeartRate); // (120 + 160) / 2
             Assert.Equal(30000, reloaded.DistanceMeters, 0.001);

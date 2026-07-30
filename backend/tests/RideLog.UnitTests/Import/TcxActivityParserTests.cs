@@ -184,10 +184,28 @@ public class TcxActivityParserTests
     }
 
     [Fact]
-    public void Takes_maximum_speed_from_the_lap_in_kmh()
+    public void Maximum_speed_comes_from_the_track_not_the_lap_summary()
     {
-        // Lap MaximumSpeed is metres per second; 16.5 m/s × 3.6 = 59.4 km/h.
-        Assert.Equal(59.4, Parse().MaximumSpeedKmh!.Value, 0.01);
+        // The lap claims 16.5 m/s (59.4 km/h), but the track only ever covers ~1.1 km per half hour.
+        // The device summary is where GPS spikes land, so the track wins (docs/adr/0002).
+        Assert.Equal(2.22, Parse().MaximumSpeedKmh!.Value, 0.01);
+    }
+
+    [Fact]
+    public void Falls_back_to_the_lap_maximum_when_the_track_has_no_speed()
+    {
+        // Trackpoints with no position leave nothing to derive speed from, so the device's own
+        // summary is all there is. Lap MaximumSpeed is metres per second: 16.5 × 3.6 = 59.4 km/h.
+        var positionless = Tcx.Replace(
+            "<Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.0</LongitudeDegrees></Position>", "")
+            .Replace("<Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.01</LongitudeDegrees></Position>", "")
+            .Replace("<Position><LatitudeDegrees>0.0</LatitudeDegrees><LongitudeDegrees>0.02</LongitudeDegrees></Position>", "");
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(positionless));
+
+        var parsed = new TcxActivityParser().Parse(stream, "ride.tcx");
+
+        Assert.Empty(parsed.RoutePoints);
+        Assert.Equal(59.4, parsed.MaximumSpeedKmh!.Value, 0.01);
     }
 
     [Fact]
