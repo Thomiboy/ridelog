@@ -19,7 +19,7 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
 
     private sealed record LongestRideDto(Guid Id, DateTimeOffset Date, double DistanceKm);
     private sealed record FastestAverageDto(Guid Id, DateTimeOffset Date, double AverageSpeedKmh);
-    private sealed record StreakDto(int Days, DateOnly StartDate, DateOnly EndDate);
+    private sealed record StreakDto(int Days, DateOnly StartDate, DateOnly EndDate, double DistanceKm);
     private sealed record RecordsDto(
         LongestRideDto? LongestRide, FastestAverageDto? FastestAverage, StreakDto? LongestStreak);
     private sealed record RecordsStatisticsDto(RecordsDto Records);
@@ -150,6 +150,146 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         Assert.Equal(3, stats.Records.LongestStreak!.Days);
         Assert.Equal(new DateOnly(2026, 6, 1), stats.Records.LongestStreak.StartDate);
         Assert.Equal(new DateOnly(2026, 6, 3), stats.Records.LongestStreak.EndDate);
+    }
+
+    /// <summary>Seeds streaks of consecutive cycling days, each day carrying the given distance.</summary>
+    private async Task SeedStreaksAsync(params (DateOnly Start, int Days, double KmPerDay)[] streaks)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+        context.Rides.RemoveRange(context.Rides);
+        await context.SaveChangesAsync();
+
+        foreach (var streak in streaks)
+        {
+            for (var day = 0; day < streak.Days; day++)
+            {
+                var start = streak.Start.AddDays(day).ToDateTime(new TimeOnly(8, 0));
+                context.Rides.Add(Ride(new DateTimeOffset(start, TimeSpan.Zero), streak.KmPerDay, 100, 30, 500));
+            }
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Equally_long_streaks_resolve_to_the_one_with_more_distance()
+    {
+        // Two 3-day streaks: June covers 150 km, July covers 300 km. The scan meets June first, so
+        // keeping the first-found longest run would pick it — distance has to override that.
+        await SeedStreaksAsync(
+            (new DateOnly(2026, 6, 1), Days: 3, KmPerDay: 50),
+            (new DateOnly(2026, 7, 1), Days: 3, KmPerDay: 100));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<RecordsStatisticsDto>("/statistics");
+
+        Assert.Equal(3, stats!.Records.LongestStreak!.Days);
+        Assert.Equal(new DateOnly(2026, 7, 1), stats.Records.LongestStreak.StartDate);
+        Assert.Equal(new DateOnly(2026, 7, 3), stats.Records.LongestStreak.EndDate);
+    }
+
+    [Fact]
+    public async Task Streaks_equal_on_length_and_distance_resolve_to_the_more_recent()
+    {
+        // Identical 3-day, 300 km streaks: nothing separates them but the date, so the newer wins.
+        await SeedStreaksAsync(
+            (new DateOnly(2026, 6, 1), Days: 3, KmPerDay: 100),
+            (new DateOnly(2026, 7, 1), Days: 3, KmPerDay: 100));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<RecordsStatisticsDto>("/statistics");
+
+        Assert.Equal(new DateOnly(2026, 7, 1), stats!.Records.LongestStreak!.StartDate);
+    }
+
+    [Fact]
+    public async Task Streak_record_carries_the_distance_ridden_over_its_days()
+    {
+        // 3 days at 80 km = 240 km; the isolated later day is outside the streak and must not count.
+        await SeedStreaksAsync(
+            (new DateOnly(2026, 6, 1), Days: 3, KmPerDay: 80),
+            (new DateOnly(2026, 6, 20), Days: 1, KmPerDay: 500));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<RecordsStatisticsDto>("/statistics");
+
+        Assert.Equal(240, stats!.Records.LongestStreak!.DistanceKm, 0.01);
+    }
+
+    private sealed record BestMonthDistanceDto(int Year, int Month, double DistanceKm);
+    private sealed record BestMonthRidesDto(int Year, int Month, int RideCount);
+    private sealed record MonthRecordsDto(BestMonthDistanceDto? BestMonthDistance, BestMonthRidesDto? BestMonthRides);
+    private sealed record MonthRecordsStatsDto(MonthRecordsDto Records);
+
+    /// <summary>Seeds a number of same-distance cycling rides into a month, one per day from the 1st.</summary>
+    private async Task SeedMonthsAsync(params (int Year, int Month, int Rides, double KmEach)[] months)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+        context.Rides.RemoveRange(context.Rides);
+        await context.SaveChangesAsync();
+
+        foreach (var month in months)
+        {
+            for (var day = 0; day < month.Rides; day++)
+            {
+                var start = new DateTimeOffset(month.Year, month.Month, 1 + day, 8, 0, 0, TimeSpan.Zero);
+                context.Rides.Add(Ride(start, month.KmEach, 100, 30, 500));
+            }
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Best_month_by_distance_is_the_calendar_month_with_the_most_kilometres()
+    {
+        // May rides more often (5 × 40 = 200 km) but June covers more ground (2 × 150 = 300 km).
+        await SeedMonthsAsync((2026, 5, Rides: 5, KmEach: 40), (2026, 6, Rides: 2, KmEach: 150));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<MonthRecordsStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.Records.BestMonthDistance);
+        Assert.Equal(2026, stats.Records.BestMonthDistance!.Year);
+        Assert.Equal(6, stats.Records.BestMonthDistance.Month);
+        Assert.Equal(300, stats.Records.BestMonthDistance.DistanceKm, 0.01);
+    }
+
+    [Fact]
+    public async Task Best_month_by_rides_counts_rides_not_distance()
+    {
+        // Same seed as the distance record: May has more rides, June more kilometres. This record
+        // must land on May, so the two records are genuinely measuring different things.
+        await SeedMonthsAsync((2026, 5, Rides: 5, KmEach: 40), (2026, 6, Rides: 2, KmEach: 150));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<MonthRecordsStatsDto>("/statistics");
+
+        Assert.NotNull(stats!.Records.BestMonthRides);
+        Assert.Equal(5, stats.Records.BestMonthRides!.RideCount);
+        Assert.Equal(2026, stats.Records.BestMonthRides.Year);
+        Assert.Equal(5, stats.Records.BestMonthRides.Month);
+    }
+
+    [Fact]
+    public async Task The_month_in_progress_competes_for_the_monthly_records()
+    {
+        // "Now" is 2026-07-17, so July is still running — and it still holds the record.
+        await SeedMonthsAsync((2026, 6, Rides: 2, KmEach: 100), (2026, 7, Rides: 3, KmEach: 100));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<MonthRecordsStatsDto>("/statistics");
+
+        Assert.Equal(7, stats!.Records.BestMonthDistance!.Month);
+        Assert.Equal(300, stats.Records.BestMonthDistance.DistanceKm, 0.01);
+    }
+
+    [Fact]
+    public async Task Months_tied_on_the_metric_resolve_to_the_more_recent()
+    {
+        // Identical months: same distance, same ride count. The newer one is the record.
+        await SeedMonthsAsync((2026, 5, Rides: 2, KmEach: 100), (2026, 6, Rides: 2, KmEach: 100));
+
+        var stats = await factory.CreateClient().GetFromJsonAsync<MonthRecordsStatsDto>("/statistics");
+
+        Assert.Equal(6, stats!.Records.BestMonthDistance!.Month);
+        Assert.Equal(6, stats.Records.BestMonthRides!.Month);
     }
 
     private sealed record MostCaloriesDto(Guid Id, DateTimeOffset Date, int Calories);

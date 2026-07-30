@@ -174,7 +174,9 @@
       "longestStreak": "Leghosszabb sorozat",
       "mostCalories": "Legtöbb kalória",
       "longestDuration": "Leghosszabb időtartam",
-      "days": "{{count}} nap"
+      "days": "{{count}} nap",
+      "bestMonthDistance": "Legjobb hónap",
+      "bestMonthRides": "Legtöbb túra egy hónapban"
     },
     "trends": {
       "title": "Trendek",

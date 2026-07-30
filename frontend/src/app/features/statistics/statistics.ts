@@ -100,6 +100,14 @@ export class Statistics implements OnDestroy {
 
   readonly records = computed(() => this.stats()?.records ?? null);
 
+  /**
+   * A year/month pair as a Date, so the month records can render their label through `translocoDate`
+   * and follow the active language instead of a backend-fixed month name.
+   */
+  monthDate(year: number, month: number): Date {
+    return new Date(year, month - 1, 1);
+  }
+
   readonly hrZoneChart = computed(() => {
     const zones = this.stats()?.hrZones;
     return zones && zones.some((z) => z.minutes > 0) ? buildHrZoneChart(zones) : null;
