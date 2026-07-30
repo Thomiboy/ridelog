@@ -43,7 +43,9 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
                 Math.Round(g.Sum(r => r.DistanceMeters) / 1000.0, 1),
                 g.Sum(r => r.ElevationGainMeters ?? 0),
                 g.Count(),
-                g.Sum(r => r.Calories ?? 0)))
+                g.Sum(r => r.Calories ?? 0),
+                // Moving time (docs/adr/0001), in minutes — the finest unit; the chart converts to hours.
+                Math.Round(g.Sum(r => r.Duration.TotalMinutes), 1)))
             .OrderBy(m => m.Year).ThenBy(m => m.Month)
             .ToList();
 

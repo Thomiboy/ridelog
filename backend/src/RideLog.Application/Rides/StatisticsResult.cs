@@ -2,7 +2,8 @@ namespace RideLog.Application.Rides;
 
 /// <summary>Totals for one calendar month of cycling; only months with rides are emitted.</summary>
 public sealed record MonthlyAggregate(
-    int Year, int Month, double DistanceKm, double ElevationGainMeters, int RideCount, int Calories);
+    int Year, int Month, double DistanceKm, double ElevationGainMeters, int RideCount, int Calories,
+    double DurationMinutes);
 
 /// <summary>The single ride with the greatest distance; links back to that ride.</summary>
 public sealed record LongestRideRecord(Guid Id, DateTimeOffset Date, double DistanceKm);

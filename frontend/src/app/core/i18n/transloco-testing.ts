@@ -32,6 +32,7 @@ const en = {
       title: 'Trends',
       year: 'Year',
       distance: 'Distance',
+      duration: 'Time (hours)',
       elevation: 'Climbing',
       rides: 'Rides',
       calories: 'Calories',

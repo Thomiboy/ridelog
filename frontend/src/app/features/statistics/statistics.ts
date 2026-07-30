@@ -74,6 +74,7 @@ export class Statistics implements OnDestroy {
   });
 
   readonly distanceChart = this.metricChart('distanceKm');
+  readonly durationChart = this.metricChart('durationMinutes');
   readonly elevationChart = this.metricChart('elevationGainMeters');
   readonly ridesChart = this.metricChart('rideCount');
   readonly caloriesChart = this.metricChart('calories');

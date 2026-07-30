@@ -190,7 +190,8 @@
       "byYear": "Évenként",
       "yearTotals": "Táv évenként",
       "ridesByYear": "Túrák évenként",
-      "temperatureDistribution": "Táv hőmérséklet szerint"
+      "temperatureDistribution": "Táv hőmérséklet szerint",
+      "duration": "Idő (óra)"
     },
     "hrZones": {
       "title": "Pulzuszónák"

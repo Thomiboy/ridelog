@@ -8,7 +8,14 @@ import type {
 import { MONTH_LABELS } from '../../core/i18n/month-labels';
 
 /** A numeric per-month metric of a monthly aggregate. */
-export type MonthlyMetric = 'distanceKm' | 'elevationGainMeters' | 'rideCount' | 'calories';
+export type MonthlyMetric = 'distanceKm' | 'elevationGainMeters' | 'rideCount' | 'calories' | 'durationMinutes';
+
+/**
+ * Factors applied between the stored value and the plotted one. Moving time is stored in minutes —
+ * the finest unit, matching the rest of the API — but a month on the bike is naturally read in hours,
+ * and hour ticks keep the axis legible where minutes would crowd it.
+ */
+const PLOT_SCALE: Partial<Record<MonthlyMetric, number>> = { durationMinutes: 1 / 60 };
 
 /** The distinct years that have cycling data, ascending — drives the year selector. */
 export function statisticsYears(monthly: MonthlyAggregate[]): number[] {
@@ -27,9 +34,13 @@ export function buildMonthlyMetricChart(
   months: readonly string[] = MONTH_LABELS,
   compareYear?: number | null,
 ): ChartData<'bar'> {
+  const scale = PLOT_SCALE[metric] ?? 1;
   const series = (of: number) => ({
     label: String(of),
-    data: months.map((_, index) => monthly.find((m) => m.year === of && m.month === index + 1)?.[metric] ?? 0),
+    data: months.map((_, index) => {
+      const value = monthly.find((m) => m.year === of && m.month === index + 1)?.[metric] ?? 0;
+      return Math.round(value * scale * 10) / 10;
+    }),
   });
   return {
     labels: [...months],

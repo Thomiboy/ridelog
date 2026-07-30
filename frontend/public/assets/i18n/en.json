@@ -190,7 +190,8 @@
       "byYear": "By year",
       "yearTotals": "Distance by year",
       "ridesByYear": "Rides by year",
-      "temperatureDistribution": "Distance by temperature"
+      "temperatureDistribution": "Distance by temperature",
+      "duration": "Time (hours)"
     },
     "hrZones": {
       "title": "HR zones"
