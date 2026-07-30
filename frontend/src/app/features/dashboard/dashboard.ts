@@ -43,10 +43,19 @@ export class Dashboard {
   /** Dual-axis scales (speed left, temperature right) for the trend chart. */
   readonly speedChartOptions = SPEED_TEMPERATURE_TREND_OPTIONS;
 
-  /** Short month name for a 1-based month number (e.g. 7 → "Jul"), for the best-month tiles. */
-  monthLabel(month: number): string {
-    return this.months()[month - 1] ?? '';
-  }
+  /**
+   * The same-month-last-year label, e.g. "July 2025" / "2025. július". Built here rather than with
+   * `translocoDate` because it feeds a transloco interpolation parameter, which needs a string —
+   * the same approach as the Rides calendar's month heading.
+   */
+  readonly sameMonthLabel = computed(() => {
+    const month = this.stats()?.sameMonthLastYear;
+    return month
+      ? new Intl.DateTimeFormat(this.language.current(), { month: 'long', year: 'numeric' }).format(
+          new Date(month.year, month.month - 1, 1),
+        )
+      : '';
+  });
 
   constructor() {
     this.dashboardService.getDashboard().subscribe((stats) => this.stats.set(stats));

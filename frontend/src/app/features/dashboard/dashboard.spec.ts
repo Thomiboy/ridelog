@@ -22,7 +22,7 @@ describe('Dashboard', () => {
     thisMonth: { distanceKm: 100, rideCount: 2, elevationGainMeters: 600 },
     thisYear: { distanceKm: 200.5, rideCount: 3, elevationGainMeters: 1100 },
     lastYear: { distanceKm: 80, rideCount: 1, elevationGainMeters: 300 },
-    lastYearBestMonth: { month: 7, distanceKm: 80, rideCount: 1 },
+    sameMonthLastYear: { year: 2025, month: 7, distanceKm: 80, rideCount: 1 },
     monthlyDistance: [
       { year: 2025, month: 7, distanceKm: 80 },
       { year: 2026, month: 7, distanceKm: 100 },
@@ -54,27 +54,36 @@ describe('Dashboard', () => {
     expect(el.querySelector('[data-tile="year-elevation"]')?.textContent).toContain('1,100');
   });
 
-  it('renders the previous-year tiles with the best month named', () => {
+  it('renders the previous-year totals', () => {
     const { el } = setup();
 
     expect(el.querySelector('[data-tile="last-year-distance"]')?.textContent).toContain('80');
     expect(el.querySelector('[data-tile="last-year-rides"]')?.textContent).toContain('1');
     expect(el.querySelector('[data-tile="last-year-elevation"]')?.textContent).toContain('300');
-    // The best-month tiles name the month (July → "Jul").
-    expect(el.querySelector('[data-tile="best-month-distance"]')?.textContent).toContain('Jul');
-    expect(el.querySelector('[data-tile="best-month-distance"]')?.textContent).toContain('80');
-    expect(el.querySelector('[data-tile="best-month-rides"]')?.textContent).toContain('Jul');
+  });
+
+  it('renders the same month last year, naming that month and its year', () => {
+    const { el } = setup();
+
+    const distance = el.querySelector('[data-tile="same-month-last-year-distance"]');
+    expect(distance?.textContent).toContain('80');
+    // Naming the year makes clear this is a whole past month, not the part-elapsed current one.
+    expect(distance?.textContent).toContain('July 2025');
+
+    const rides = el.querySelector('[data-tile="same-month-last-year-rides"]');
+    expect(rides?.textContent).toContain('1');
+    expect(rides?.textContent).toContain('July 2025');
   });
 
   it('hides the previous-year tiles when there were no rides last year', () => {
-    const { el } = setup({ lastYear: { distanceKm: 0, rideCount: 0, elevationGainMeters: 0 }, lastYearBestMonth: null });
+    const { el } = setup({ lastYear: { distanceKm: 0, rideCount: 0, elevationGainMeters: 0 } });
 
     expect(el.querySelector('[data-tile="last-year-distance"]')).toBeNull();
-    expect(el.querySelector('[data-tile="best-month-distance"]')).toBeNull();
+    expect(el.querySelector('[data-tile="same-month-last-year-distance"]')).toBeNull();
   });
 
   it('renders without crashing when the API omits last-year data (older backend)', () => {
-    const { el } = setup({ lastYear: undefined, lastYearBestMonth: undefined });
+    const { el } = setup({ lastYear: undefined, sameMonthLastYear: undefined });
 
     // The current-period tiles still render; the previous-year group is simply absent.
     expect(el.querySelector('[data-tile="year-distance"]')?.textContent).toContain('200.5');

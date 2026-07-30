@@ -23,8 +23,12 @@ export interface MonthlyAverageTemperature {
   averageTemperatureCelsius?: number | null;
 }
 
-/** The best (highest-distance) month of a year, mirroring the backend BestMonth. */
-export interface BestMonth {
+/**
+ * The same calendar month one year ago (the whole month), mirroring the backend SameMonthLastYear.
+ * Year and month are numbers so the label can name the month in the active language.
+ */
+export interface SameMonthLastYear {
+  year: number;
   month: number;
   distanceKm: number;
   rideCount: number;
@@ -36,7 +40,7 @@ export interface DashboardStats {
   thisYear: PeriodStats;
   // Optional so the dashboard survives talking to an older backend that doesn't send these yet.
   lastYear?: PeriodStats;
-  lastYearBestMonth?: BestMonth | null;
+  sameMonthLastYear?: SameMonthLastYear;
   monthlyDistance: MonthlyDistance[];
   averageSpeedTrend: MonthlySpeed[];
   // Optional so the dashboard survives an older backend that doesn't send it yet.

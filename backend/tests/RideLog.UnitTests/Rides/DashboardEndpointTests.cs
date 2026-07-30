@@ -31,9 +31,8 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
     private sealed record PeriodDto(double DistanceKm, int RideCount, double ElevationGainMeters);
     private sealed record MonthDto(int Year, int Month, double DistanceKm);
     private sealed record SpeedDto(int Year, int Month, double? AverageSpeedKmh);
-    private sealed record BestMonthDto(int Month, double DistanceKm, int RideCount);
     private sealed record DashboardDto(
-        PeriodDto ThisMonth, PeriodDto ThisYear, PeriodDto LastYear, BestMonthDto? LastYearBestMonth,
+        PeriodDto ThisMonth, PeriodDto ThisYear, PeriodDto LastYear,
         IReadOnlyList<MonthDto> MonthlyDistance, IReadOnlyList<SpeedDto> AverageSpeedTrend);
 
     private static Ride Ride(DateTimeOffset start, double km, double elevation, double avgSpeed, string sport = "ROAD_BIKING") => new()
@@ -63,6 +62,35 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
             Ride(new DateTimeOffset(2025, 7, 20, 8, 0, 0, TimeSpan.Zero), km: 80, elevation: 300, avgSpeed: 25),
             Ride(new DateTimeOffset(2026, 7, 14, 8, 0, 0, TimeSpan.Zero), km: 10, elevation: 50, avgSpeed: 10, sport: "RUNNING"));
         await context.SaveChangesAsync();
+    }
+
+    private sealed record SameMonthDto(int Year, int Month, double DistanceKm, int RideCount);
+    private sealed record SameMonthDashboardDto(SameMonthDto SameMonthLastYear);
+
+    [Fact]
+    public async Task Same_month_last_year_is_the_matching_month_not_last_years_best()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            context.Rides.AddRange(
+                // "Now" is 2026-07-17. May 2025 is last year's *best* month by distance...
+                Ride(new DateTimeOffset(2025, 5, 10, 8, 0, 0, TimeSpan.Zero), km: 200, elevation: 900, avgSpeed: 30),
+                // ...but July 2025 is the month we are actually in, a year earlier: 80 + 30 = 110 km, 2 rides.
+                Ride(new DateTimeOffset(2025, 7, 3, 8, 0, 0, TimeSpan.Zero), km: 80, elevation: 300, avgSpeed: 28),
+                Ride(new DateTimeOffset(2025, 7, 28, 8, 0, 0, TimeSpan.Zero), km: 30, elevation: 100, avgSpeed: 26),
+                // An adjacent month must not leak into the figure.
+                Ride(new DateTimeOffset(2025, 8, 2, 8, 0, 0, TimeSpan.Zero), km: 500, elevation: 100, avgSpeed: 26));
+            await context.SaveChangesAsync();
+        }
+
+        var dashboard = await factory.CreateClient().GetFromJsonAsync<SameMonthDashboardDto>("/dashboard");
+
+        Assert.Equal(2025, dashboard!.SameMonthLastYear.Year);
+        Assert.Equal(7, dashboard.SameMonthLastYear.Month);
+        Assert.Equal(110, dashboard.SameMonthLastYear.DistanceKm, 0.01);
+        Assert.Equal(2, dashboard.SameMonthLastYear.RideCount);
     }
 
     private sealed record TempTrendDto(int Year, int Month, double? AverageTemperatureCelsius);
@@ -130,7 +158,7 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
     }
 
     [Fact]
-    public async Task Last_year_totals_and_best_month_come_from_the_previous_year()
+    public async Task Last_year_totals_come_from_the_previous_year()
     {
         await SeedAsync();
 
@@ -140,11 +168,6 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
         Assert.Equal(80, dashboard!.LastYear.DistanceKm, 0.01);
         Assert.Equal(1, dashboard.LastYear.RideCount);
         Assert.Equal(300, dashboard.LastYear.ElevationGainMeters, 0.01);
-
-        Assert.NotNull(dashboard.LastYearBestMonth);
-        Assert.Equal(7, dashboard.LastYearBestMonth!.Month); // July
-        Assert.Equal(80, dashboard.LastYearBestMonth.DistanceKm, 0.01);
-        Assert.Equal(1, dashboard.LastYearBestMonth.RideCount);
     }
 
     [Fact]
@@ -163,6 +186,26 @@ public class DashboardEndpointTests(FixedClockApiFactory factory) : IClassFixtur
 
         Assert.Equal(0, dashboard!.LastYear.DistanceKm, 0.01);
         Assert.Equal(0, dashboard.LastYear.RideCount);
-        Assert.Null(dashboard.LastYearBestMonth);
+    }
+
+    [Fact]
+    public async Task Same_month_last_year_reads_zero_rather_than_going_missing()
+    {
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+            context.Rides.RemoveRange(context.Rides);
+            // Rides last year, but none in July — the month we are in now.
+            context.Rides.Add(Ride(new DateTimeOffset(2025, 4, 8, 8, 0, 0, TimeSpan.Zero), km: 90, elevation: 200, avgSpeed: 28));
+            await context.SaveChangesAsync();
+        }
+
+        var dashboard = await factory.CreateClient().GetFromJsonAsync<SameMonthDashboardDto>("/dashboard");
+
+        // The month existed, so zero is the answer; the tiles still have something to render.
+        Assert.Equal(2025, dashboard!.SameMonthLastYear.Year);
+        Assert.Equal(7, dashboard.SameMonthLastYear.Month);
+        Assert.Equal(0, dashboard.SameMonthLastYear.DistanceKm, 0.01);
+        Assert.Equal(0, dashboard.SameMonthLastYear.RideCount);
     }
 }

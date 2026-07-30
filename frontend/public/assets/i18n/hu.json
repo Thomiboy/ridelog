@@ -29,11 +29,11 @@
       "yearDistance": "Idén",
       "yearRides": "Túrák idén",
       "yearElevation": "Szintemelkedés idén",
-      "bestMonthDistance": "Legjobb hónap ({{month}})",
-      "bestMonthRides": "Legjobb hónap túrái ({{month}})",
       "lastYearDistance": "Tavaly",
       "lastYearRides": "Túrák tavaly",
-      "lastYearElevation": "Szintemelkedés tavaly"
+      "lastYearElevation": "Szintemelkedés tavaly",
+      "sameMonthLastYearDistance": "Táv ({{month}})",
+      "sameMonthLastYearRides": "Túrák ({{month}})"
     },
     "charts": {
       "monthlyDistance": "Havi táv",

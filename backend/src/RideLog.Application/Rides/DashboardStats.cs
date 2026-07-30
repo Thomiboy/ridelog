@@ -3,8 +3,11 @@ namespace RideLog.Application.Rides;
 /// <summary>Aggregate totals for one period (this month / this year / last year).</summary>
 public sealed record PeriodStats(double DistanceKm, int RideCount, double ElevationGainMeters);
 
-/// <summary>The best (highest-distance) month of a year: its month number, distance and ride count.</summary>
-public sealed record BestMonth(int Month, double DistanceKm, int RideCount);
+/// <summary>
+/// The same calendar month one year ago — the whole month, so the figure is stable rather than
+/// changing daily. Year and month are numbers so the label can name the month in the active language.
+/// </summary>
+public sealed record SameMonthLastYear(int Year, int Month, double DistanceKm, int RideCount);
 
 /// <summary>Distance ridden in one calendar month.</summary>
 public sealed record MonthlyDistance(int Year, int Month, double DistanceKm);
@@ -24,7 +27,7 @@ public sealed record DashboardStats(
     PeriodStats ThisMonth,
     PeriodStats ThisYear,
     PeriodStats LastYear,
-    BestMonth? LastYearBestMonth,
+    SameMonthLastYear SameMonthLastYear,
     IReadOnlyList<MonthlyDistance> MonthlyDistance,
     IReadOnlyList<MonthlySpeed> AverageSpeedTrend,
     IReadOnlyList<MonthlyAverageTemperature> AverageTemperatureTrend);
