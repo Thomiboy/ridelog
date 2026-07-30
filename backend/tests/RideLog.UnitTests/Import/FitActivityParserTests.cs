@@ -150,4 +150,25 @@ public sealed class FitActivityParserTests
 
         Assert.Equal([8.0, 17.0], parsed.RoutePoints.Select(p => p.TemperatureCelsius));
     }
+
+    [Fact]
+    public void Summarises_temperature_from_the_same_records_the_route_is_built_from()
+    {
+        // A device switched on before it has a GPS fix logs records with no position, and the
+        // temperature sensor reads its power-on default until it settles. Those records are dropped
+        // from the route, so the graph never shows the bogus reading — but they must not reach the
+        // ride's min/avg/max either, or a July ride reports a 0 °C low that appears nowhere on it.
+        var start = new System.DateTime(2026, 7, 28, 6, 0, 0, DateTimeKind.Utc);
+        var samples = Enumerable.Range(0, 60)
+            .Select(i => (Time: start.AddSeconds(i), Temp: (sbyte)(i < 5 ? 0 : 26)))
+            .ToArray();
+        var bytes = TestFit.Build(samples, unpositionedPrefix: 5);
+
+        var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
+
+        // The route only ever saw 26 °C, so the summary must agree with it.
+        Assert.All(parsed.RoutePoints, p => Assert.Equal(26, p.TemperatureCelsius));
+        Assert.Equal(26, parsed.MinTemperatureCelsius);
+        Assert.Equal(26, parsed.AverageTemperatureCelsius);
+    }
 }

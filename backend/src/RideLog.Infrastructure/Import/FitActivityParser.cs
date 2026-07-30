@@ -7,8 +7,8 @@ namespace RideLog.Infrastructure.Import;
 /// <summary>
 /// Parses Bryton (and other Garmin-FIT) activity files with the official FIT SDK. Bryton's value to
 /// RideLog is the ambient temperature series, so temperature is summarised (avg/min/max) from the
-/// record messages; the remaining metrics come from the Session summary, falling back to values
-/// derived from the record track when the session omits them.
+/// track the records build; the remaining metrics come from the Session summary, falling back to
+/// values derived from the record track when the session omits them.
 /// </summary>
 internal sealed class FitActivityParser : IActivityFileParser
 {
@@ -66,10 +66,14 @@ internal sealed class FitActivityParser : IActivityFileParser
         var distance = session?.GetTotalDistance() ?? ComputedDistance(points);
         var elevationGain = session?.GetTotalAscent() is { } ascent ? ascent : ComputedElevationGain(points);
 
-        var temperatures = records
-            .Select(r => r.GetTemperature())
+        // Summarised from the track, not from every record message. A device that is switched on
+        // before it has a GPS fix logs positionless records whose temperature sensor still reads its
+        // power-on default; those records never make it onto the route, so letting them into the
+        // avg/min/max would report a low the ride's own graph doesn't show anywhere.
+        var temperatures = points
+            .Select(p => p.TemperatureCelsius)
             .Where(t => t is not null)
-            .Select(t => (double)t!.Value)
+            .Select(t => t!.Value)
             .ToList();
 
         return new ParsedActivity
