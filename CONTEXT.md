@@ -12,9 +12,15 @@ One recorded cycling activity, from a single source event. Rides from different 
 the same time span are the same ride, merged rather than stored twice.
 _Avoid_: Activity, session, workout, exercise
 
+**Other activity**:
+One recorded activity whose sport is not cycling — a run, a walk, a hike, a swim. It arrives from
+the same sources as a ride and is kept, but it is not a ride and nothing is a term for both.
+_Avoid_: Workout (excludes walking), exercise, training
+
 **Sport**:
-What kind of activity a ride records, as the source reported it. Every sport is stored; only cycling
-is currently shown.
+What kind of activity was recorded, as the source reported it. Sources name the same sport
+differently, so what the app reasons about is the category the raw name falls into; a name it does
+not recognise counts as cycling, because an untagged recording here is a ride.
 _Avoid_: Type, discipline
 
 ### Time
@@ -50,6 +56,18 @@ _Avoid_: Metric, series, field
 **Route**:
 The path a ride took, as positions. Distinct from the metric series, which carries no positions.
 _Avoid_: Track, path, polyline
+
+**Weather**:
+The conditions reported for a ride's time and place by a third party. Reported, not measured: it
+describes the area a ride passed through, where a channel describes the ride itself. A ride's own
+temperature reading and the weather's temperature are therefore different quantities, never one.
+_Avoid_: Conditions, climate
+
+**Headwind**:
+How much of the weather's wind opposed the direction actually being ridden. Derived by comparing the
+two, so it exists for any ride that has both a route and weather, and means nothing on its own for a
+loop — a lap returns whatever it borrowed.
+_Avoid_: Wind (that's the weather's), wind resistance, drag
 
 **Top speed**:
 The fastest a ride went, as its recording device measured it — unless the ride's own track cannot
