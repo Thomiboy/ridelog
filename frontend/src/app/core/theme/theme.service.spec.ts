@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { ThemeService } from './theme.service';
 
 function stubMatchMedia(dark: boolean) {
@@ -9,6 +9,10 @@ function stubMatchMedia(dark: boolean) {
     media: '(prefers-color-scheme: dark)',
     addEventListener: (_: string, cb: (e: { matches: boolean }) => void) => listeners.push(cb),
     removeEventListener: vi.fn(),
+    // The deprecated pair as well: Angular CDK's BreakpointObserver still calls addListener, and a
+    // stub that only answers the modern half throws the moment anything using it is rendered.
+    addListener: (cb: (e: { matches: boolean }) => void) => listeners.push(cb),
+    removeListener: vi.fn(),
   };
   vi.stubGlobal('matchMedia', vi.fn(() => mql));
   return {
@@ -18,6 +22,10 @@ function stubMatchMedia(dark: boolean) {
     },
   };
 }
+
+// Without this the stubbed matchMedia outlives this file and is inherited by whatever the worker
+// runs next, where it belongs to nothing and matches no real browser.
+afterEach(() => vi.unstubAllGlobals());
 
 function create() {
   TestBed.configureTestingModule({});

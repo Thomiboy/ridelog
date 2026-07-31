@@ -120,7 +120,7 @@
       "headwind": "Ellenszél",
       "tailwind": "Hátszél",
       "crosswind": "Oldalszél",
-      "temperature": "Jelentett hőmérséklet",
+      "temperature": "Hőmérséklet",
       "rain": "Csapadék",
       "note": "A területre jelentett érték 10 méteren, nem a kerékpáron mért."
     }
