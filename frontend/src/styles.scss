@@ -2,6 +2,11 @@
 @use './theme/theme-colors' as palettes;
 
 html {
+  // The header and the bottom sheet are the top and bottom of one floating frame — same width,
+  // same centring, mirrored rounded corners — so their width is one value, not two that have to
+  // be remembered together.
+  --rl-frame-width: 85rem;
+
   // Emit both schemes as light-dark() values; ThemeService overrides color-scheme on the root to
   // force light/dark, or leaves "light dark" to follow the OS.
   color-scheme: light dark;
