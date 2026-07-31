@@ -40,6 +40,18 @@ form "the app says 85 and RideLog says 58" is this decision working.
 Rides imported before this keep their old maximum until an admin **Reprocess all** rebuilds them
 from the stored raw files. The raw files are kept, so the threshold stays tunable afterwards.
 
+"The track" means the route the ride actually stores, which is not always the file the scalar metrics
+came from: Polar sync and reprocessing prefer the TCX for its heart rate but fall back to the GPX
+route when the TCX has no positioned points. Deriving the maximum inside the parser was therefore not
+enough — a TCX with an empty track handed over its lap summary while the graph was built from the
+GPX.
+
+Parsers no longer answer the question at all. `ParsedActivity` carries `DeviceMaximumSpeedKmh`, the
+file's own summary verbatim, and every site that builds a ride derives the top speed from the route
+it is about to store, falling back to that summary only when the route yields no speed. The naming
+is the enforcement: there is no longer a `MaximumSpeedKmh` on a parse result that a caller could
+store by mistake, which is how this went wrong three times running.
+
 GPX rides gain a maximum for the first time — GPX records no speed at all, so they previously had
 none. Their speed is derived from position and time, which is noisier than a wheel sensor; the same
 filter is what makes that acceptable.

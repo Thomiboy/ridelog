@@ -56,8 +56,6 @@ internal sealed class GpxActivityParser : IActivityFileParser
             Sport = string.IsNullOrWhiteSpace(sport) ? "Unknown" : sport,
             ElevationGainMeters = points.Any(p => p.ElevationMeters.HasValue) ? elevationGain : null,
             AverageSpeedKmh = duration > TimeSpan.Zero ? distance / 1000 / duration.TotalHours : null,
-            // GPX carries no speed of its own, so the maximum is derived from the track (docs/adr/0002).
-            MaximumSpeedKmh = SpeedSeries.MaxKmh(points),
             RoutePoints = points,
         };
     }

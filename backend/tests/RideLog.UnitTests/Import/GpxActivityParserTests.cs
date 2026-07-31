@@ -64,27 +64,10 @@ public class GpxActivityParserTests
     }
 
     [Fact]
-    public void Derives_a_maximum_speed_from_the_track()
+    public void Reports_no_device_maximum_because_gpx_records_none()
     {
-        // GPX carries no speed at all, so before this the ride simply had no maximum. Three points
-        // 10 s apart, each ~83.3 m along the equator — a steady 30 km/h.
-        const string steady = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
-              <trk>
-                <type>cycling</type>
-                <trkseg>
-                  <trkpt lat="0.0" lon="0.0000000"><ele>100</ele><time>2026-06-01T08:00:00Z</time></trkpt>
-                  <trkpt lat="0.0" lon="0.0007494"><ele>100</ele><time>2026-06-01T08:00:10Z</time></trkpt>
-                  <trkpt lat="0.0" lon="0.0014988"><ele>100</ele><time>2026-06-01T08:00:20Z</time></trkpt>
-                </trkseg>
-              </trk>
-            </gpx>
-            """;
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(steady));
-
-        var parsed = new GpxActivityParser().Parse(stream, "ride.gpx");
-
-        Assert.Equal(30.0, parsed.MaximumSpeedKmh!.Value, 0.1);
+        // GPX has no speed field anywhere, so there is no device summary to fall back on. A GPX
+        // ride's top speed can only come from its track, which the importer derives.
+        Assert.Null(Parse().DeviceMaximumSpeedKmh);
     }
 }

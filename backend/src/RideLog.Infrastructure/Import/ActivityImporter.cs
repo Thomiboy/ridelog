@@ -78,7 +78,7 @@ internal sealed class ActivityImporter(
             Duration = parsed.Duration,
             DistanceMeters = parsed.DistanceMeters,
             AverageSpeedKmh = parsed.AverageSpeedKmh,
-            MaximumSpeedKmh = parsed.MaximumSpeedKmh,
+            MaximumSpeedKmh = SpeedSeries.MaxKmh(parsed.RoutePoints) ?? parsed.DeviceMaximumSpeedKmh,
             AverageHeartRate = parsed.AverageHeartRate,
             MaximumHeartRate = parsed.MaximumHeartRate,
             ElevationGainMeters = parsed.ElevationGainMeters,

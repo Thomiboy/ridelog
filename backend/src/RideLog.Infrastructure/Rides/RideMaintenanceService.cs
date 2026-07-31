@@ -115,7 +115,7 @@ internal sealed class RideMaintenanceService(
         ride.DistanceMeters = metrics.DistanceMeters;
         ride.Duration = metrics.Duration;
         ride.AverageSpeedKmh = metrics.AverageSpeedKmh;
-        ride.MaximumSpeedKmh = metrics.MaximumSpeedKmh;
+        ride.MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.DeviceMaximumSpeedKmh;
         ride.AverageHeartRate = metrics.AverageHeartRate;
         ride.MaximumHeartRate = metrics.MaximumHeartRate;
         ride.ElevationGainMeters = metrics.ElevationGainMeters;

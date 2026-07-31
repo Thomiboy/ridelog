@@ -108,7 +108,7 @@ internal sealed class PolarSyncService(
             Duration = metrics.Duration,
             DistanceMeters = metrics.DistanceMeters,
             AverageSpeedKmh = metrics.AverageSpeedKmh,
-            MaximumSpeedKmh = metrics.MaximumSpeedKmh,
+            MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.DeviceMaximumSpeedKmh,
             AverageHeartRate = metrics.AverageHeartRate,
             MaximumHeartRate = metrics.MaximumHeartRate,
             ElevationGainMeters = metrics.ElevationGainMeters,
