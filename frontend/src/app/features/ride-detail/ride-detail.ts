@@ -116,7 +116,7 @@ export class RideDetail {
 
     // Weather rides along as a layer, never as a channel: nothing on the bike measured it, so it
     // stays out of the picker and off the channels' axes (docs/adr/0005).
-    return withHeadwindLayer(chart, series, ride.weather, ride.startTime, this.transloco.translate('rideDetail.headwind'));
+    return withHeadwindLayer(chart, ride.weather?.headwindKmhBySample, this.transloco.translate('rideDetail.headwind'));
   });
 
   /** Labels the picker buttons, so the toggle reads in the active language. */
@@ -153,7 +153,7 @@ export class RideDetail {
   });
 
   /** The weather card's figures; null when no lookup has stored any for this ride. */
-  readonly weather = computed(() => summariseWeather(this.ride()?.weather));
+  readonly weather = computed(() => summariseWeather(this.ride()?.weather?.hours));
 
   /** How much wind there was either way, since the direction is carried by the label beside it. */
   readonly absHeadwind = computed(() => Math.abs(this.weather()?.meanHeadwindKmh ?? 0));
@@ -200,7 +200,7 @@ export class RideDetail {
    * against it, not to be read off in km/h — that is what the weather card is for.
    */
   private weatherScale(): NonNullable<ChartOptions<'line'>['scales']> {
-    return this.ride()?.weather?.length
+    return this.ride()?.weather?.hours?.length
       ? { [WEATHER_AXIS_ID]: { type: 'linear' as const, display: false, position: 'right' as const } }
       : {};
   }

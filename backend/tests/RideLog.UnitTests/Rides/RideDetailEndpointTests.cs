@@ -36,7 +36,10 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         DateTimeOffset Hour, double? TemperatureCelsius, double? WindSpeedKmh,
         double? WindFromBearing, double? HeadwindKmh);
 
-    private sealed record WeatherDetailDto(IReadOnlyList<WeatherHourDto>? Weather);
+    private sealed record RideWeatherDto(
+        IReadOnlyList<WeatherHourDto> Hours, IReadOnlyList<double?> HeadwindKmhBySample);
+
+    private sealed record WeatherDetailDto(RideWeatherDto? Weather);
 
     // A ride due north for two hours, into a northerly for the first and away from a southerly for
     // the second. Riding straight into a wind means the whole of it opposes you, and straight away
@@ -72,8 +75,13 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         var detail = await factory.CreateClient().GetFromJsonAsync<WeatherDetailDto>($"/rides/{ride.Id}");
 
         Assert.NotNull(detail!.Weather);
-        Assert.Equal(20, detail.Weather![0].HeadwindKmh!.Value, 0.5);  // dead into it
-        Assert.Equal(-10, detail.Weather[1].HeadwindKmh!.Value, 0.5);  // dead behind
+        Assert.Equal(20, detail.Weather!.Hours[0].HeadwindKmh!.Value, 0.5);  // dead into it
+        Assert.Equal(-10, detail.Weather.Hours[1].HeadwindKmh!.Value, 0.5);  // dead behind
+
+        // The graph reads the same wind per sample, so it can turn where the road does rather than
+        // only on the hour.
+        Assert.Equal(ride.MetricSeries!.Count, detail.Weather.HeadwindKmhBySample.Count);
+        Assert.Equal(20, detail.Weather.HeadwindKmhBySample[0]!.Value, 0.5);
     }
 
     [Fact]

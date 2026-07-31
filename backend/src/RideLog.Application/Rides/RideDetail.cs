@@ -44,8 +44,9 @@ public sealed record RideDetail
     public IReadOnlyList<RestStop> RestStops { get; init; } = [];
 
     /// <summary>
-    /// Hourly weather reported for where and when this ride happened, each hour carrying the share
-    /// of its wind that opposed the direction ridden. Null when no lookup has stored any.
+    /// Weather reported for where and when this ride happened — by the hour for the card, and
+    /// resolved against the direction ridden at every sample for the graph. Null when no lookup has
+    /// stored any.
     /// </summary>
-    public IReadOnlyList<WeatherHour>? Weather { get; init; }
+    public RideWeather? Weather { get; init; }
 }
