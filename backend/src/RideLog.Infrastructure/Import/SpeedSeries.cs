@@ -29,6 +29,14 @@ public static class SpeedSeries
     private const double MaxFallKmhPerSecond = 30.0;
 
     /// <summary>
+    /// The longest interval either bound is allowed to earn room over (seconds). Acceleration decays
+    /// within a couple of seconds as drag takes over, so a rider cannot bank a bigger jump simply by
+    /// being sampled less often. Without this the bounds scale away to nothing on a sparse track —
+    /// at one sample per ten seconds a rise of 150 km/h counts as plausible.
+    /// </summary>
+    private const double MaxJudgedSeconds = 2.0;
+
+    /// <summary>
     /// Each point's speed in km/h, or null where the track offers none or the reading was rejected.
     /// A rejected reading is left empty rather than replaced, exactly as if the device had never
     /// written one — the graph spans the gap and the maximum ignores it.
@@ -129,7 +137,7 @@ public static class SpeedSeries
         }
 
         var seconds = (end - start).TotalSeconds;
-        return seconds <= 0 || changeKmh <= maxKmhPerSecond * seconds;
+        return seconds <= 0 || changeKmh <= maxKmhPerSecond * Math.Min(seconds, MaxJudgedSeconds);
     }
 
     /// <summary>

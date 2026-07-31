@@ -65,7 +65,13 @@ looser than the 15 km/h rise bound, because braking genuinely is more abrupt tha
 only rules out drops no brake produces. A ride that truly opens at speed and then brakes hard keeps
 its reading.
 
-Two details make that check actually reach the glitch. Derived speed no longer **borrows** for the
+Both bounds scale with the interval between readings, but only up to two seconds' worth. Acceleration
+decays within a couple of seconds as drag takes over, so a rider cannot bank a bigger jump by being
+sampled less often — and without the cap the rule has no teeth where tracks are sparse. Polar's smart
+recording samples about every ten seconds, which under a purely per-second bound licensed a 150 km/h
+rise: a 300 m fix jump read as 108 km/h and passed unchallenged.
+
+Two further details make the opening check actually reach the glitch. Derived speed no longer **borrows** for the
 first point: it used to take the second point's reading so the chart wouldn't dip at the start, but
 that made the opening pair identical by construction, and a glitched first interval then produced
 two matching bogus readings that no rate-of-change rule can separate. And a reading that replaces a
