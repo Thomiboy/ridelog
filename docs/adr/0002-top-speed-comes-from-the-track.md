@@ -16,6 +16,12 @@ whichever reading the source is actually in a position to know. A device times i
 intervals better than we can reconstruct them, but it summarises a maximum from the same noisy
 samples we hold — and unlike us, it never revisits that number once written.
 
+Two exported rides from the same device, kept as fixtures, are why this is not negotiable. One
+summarised a believable 37.5 km/h. The other claims 85 km/h on a ride averaging 26 — and 85 is
+precisely what its own first few seconds of GPS warm-up read, before the fix had settled. A device
+summary is sometimes right, which is worse than being reliably wrong: it cannot serve as a check on
+anything, only as a last resort when the track offers nothing at all.
+
 ## Considered options
 
 **An absolute ceiling** — reject anything above, say, 80 km/h — was the smallest change, and was
