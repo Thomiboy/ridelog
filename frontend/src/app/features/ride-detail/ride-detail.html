@@ -104,7 +104,10 @@
       </mat-card>
 
       <mat-card appearance="outlined" class="metric-card" data-card>
-        <span class="card-title">{{ 'rideDetail.card.speed' | transloco }}</span>
+        <span class="card-title card-title--with-info">
+          {{ 'rideDetail.card.speed' | transloco }}
+          <app-info-hint key="rideDetail.topSpeedNote" />
+        </span>
         <div class="metric">
           <mat-icon>speed</mat-icon>
           <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
@@ -155,14 +158,7 @@
         <mat-card appearance="outlined" class="metric-card" data-card="temperature">
           <span class="card-title card-title--with-info">
             {{ 'rideDetail.card.temperature' | transloco }}
-            <mat-icon
-              class="card-info"
-              tabindex="0"
-              [attr.aria-label]="'rideDetail.temperatureNote' | transloco"
-              [matTooltip]="'rideDetail.temperatureNote' | transloco"
-              matTooltipPosition="above"
-              matTooltipTouchGestures="on"
-            >info_outline</mat-icon>
+            <app-info-hint key="rideDetail.temperatureNote" />
           </span>
           <div class="metric">
             <mat-icon>device_thermostat</mat-icon>
@@ -190,14 +186,7 @@
         <mat-card appearance="outlined" class="metric-card" data-card="weather">
           <span class="card-title card-title--with-info">
             {{ 'rideDetail.card.weather' | transloco }}
-            <mat-icon
-              class="card-info"
-              tabindex="0"
-              [attr.aria-label]="'rideDetail.weather.note' | transloco"
-              [matTooltip]="'rideDetail.weather.note' | transloco"
-              matTooltipPosition="above"
-              matTooltipTouchGestures="on"
-            >info_outline</mat-icon>
+            <app-info-hint key="rideDetail.weather.note" />
           </span>
           @if (weather.windKmh; as wind) {
             <div class="metric">

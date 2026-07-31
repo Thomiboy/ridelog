@@ -52,21 +52,13 @@
     color: var(--mat-sys-on-surface-variant);
   }
 
-  // The weather figures are reported for an area rather than measured on the bike. That caveat
-  // matters but is not worth a paragraph in a card this size, so it hides behind the icon.
+  // Titles that carry an info hint beside them (see shared/info-hint).
   .card-title--with-info {
     display: flex;
     align-items: center;
     gap: 0.25rem;
   }
 
-  .card-info {
-    font-size: 1rem;
-    width: 1rem;
-    height: 1rem;
-    cursor: help;
-    color: var(--mat-sys-outline);
-  }
 
   .metric {
     display: flex;
