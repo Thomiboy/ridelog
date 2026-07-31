@@ -74,6 +74,17 @@ export interface WeatherHour {
   weatherCode?: number | null;
 }
 
+/**
+ * A ride's weather in the two shapes the detail view reads it: by the hour for the card, and
+ * resolved against the direction ridden at every sample for the graph. Per sample because the wind
+ * changes by the hour while the rider's direction changes with the road.
+ */
+export interface RideWeather {
+  hours: WeatherHour[];
+  /** Aligned one-for-one with the metric series; positive into the wind, negative with it behind. */
+  headwindKmhBySample: (number | null)[];
+}
+
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
@@ -90,5 +101,5 @@ export interface RideDetail extends RideSummary {
   averageTemperatureCelsius?: number | null;
   minTemperatureCelsius?: number | null;
   maxTemperatureCelsius?: number | null;
-  weather?: WeatherHour[] | null;
+  weather?: RideWeather | null;
 }

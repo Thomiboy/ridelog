@@ -75,6 +75,15 @@ Two things were checked against real responses rather than taken on trust, both 
 - **The response snaps to a grid cell**: asking for 46.24613/20.14038 answered 46.291737/20.127794, ~5 km
   away, with its own `elevation`. Reported for an area, not measured at the handlebars (docs/adr/0005).
 
+### Headwind is resolved per sample, not per hour
+Wind is reported hourly; a rider's direction changes with the road, and the two do not line up. Taking
+an hour's direction from its end points asks which way someone went when they went out and came back —
+on the 2025-05-31 fixture (62 km, turnaround at 31 km, 07:27Z) that answered "tailwind" for an hour
+that honestly weighed was neither, and called the run home a headwind when it was pushed along by most
+of a 6.9 km/h wind. `RideWeatherReader` therefore resolves each **sample** against its own hour's wind,
+and an hour's figure is the distance-weighted mean of its own samples. Both fixtures
+(`Weather/Fixtures/open-meteo-2025-05-31-szeged.json` and the 2024-05-05 one) are real responses.
+
 ### Derived metrics come from real files, not invented fixtures
 `backend/tests/RideLog.UnitTests/Import/Fixtures/` holds five real exports (four Polar TCX, one Bryton FIT), committed because hand-made fixtures kept agreeing with whatever the code happened to do. **Reach for them first** when a derived number looks wrong — they carry GPS warm-up, stale repeated positions, positionless records and dishonest device summaries, none of which anyone thinks to invent. Five rounds of fixing top speed from the symptom alone were undone in one sitting once a real file was on disk.
 
@@ -89,5 +98,5 @@ Two things they settled, both in `docs/adr/0003` (which supersedes `0002`):
 - **The weather backfill is done:** all 131 stored rides carry weather, fetched through the admin **Fetch weather** button in batches of 25 without hitting a rate limit. That answers the one number #121 had to guess at — and makes it moot: with the archive full, the daily sync finds nothing to top up and spends no calls, and steady state is at most a ride a day. Raise the batch only if a future bulk import needs backfilling again.
 - **No other outstanding manual actions.** The admin **"Reprocess all"** has been run in production repeatedly through the #138 work and once more after it settled, so stored rides carry the corrected temperature summaries, top speeds and smoothed speed series. Every ride lost to a failed sync — including the Polar exercise `498528704` from 2026-07-23 — has been imported by hand via Polar Flow export → admin Import.
 - Two things a reprocess used to be unable to fix, now that it can: it rewrites the **temperature summary** from the stored FIT (it only re-merged the per-point series before, so a bad value was uncorrectable by any means the owner had), and it rebuilds the **stored series**, so the speed graph changes with it.
-- Test suite: **231 backend** (unit + endpoint tests in `RideLog.UnitTests`) and **273 frontend** (Vitest, 38 files).
+- Test suite: **233 backend** (unit + endpoint tests in `RideLog.UnitTests`) and **270 frontend** (Vitest, 38 files).
 - Working agreement with the owner: develop on `develop`, TDD via `/tdd #N`, and **only push and open a PR (develop → main) when the owner says so** — they merge it themselves.
