@@ -111,6 +111,6 @@ Cors__AllowedOrigins__0        = <Static Web App origin, set once the frontend i
 - **Phase 3 (planned):**
   - **Interactive analysis view** — link the ride graph and the map: scrubbing the chart moves a marker along the route, and vice versa
   - **Weather enrichment** — per-ride wind, precipitation and conditions from a free historical weather API, cached alongside the ride
-  - **Other sports** — surface the non-cycling activities that are already stored, instead of filtering them out of the UI
+  - **Other activities** — surface the non-cycling recordings that are already stored, as their own list beside the rides rather than filtered out of the UI
   - **Multi-user mode + Google/Microsoft login** — open the single-admin app up to registered users (the data model already carries `UserId` throughout)
 - **Backlog:** containerization (Container Apps), Azure Blob Storage for raw files — both deferred while the zero-cost hosting setup is working; swapping the map engine for MapLibre, deferred until something actually needs vector styling or a tilted view (#122)

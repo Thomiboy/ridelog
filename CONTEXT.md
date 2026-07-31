@@ -12,9 +12,15 @@ One recorded cycling activity, from a single source event. Rides from different 
 the same time span are the same ride, merged rather than stored twice.
 _Avoid_: Activity, session, workout, exercise
 
+**Other activity**:
+One recorded activity whose sport is not cycling — a run, a walk, a hike, a swim. It arrives from
+the same sources as a ride and is kept, but it is not a ride and nothing is a term for both.
+_Avoid_: Workout (excludes walking), exercise, training
+
 **Sport**:
-What kind of activity a ride records, as the source reported it. Every sport is stored; only cycling
-is currently shown.
+What kind of activity was recorded, as the source reported it. Sources name the same sport
+differently, so what the app reasons about is the category the raw name falls into; a name it does
+not recognise counts as cycling, because an untagged recording here is a ride.
 _Avoid_: Type, discipline
 
 ### Time
