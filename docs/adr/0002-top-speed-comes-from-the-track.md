@@ -1,5 +1,10 @@
 # A ride's top speed comes from its track, not the device's summary
 
+> **Superseded by [ADR 0003](0003-top-speed-prefers-the-device-summary.md).** This decision was made
+> from one reported symptom; five real rides later showed the device summary is right far more often
+> than the track. The per-point filtering described below is still in force — it decides the graph's
+> speed channel, and supplies the figure ADR 0003's veto is measured against.
+
 Every source hands us a maximum speed of its own — FIT `session.MaxSpeed`, TCX lap `MaximumSpeed`,
 and Polar by way of the TCX it serves — and we stored it unexamined. A single GPS jump lands in that
 summary, so rides reported speeds no bicycle reaches (85 km/h), and once the top-speed record (#131)

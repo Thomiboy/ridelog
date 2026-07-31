@@ -429,4 +429,66 @@ public sealed class RideMaintenanceServiceTests : IDisposable
             Assert.Equal(13.42, reloaded.MaximumSpeedKmh!.Value, 0.01);
         }
     }
+
+    [Fact]
+    public async Task Reprocess_rebuilds_the_temperature_summary_from_the_stored_fit()
+    {
+        // A real Bryton FIT from late July: its readings run 15-29 °C. The ride carries a 0 °C low
+        // left over from before the summary was taken from the track — the kind of value a reprocess
+        // is supposed to clear, but couldn't, because it never rewrote these columns at all.
+        var ride = StaleRide();
+        ride.MinTemperatureCelsius = 0;
+        ride.AverageTemperatureCelsius = 5;
+        ride.MaxTemperatureCelsius = 29;
+        ride.RawFiles.Add(Raw(
+            RawFileFormat.Fit,
+            "bryton.fit",
+            File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Import", "Fixtures", "260725070607.fit"))));
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(context).ReprocessAsync("user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloaded = await verify.Rides.SingleAsync();
+            Assert.Equal(15, reloaded.MinTemperatureCelsius!.Value, 0.01);
+            Assert.Equal(29, reloaded.MaxTemperatureCelsius!.Value, 0.01);
+        }
+    }
+
+    [Fact]
+    public async Task Reprocess_leaves_no_temperature_on_a_ride_with_no_fit()
+    {
+        // Temperature only ever comes from a Bryton FIT. A ride without one carrying a reading is
+        // carrying a stale value, and the rewrite has to clear it rather than preserve it.
+        var ride = StaleRide();
+        ride.MinTemperatureCelsius = 0;
+        ride.AverageTemperatureCelsius = 5;
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(context).ReprocessAsync("user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloaded = await verify.Rides.SingleAsync();
+            Assert.Null(reloaded.MinTemperatureCelsius);
+            Assert.Null(reloaded.AverageTemperatureCelsius);
+        }
+    }
 }

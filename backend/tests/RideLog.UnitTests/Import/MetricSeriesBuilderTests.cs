@@ -67,11 +67,10 @@ public sealed class MetricSeriesBuilderTests
 
         var series = MetricSeriesBuilder.Build(points);
 
+        // The graph averages over a window centred on each sample, so both ends of a two-point
+        // track see the same interval and the line starts where the ride does.
         Assert.Equal(2.22, series[1].SpeedKmh!.Value, 0.15);
-        // The first sample has no preceding interval, so it has no derived speed. It used to borrow
-        // the second's, which made a glitched opening interval produce two identical bogus readings
-        // that no rate-of-change rule could tell apart; the chart spans the gap instead.
-        Assert.Null(series[0].SpeedKmh);
+        Assert.Equal(2.22, series[0].SpeedKmh!.Value, 0.15);
     }
 
     [Fact]
@@ -190,21 +189,20 @@ public sealed class MetricSeriesBuilderTests
     }
 
     [Fact]
-    public void Leaves_the_speed_empty_where_the_reading_was_rejected()
+    public void Leaves_the_resolved_speed_empty_where_the_reading_was_rejected()
     {
-        // The graph and the ride's maximum read the same resolved speeds, so a sample the filter
-        // rejects must be missing from the plotted series too — otherwise the line would show a
-        // spike the headline number denies. `spanGaps` bridges it, so no hole appears.
+        // This is the figure the top-speed veto measures against (docs/adr/0003), so an unreachable
+        // reading must not survive into it. The graph is derived separately and smoothed.
         var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
         var points = Enumerable.Range(0, 10)
             .Select(i => new GeoPoint(0, i * 0.0000749, 100, start.AddSeconds(i), 140, null, i == 5 ? 85 : 30))
             .ToList();
 
-        var series = MetricSeriesBuilder.Build(points);
+        var resolved = SpeedSeries.Resolve(points);
 
-        Assert.Null(series[5].SpeedKmh);
-        Assert.Equal(30, series[4].SpeedKmh);
-        Assert.Equal(30, series[6].SpeedKmh);
+        Assert.Null(resolved[5]);
+        Assert.Equal(30, resolved[4]);
+        Assert.Equal(30, resolved[6]);
     }
 
     [Fact]
@@ -218,10 +216,10 @@ public sealed class MetricSeriesBuilderTests
             .Select(i => new GeoPoint(0, i * 0.0000749, 100, start.AddSeconds(i), 140, null, i == 0 ? 421.6 : 30))
             .ToList();
 
-        var series = MetricSeriesBuilder.Build(points);
+        var resolved = SpeedSeries.Resolve(points);
 
-        Assert.Null(series[0].SpeedKmh);
-        Assert.Equal(30, series[1].SpeedKmh);
+        Assert.Null(resolved[0]);
+        Assert.Equal(30, resolved[1]);
     }
 
     [Fact]
@@ -235,9 +233,7 @@ public sealed class MetricSeriesBuilderTests
             .Select((kmh, i) => new GeoPoint(0, i * 0.0000749, 100, start.AddSeconds(i), 140, null, kmh))
             .ToList();
 
-        var series = MetricSeriesBuilder.Build(points);
-
-        Assert.Equal(45, series[0].SpeedKmh);
+        Assert.Equal(45, SpeedSeries.Resolve(points)[0]);
     }
 
     /// <summary>A 1 Hz equator track from per-second gaps in metres; 1° of longitude is ~111 195 m.</summary>
@@ -262,11 +258,11 @@ public sealed class MetricSeriesBuilderTests
         // true start — 421 km/h — and the ride then settles into a steady 30 km/h.
         var points = DerivedTrack(117, 8.33, 8.33, 8.33, 8.33);
 
-        var series = MetricSeriesBuilder.Build(points);
+        var resolved = SpeedSeries.Resolve(points);
 
-        Assert.Null(series[0].SpeedKmh); // no preceding interval to derive from
-        Assert.Null(series[1].SpeedKmh); // the glitched interval
-        Assert.Equal(30, series[2].SpeedKmh!.Value, 0.5);
+        Assert.Null(resolved[0]); // no preceding interval to derive from
+        Assert.Null(resolved[1]); // the glitched interval
+        Assert.Equal(30, resolved[2]!.Value, 0.5);
         Assert.Equal(30, SpeedSeries.MaxKmh(points)!.Value, 0.5);
     }
 

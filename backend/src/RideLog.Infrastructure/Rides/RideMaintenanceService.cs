@@ -115,7 +115,7 @@ internal sealed class RideMaintenanceService(
         ride.DistanceMeters = metrics.DistanceMeters;
         ride.Duration = metrics.Duration;
         ride.AverageSpeedKmh = metrics.AverageSpeedKmh;
-        ride.MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.DeviceMaximumSpeedKmh;
+        ride.MaximumSpeedKmh = SpeedSeries.TopSpeedKmh(route, metrics.DeviceMaximumSpeedKmh);
         ride.AverageHeartRate = metrics.AverageHeartRate;
         ride.MaximumHeartRate = metrics.MaximumHeartRate;
         ride.ElevationGainMeters = metrics.ElevationGainMeters;
@@ -123,7 +123,7 @@ internal sealed class RideMaintenanceService(
         ride.Calories = metrics.Calories;
         ride.RoutePolyline = PolylineEncoder.Encode(Downsample(route));
 
-        var series = MetricSeriesBuilder.BuildStorable(route);
+        var series = MetricSeriesBuilder.BuildStorable(route, ride.MaximumSpeedKmh);
         // The GPX/TCX route carries no temperature; re-merge it from the stored Bryton FIT.
         var fit = ParseFirst(ride, RawFileFormat.Fit);
         if (series is not null && fit is not null)
@@ -131,6 +131,14 @@ internal sealed class RideMaintenanceService(
             series = MetricSeriesBuilder.MergeTemperature(series, fit.RoutePoints);
         }
         ride.MetricSeries = series;
+
+        // The summary comes from the same FIT, and is rewritten rather than left alone — otherwise a
+        // reading corrected in the parser (a 0 °C low logged before the device had a GPS fix, say)
+        // survives every reprocess, since nothing else ever writes these columns. A ride with no FIT
+        // has no temperature at all: GPX and TCX carry none.
+        ride.AverageTemperatureCelsius = fit?.AverageTemperatureCelsius;
+        ride.MinTemperatureCelsius = fit?.MinTemperatureCelsius;
+        ride.MaxTemperatureCelsius = fit?.MaxTemperatureCelsius;
         // Sport, Source, StartTime, EndTime and the raw files are intentionally left untouched.
         return true;
     }
