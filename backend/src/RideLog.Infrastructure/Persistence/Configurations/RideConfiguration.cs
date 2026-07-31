@@ -29,6 +29,17 @@ internal sealed class RideConfiguration : IEntityTypeConfiguration<Ride>
             series => series == null ? null : series.ToList());
         builder.Property(ride => ride.MetricSeries).HasConversion(seriesConverter, seriesComparer);
 
+        // Weather rides along in the same shape and for the same reason: read whole, replaced whole.
+        var weatherConverter = new ValueConverter<IReadOnlyList<WeatherReading>?, string?>(
+            weather => weather == null ? null : JsonSerializer.Serialize(weather, (JsonSerializerOptions?)null),
+            json => string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<WeatherReading>>(json, (JsonSerializerOptions?)null));
+        var weatherComparer = new ValueComparer<IReadOnlyList<WeatherReading>?>(
+            (a, b) => (a == null && b == null) || (a != null && b != null && a.SequenceEqual(b)),
+            weather => weather == null ? 0 : weather.Aggregate(0, (hash, reading) => HashCode.Combine(hash, reading.GetHashCode())),
+            weather => weather == null ? null : weather.ToList());
+        builder.Property(ride => ride.Weather).HasConversion(weatherConverter, weatherComparer);
+        builder.Property(ride => ride.WeatherOutcome).HasConversion<string>().HasMaxLength(16);
+
         // Uniqueness half of the duplicate guard: the same source event can never be stored
         // twice; cross-source duplicates are caught by the Ride.Overlaps matching contract.
         builder.HasIndex(ride => new { ride.UserId, ride.StartTime }).IsUnique();

@@ -32,6 +32,50 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
 
     private sealed record TempDetailDto(double? AverageTemperatureCelsius, double? MinTemperatureCelsius, double? MaxTemperatureCelsius);
 
+    private sealed record WeatherHourDto(
+        DateTimeOffset Hour, double? TemperatureCelsius, double? WindSpeedKmh,
+        double? WindFromBearing, double? HeadwindKmh);
+
+    private sealed record WeatherDetailDto(IReadOnlyList<WeatherHourDto>? Weather);
+
+    // A ride due north for two hours, into a northerly for the first and away from a southerly for
+    // the second. Riding straight into a wind means the whole of it opposes you, and straight away
+    // from one means the whole of it pushes — so the two hours are the full wind speed, signed.
+    // The point of computing it at all is that "20 km/h from the north" tells you nothing until it
+    // is put next to the direction you were actually going.
+    [Fact]
+    public async Task Resolves_the_stored_wind_against_the_direction_ridden_in_each_hour()
+    {
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        var ride = new Ride
+        {
+            Id = Guid.NewGuid(),
+            UserId = "admin-1",
+            StartTime = start,
+            EndTime = start.AddHours(2),
+            Duration = TimeSpan.FromHours(2),
+            DistanceMeters = 11_100,
+            Sport = "ROAD_BIKING",
+            Source = RideSource.Polar,
+            RoutePolyline = PolylineEncoder.Encode([
+                new GeoPoint(47.50, 19.04), new GeoPoint(47.55, 19.04), new GeoPoint(47.60, 19.04)]),
+        };
+        ride.MetricSeries = [
+            new MetricSample(DistanceKm: 0, ElapsedMinutes: 0, null, null),
+            new MetricSample(DistanceKm: 5.5, ElapsedMinutes: 60, null, null),
+            new MetricSample(DistanceKm: 11.1, ElapsedMinutes: 120, null, null)];
+        ride.Weather = [
+            new WeatherReading(start, 15, WindSpeedKmh: 20, WindFromBearing: 0, 0, 60, 10, 0),
+            new WeatherReading(start.AddHours(1), 17, WindSpeedKmh: 10, WindFromBearing: 180, 0, 55, 10, 0)];
+        await SeedRidesAsync(ride);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<WeatherDetailDto>($"/rides/{ride.Id}");
+
+        Assert.NotNull(detail!.Weather);
+        Assert.Equal(20, detail.Weather![0].HeadwindKmh!.Value, 0.5);  // dead into it
+        Assert.Equal(-10, detail.Weather[1].HeadwindKmh!.Value, 0.5);  // dead behind
+    }
+
     [Fact]
     public async Task Exposes_the_stored_temperature_summary()
     {

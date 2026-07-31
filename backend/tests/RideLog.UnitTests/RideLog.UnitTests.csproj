@@ -26,6 +26,7 @@
     <!-- Real exported rides, kept verbatim so the parsers are exercised against what devices
          actually write rather than against fixtures we invented. -->
     <None Include="Import\Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Weather\Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

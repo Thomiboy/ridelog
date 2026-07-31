@@ -6,12 +6,14 @@ using RideLog.Application.Import;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
 using RideLog.Application.Users;
+using RideLog.Application.Weather;
 using RideLog.Infrastructure.Auth;
 using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
 using RideLog.Infrastructure.Rides;
 using RideLog.Infrastructure.Users;
+using RideLog.Infrastructure.Weather;
 
 // Placed in the DI namespace so callers get the extensions without an extra using.
 namespace Microsoft.Extensions.DependencyInjection;
@@ -76,6 +78,24 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IPolarSyncService, PolarSyncService>();
         services.AddHttpClient<IPolarClient, PolarApiClient>();
         services.AddHttpClient<IPolarOAuth, PolarOAuthClient>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers historical weather enrichment: the Open-Meteo archive client and the top-up that
+    /// fills rides in a batch at a time. Kept out of <see cref="AddRideLogPolar"/> on purpose —
+    /// weather is fetched after a ride is committed, never inside the import (docs/adr/0005).
+    /// </summary>
+    public static IServiceCollection AddRideLogWeather(this IServiceCollection services)
+    {
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<IWeatherTopUpService, WeatherTopUpService>();
+        services.AddHttpClient<IWeatherProvider, OpenMeteoWeatherProvider>(client =>
+        {
+            client.BaseAddress = new Uri("https://archive-api.open-meteo.com/");
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
 
         return services;
     }

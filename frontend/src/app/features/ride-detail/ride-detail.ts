@@ -27,6 +27,7 @@ import {
   type MetricChannel,
 } from './metric-series-chart';
 import { buildHrZoneChart } from './hr-zone-chart';
+import { WEATHER_AXIS_ID, summariseWeather, withHeadwindLayer } from './weather-layer';
 import { compareRides, type MetricDelta } from './ride-comparison';
 import { RidePicker } from './ride-picker';
 import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ride.models';
@@ -103,10 +104,17 @@ export class RideDetail {
   });
 
   readonly metricChart = computed(() => {
-    const series = this.ride()?.metricSeries;
-    return series && hasGraphableSeries(series)
-      ? buildMetricSeriesChart(series, this.metricAxis(), this.shownChannels(), this.metricLabels())
-      : null;
+    const ride = this.ride();
+    const series = ride?.metricSeries;
+    if (!series || !hasGraphableSeries(series)) {
+      return null;
+    }
+
+    const chart = buildMetricSeriesChart(series, this.metricAxis(), this.shownChannels(), this.metricLabels());
+
+    // Weather rides along as a layer, never as a channel: nothing on the bike measured it, so it
+    // stays out of the picker and off the channels' axes (docs/adr/0005).
+    return withHeadwindLayer(chart, series, ride.weather, ride.startTime, this.transloco.translate('rideDetail.headwind'));
   });
 
   /** Labels the picker buttons, so the toggle reads in the active language. */
@@ -142,6 +150,29 @@ export class RideDetail {
       : null;
   });
 
+  /** The weather card's figures; null when no lookup has stored any for this ride. */
+  readonly weather = computed(() => summariseWeather(this.ride()?.weather));
+
+  /** How much wind there was either way, since the direction is carried by the label beside it. */
+  readonly absHeadwind = computed(() => Math.abs(this.weather()?.meanHeadwindKmh ?? 0));
+
+  /**
+   * Which way the wind went on balance. Under about 2 km/h either way there was no useful wind
+   * along the route — on a loop that is the normal outcome — so it reads as a crosswind rather than
+   * claiming a direction the numbers cannot support.
+   */
+  private readonly windDirection = computed<'head' | 'tail' | 'cross'>(() => {
+    const mean = this.weather()?.meanHeadwindKmh ?? 0;
+    if (Math.abs(mean) < 2) {
+      return 'cross';
+    }
+    return mean > 0 ? 'head' : 'tail';
+  });
+
+  readonly windLabel = computed(() => `rideDetail.weather.${this.windDirection()}wind`);
+
+  readonly windIcon = computed(() => (this.windDirection() === 'head' ? 'trending_up' : 'trending_flat'));
+
   readonly hrZoneChart = computed(() => {
     const zones = this.ride()?.hrZones;
     return zones && zones.some((z) => z.minutes > 0) ? buildHrZoneChart(zones) : null;
@@ -162,11 +193,21 @@ export class RideDetail {
     );
   }
 
+  /**
+   * The wind's own axis, hidden and unlabelled: the line is there to show when the rider was working
+   * against it, not to be read off in km/h — that is what the weather card is for.
+   */
+  private weatherScale(): NonNullable<ChartOptions<'line'>['scales']> {
+    return this.ride()?.weather?.length
+      ? { [WEATHER_AXIS_ID]: { type: 'linear' as const, display: false, position: 'right' as const } }
+      : {};
+  }
+
   readonly graphOptions = computed<ChartOptions<'line'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'index' },
-    scales: this.channelScales(),
+    scales: { ...this.channelScales(), ...this.weatherScale() },
   }));
 
   // Comparison overlay uses a real-value linear x-axis so rides of different length keep their ranges.

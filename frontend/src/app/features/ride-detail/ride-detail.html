@@ -175,6 +175,47 @@
           </div>
         </mat-card>
       }
+
+      @if (weather(); as weather) {
+        <mat-card appearance="outlined" class="metric-card" data-card="weather">
+          <span class="card-title">{{ 'rideDetail.card.weather' | transloco }}</span>
+          @if (weather.windKmh; as wind) {
+            <div class="metric">
+              <mat-icon>air</mat-icon>
+              <span class="metric-label">{{ 'rideDetail.weather.wind' | transloco }}</span>
+              <span class="metric-value">
+                {{ wind.minimum | translocoDecimal: { maximumFractionDigits: 0 } }}–{{ wind.maximum | translocoDecimal: { maximumFractionDigits: 0 } }} km/h
+              </span>
+            </div>
+          }
+          @if (weather.meanHeadwindKmh != null) {
+            <div class="metric">
+              <mat-icon>{{ windIcon() }}</mat-icon>
+              <span class="metric-label">{{ windLabel() | transloco }}</span>
+              <span class="metric-value">
+                {{ absHeadwind() | translocoDecimal: { maximumFractionDigits: 0 } }} km/h
+              </span>
+            </div>
+          }
+          @if (weather.temperatureCelsius; as reported) {
+            <div class="metric">
+              <mat-icon>device_thermostat</mat-icon>
+              <span class="metric-label">{{ 'rideDetail.weather.temperature' | transloco }}</span>
+              <span class="metric-value">
+                {{ reported.minimum | translocoDecimal: { maximumFractionDigits: 0 } }}–{{ reported.maximum | translocoDecimal: { maximumFractionDigits: 0 } }} °C
+              </span>
+            </div>
+          }
+          @if (weather.precipitationMm) {
+            <div class="metric">
+              <mat-icon>water_drop</mat-icon>
+              <span class="metric-label">{{ 'rideDetail.weather.rain' | transloco }}</span>
+              <span class="metric-value">{{ weather.precipitationMm | translocoDecimal: { maximumFractionDigits: 1 } }} mm</span>
+            </div>
+          }
+          <p class="card-note">{{ 'rideDetail.weather.note' | transloco }}</p>
+        </mat-card>
+      }
     </div>
     }
 

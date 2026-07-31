@@ -57,6 +57,23 @@ export interface RestStop {
   longitude: number;
 }
 
+/**
+ * One hour of weather reported for where and when a ride happened, mirroring the backend WeatherHour.
+ * Reported for the area, not measured on the bike — which is why it never fills in for the ride's own
+ * temperature. `headwindKmh` is positive into the wind and negative with it behind.
+ */
+export interface WeatherHour {
+  hour: string;
+  temperatureCelsius?: number | null;
+  windSpeedKmh?: number | null;
+  windFromBearing?: number | null;
+  headwindKmh?: number | null;
+  precipitationMm?: number | null;
+  relativeHumidityPercent?: number | null;
+  cloudCoverPercent?: number | null;
+  weatherCode?: number | null;
+}
+
 /** Full ride detail, including the encoded route polyline for the map. */
 export interface RideDetail extends RideSummary {
   endTime: string;
@@ -73,4 +90,5 @@ export interface RideDetail extends RideSummary {
   averageTemperatureCelsius?: number | null;
   minTemperatureCelsius?: number | null;
   maxTemperatureCelsius?: number | null;
+  weather?: WeatherHour[] | null;
 }

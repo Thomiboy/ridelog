@@ -82,7 +82,8 @@
       "speed": "Sebesség",
       "heartRate": "Pulzus",
       "climbingEnergy": "Szint és energia",
-      "temperature": "Hőmérséklet"
+      "temperature": "Hőmérséklet",
+      "weather": "Időjárás"
     },
     "graph": {
       "title": "Mérések",
@@ -112,6 +113,16 @@
       "maxHeartRate": "Max pulzus",
       "elevation": "Szintemelkedés",
       "calories": "Kalória"
+    },
+    "headwind": "Ellenszél",
+    "weather": {
+      "wind": "Szél",
+      "headwind": "Ellenszél",
+      "tailwind": "Hátszél",
+      "crosswind": "Oldalszél",
+      "temperature": "Jelentett hőmérséklet",
+      "rain": "Csapadék",
+      "note": "A területre jelentett érték 10 méteren, nem a kerékpáron mért."
     }
   },
   "admin": {
@@ -148,7 +159,10 @@
       "deleteButton": "Összes túra törlése",
       "deleteConfirm1": "Törlöd az ÖSSZES túrát és a tárolt fájljaikat? Ez nem vonható vissza.",
       "deleteConfirm2": "A Polar-szinkronizált túrák nem húzhatók vissza a Polarból. Biztosan folytatod?",
-      "deleteResult": "{{deleted}} túra törölve."
+      "deleteResult": "{{deleted}} túra törölve.",
+      "weatherHint": "Időjárás lekérése az még hiányzó túrákhoz. A napi szinkron is feltölt egy adagot.",
+      "weatherButton": "Időjárás lekérése",
+      "weatherResult": "{{fetched}} lekérve, {{unavailable}} túrához nincs adat, {{failed}} sikertelen."
     },
     "settings": {
       "title": "Pulzuszónák",

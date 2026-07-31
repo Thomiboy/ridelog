@@ -42,4 +42,10 @@ public sealed record RideDetail
 
     /// <summary>Places on the route where the rider paused for more than about a minute; empty when none.</summary>
     public IReadOnlyList<RestStop> RestStops { get; init; } = [];
+
+    /// <summary>
+    /// Hourly weather reported for where and when this ride happened, each hour carrying the share
+    /// of its wind that opposed the direction ridden. Null when no lookup has stored any.
+    /// </summary>
+    public IReadOnlyList<WeatherHour>? Weather { get; init; }
 }
