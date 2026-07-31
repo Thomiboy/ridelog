@@ -36,6 +36,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
                 r.MaxTemperatureCelsius,
                 r.RoutePolyline,
                 r.MetricSeries,
+                r.Weather,
             })
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -97,6 +98,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             MetricSeries = ride.MetricSeries,
             HrZones = hrZones,
             RestStops = restStops,
+            Weather = RideWeatherReader.Read(ride.Weather, ride.RoutePolyline, ride.MetricSeries, ride.StartTime),
         };
     }
 }
