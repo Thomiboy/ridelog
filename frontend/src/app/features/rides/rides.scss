@@ -52,7 +52,7 @@
   // Days are square, so on a wide page seven full-width columns become seven big empty squares
   // holding three short lines of text. Capping the grid keeps a cell around 5rem; on a phone the
   // viewport is narrower than this anyway, so the layout there is untouched.
-  max-width: 38rem;
+  max-width: 55rem;
   margin-inline: auto;
 
   .cal-weekday {
@@ -105,7 +105,7 @@
 .cal-day-panel {
   margin-top: 1rem;
   // Line up with the grid above rather than running the full width of the page under it.
-  max-width: 38rem;
+  max-width: 55rem;
   margin-inline: auto;
 
   h3 {
