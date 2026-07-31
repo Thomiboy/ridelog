@@ -115,10 +115,7 @@ internal sealed class RideMaintenanceService(
         ride.DistanceMeters = metrics.DistanceMeters;
         ride.Duration = metrics.Duration;
         ride.AverageSpeedKmh = metrics.AverageSpeedKmh;
-        // From the route actually chosen above, not from whichever parser supplied the scalars: a
-        // TCX with no positioned track points hands over its lap summary while the graph is built
-        // from the GPX, which is how a card can show a speed the chart beside it never plots.
-        ride.MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.MaximumSpeedKmh;
+        ride.MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.DeviceMaximumSpeedKmh;
         ride.AverageHeartRate = metrics.AverageHeartRate;
         ride.MaximumHeartRate = metrics.MaximumHeartRate;
         ride.ElevationGainMeters = metrics.ElevationGainMeters;

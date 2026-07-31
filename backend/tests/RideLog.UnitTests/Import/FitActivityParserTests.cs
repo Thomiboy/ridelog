@@ -184,20 +184,17 @@ public sealed class FitActivityParserTests
     }
 
     [Fact]
-    public void A_speed_spike_does_not_become_the_rides_maximum()
+    public void Exposes_the_session_maximum_as_the_device_summary()
     {
-        // Riding a steady 30 km/h (8.333 m/s) with one sample glitched to 85 km/h (23.6 m/s). The
-        // device's own summary repeats the glitch, which is exactly what used to be stored.
-        var speeds = Enumerable.Repeat(8.333f, 30).ToArray();
-        speeds[15] = 23.6f;
-        var records = Enumerable.Range(0, 30)
+        // 23.6 m/s × 3.6 ≈ 85 km/h — a glitch, reported verbatim. The parser doesn't judge it; the
+        // ride's top speed is derived from the route by whoever stores it (docs/adr/0002).
+        var records = Enumerable.Range(0, 5)
             .Select(i => (T0.AddSeconds(i), 47.50 + i * 0.0001, 19.00, 100f, (sbyte)20, (byte)140))
             .ToArray();
-        var bytes = BuildFit(records, recordSpeedsMps: speeds, sessionMaxSpeedMps: 23.6f);
+        var bytes = BuildFit(records, sessionMaxSpeedMps: 23.6f);
 
         var parsed = new FitActivityParser().Parse(new MemoryStream(bytes), "ride.fit");
 
-        // Going from 30 to 85 km/h in one second is not something a bicycle does.
-        Assert.Equal(30.0, parsed.MaximumSpeedKmh!.Value, 0.1);
+        Assert.Equal(84.96, parsed.DeviceMaximumSpeedKmh!.Value, 0.01);
     }
 }

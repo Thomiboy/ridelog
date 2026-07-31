@@ -108,9 +108,7 @@ internal sealed class PolarSyncService(
             Duration = metrics.Duration,
             DistanceMeters = metrics.DistanceMeters,
             AverageSpeedKmh = metrics.AverageSpeedKmh,
-            // From the route chosen above, so the ride's headline speed and its graph can't be
-            // derived from different tracks.
-            MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.MaximumSpeedKmh,
+            MaximumSpeedKmh = SpeedSeries.MaxKmh(route) ?? metrics.DeviceMaximumSpeedKmh,
             AverageHeartRate = metrics.AverageHeartRate,
             MaximumHeartRate = metrics.MaximumHeartRate,
             ElevationGainMeters = metrics.ElevationGainMeters,

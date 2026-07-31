@@ -95,7 +95,7 @@ internal sealed class TcxActivityParser : IActivityFileParser
             MaximumHeartRate = heartRates.Count > 0 ? heartRates.Max() : null,
             AverageCadence = cadences.Count > 0 ? (int)Math.Round(cadences.Average()) : null,
             ElevationGainMeters = hasElevation ? elevationGain : null,
-            MaximumSpeedKmh = SpeedSeries.MaxKmh(points) ?? maximumSpeedKmh,
+            DeviceMaximumSpeedKmh = maximumSpeedKmh,
             Calories = calories,
             AverageSpeedKmh = averageSpeedKmh,
             RoutePoints = points,

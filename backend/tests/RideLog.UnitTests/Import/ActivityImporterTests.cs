@@ -367,4 +367,41 @@ public sealed class ActivityImporterTests : IDisposable
 
         Assert.Equal(ImportOutcome.Failed, Assert.Single(summary.Files).Outcome);
     }
+
+    [Fact]
+    public async Task Import_derives_the_maximum_from_the_track_of_a_gpx()
+    {
+        // GPX carries no speed anywhere, so the stored maximum can only come from the track. The
+        // fixture covers ~13.4 km in an hour.
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync([new ActivityFile("ride.gpx", Gpx())], "user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Equal(13.42, (await verify.Rides.SingleAsync()).MaximumSpeedKmh!.Value, 0.01);
+        }
+    }
+
+    [Fact]
+    public async Task Import_keeps_the_device_maximum_when_the_track_has_no_speed()
+    {
+        // Trackpoints without positions leave nothing to derive from, so the device's own summary
+        // is all there is: the lap's 16.5 m/s × 3.6 = 59.4 km/h.
+        var positionless = Encoding.UTF8.GetString(TcxWithSummary())
+            .Replace("<Position><LatitudeDegrees>47.5</LatitudeDegrees><LongitudeDegrees>19.0</LongitudeDegrees></Position>", "")
+            .Replace("<Position><LatitudeDegrees>47.6</LatitudeDegrees><LongitudeDegrees>19.1</LongitudeDegrees></Position>", "");
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewImporter(context).ImportAsync(
+                [new ActivityFile("ride.tcx", Encoding.UTF8.GetBytes(positionless))], "user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            Assert.Equal(59.4, (await verify.Rides.SingleAsync()).MaximumSpeedKmh!.Value, 0.01);
+        }
+    }
 }

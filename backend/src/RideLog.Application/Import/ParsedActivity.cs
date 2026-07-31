@@ -12,7 +12,14 @@ public sealed record ParsedActivity
     public required string Sport { get; init; }
 
     public double? AverageSpeedKmh { get; init; }
-    public double? MaximumSpeedKmh { get; init; }
+
+    /// <summary>
+    /// The maximum speed the device wrote into its own summary, exactly as the file states it — a
+    /// single GPS jump lands here and stays, so this is <em>not</em> the ride's top speed and must
+    /// never be stored as one. Derive that from the route the ride actually keeps and fall back to
+    /// this only when that route yields no speed at all (docs/adr/0002).
+    /// </summary>
+    public double? DeviceMaximumSpeedKmh { get; init; }
     public int? AverageHeartRate { get; init; }
     public int? MaximumHeartRate { get; init; }
     public double? ElevationGainMeters { get; init; }
