@@ -131,6 +131,14 @@ internal sealed class RideMaintenanceService(
             series = MetricSeriesBuilder.MergeTemperature(series, fit.RoutePoints);
         }
         ride.MetricSeries = series;
+
+        // The summary comes from the same FIT, and is rewritten rather than left alone — otherwise a
+        // reading corrected in the parser (a 0 °C low logged before the device had a GPS fix, say)
+        // survives every reprocess, since nothing else ever writes these columns. A ride with no FIT
+        // has no temperature at all: GPX and TCX carry none.
+        ride.AverageTemperatureCelsius = fit?.AverageTemperatureCelsius;
+        ride.MinTemperatureCelsius = fit?.MinTemperatureCelsius;
+        ride.MaxTemperatureCelsius = fit?.MaxTemperatureCelsius;
         // Sport, Source, StartTime, EndTime and the raw files are intentionally left untouched.
         return true;
     }

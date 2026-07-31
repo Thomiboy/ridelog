@@ -73,4 +73,17 @@ public sealed class RealRideFixtureTests
                 "the filter discarded more than a third of a legitimate ride");
         }
     }
+
+    [Fact]
+    public void A_real_bryton_fit_from_late_july_reads_like_late_july()
+    {
+        // Recorded 2026-07-25. A summary drawn from every record message rather than from the track
+        // used to report a 0 °C low here, from the seconds before the device had a GPS fix.
+        using var stream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Import", "Fixtures", "260725070607.fit"));
+        var parsed = new FitActivityParser().Parse(stream, "260725070607.fit");
+
+        Assert.Equal(15, parsed.MinTemperatureCelsius!.Value, 0.01);
+        Assert.Equal(29, parsed.MaxTemperatureCelsius!.Value, 0.01);
+        Assert.All(parsed.RoutePoints, p => Assert.True(p.TemperatureCelsius is null or >= 15));
+    }
 }
