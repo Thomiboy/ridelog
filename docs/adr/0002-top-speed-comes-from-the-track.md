@@ -71,6 +71,11 @@ sampled less often — and without the cap the rule has no teeth where tracks ar
 recording samples about every ten seconds, which under a purely per-second bound licensed a 150 km/h
 rise: a 300 m fix jump read as 108 km/h and passed unchallenged.
 
+Only a reading we accept may settle an unproven opening one. A rejected reading is itself bogus and
+says nothing, so the opening stays pending until something trustworthy arrives. A real ride caught
+this: its opening interval read 190 km/h and the one after it a wilder 770 km/h, and treating the
+second as a verdict on the first left the 190 standing for good.
+
 Two further details make the opening check actually reach the glitch. Derived speed no longer **borrows** for the
 first point: it used to take the second point's reading so the chart wouldn't dip at the start, but
 that made the opening pair identical by construction, and a glitched first interval then produced

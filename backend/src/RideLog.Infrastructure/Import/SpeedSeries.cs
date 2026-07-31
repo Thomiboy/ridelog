@@ -91,10 +91,11 @@ public static class SpeedSeries
                 // otherwise loses its first half and keeps its second.
                 provisionalIndex = condemned ? i : null;
             }
-            else
-            {
-                provisionalIndex = null;
-            }
+
+            // A rejected reading is itself bogus, so it says nothing about an unproven opening one —
+            // that stays pending until a reading we trust either confirms or condemns it. Clearing it
+            // here let a 190 km/h opening survive: the reading after it was a wilder 770 km/h that
+            // got rejected, and the opening was never looked at again.
         }
 
         return resolved;

@@ -23,6 +23,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Real exported rides, kept verbatim so the parsers are exercised against what devices
+         actually write rather than against fixtures we invented. -->
+    <None Include="Import\Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\RideLog.Application\RideLog.Application.csproj" />
     <ProjectReference Include="..\..\src\RideLog.Infrastructure\RideLog.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\RideLog.Api\RideLog.Api.csproj" />
