@@ -45,10 +45,17 @@ none. Their speed is derived from position and time, which is noisier than a whe
 filter is what makes that acceptable.
 
 A track's opening reading has nothing before it, so the rise bound cannot judge it. We first
-accepted that as a limit; the first ride imported afterwards opened on a 421 km/h GPS fix, so it
-isn't one we can live with. The opening reading is now held provisionally and judged by what comes
-next: a drop of more than 30 km/h per second — beyond the limit of tyre grip, never mind brakes — is
-not deceleration, and condemns the reading it fell from. The bound is deliberately far looser than
-the 15 km/h rise bound, because braking genuinely is more abrupt than accelerating; it only rules
-out drops no brake produces. A ride that truly opens at speed and then brakes hard keeps its
-reading.
+accepted that as a limit; the rides imported afterwards opened on GPS fixes reading 100–421 km/h, so
+it isn't one we can live with. The opening reading is now held provisionally and judged by what
+comes next: a drop of more than 30 km/h per second — beyond the limit of tyre grip, never mind
+brakes — is not deceleration, and condemns the reading it fell from. The bound is deliberately far
+looser than the 15 km/h rise bound, because braking genuinely is more abrupt than accelerating; it
+only rules out drops no brake produces. A ride that truly opens at speed and then brakes hard keeps
+its reading.
+
+Two details make that check actually reach the glitch. Derived speed no longer **borrows** for the
+first point: it used to take the second point's reading so the chart wouldn't dip at the start, but
+that made the opening pair identical by construction, and a glitched first interval then produced
+two matching bogus readings that no rate-of-change rule can separate. And a reading that replaces a
+condemned one inherits the provisional status, so a fix that drifts back over a second sample loses
+both halves rather than keeping the second as the new maximum.

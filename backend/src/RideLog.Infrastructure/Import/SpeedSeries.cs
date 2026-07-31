@@ -62,11 +62,12 @@ public static class SpeedSeries
 
             var change = kmh - baseline;
 
-            // While the baseline is still the provisional opening reading, a drop no brake could
-            // have produced is what exposes that opening reading as the glitch.
-            if (provisionalIndex is { } opening && !IsPlausibleFall(points, opening, i, -change))
+            // While the baseline is still an unproven opening reading, a drop no brake could have
+            // produced is what exposes that reading as the glitch.
+            var condemned = provisionalIndex is { } opening && !IsPlausibleFall(points, opening, i, -change);
+            if (condemned)
             {
-                resolved[opening] = null;
+                resolved[provisionalIndex!.Value] = null;
             }
 
             // Each reading is measured against the last *accepted* one. Were it measured against the
@@ -77,9 +78,15 @@ public static class SpeedSeries
                 resolved[i] = kmh;
                 lastAccepted = kmh;
                 lastAcceptedIndex = i;
+                // Replacing a condemned opening leaves this reading just as unproven as that one
+                // was, so it inherits the provisional status — a glitch spanning two intervals
+                // otherwise loses its first half and keeps its second.
+                provisionalIndex = condemned ? i : null;
             }
-
-            provisionalIndex = null;
+            else
+            {
+                provisionalIndex = null;
+            }
         }
 
         return resolved;
@@ -127,9 +134,15 @@ public static class SpeedSeries
 
     /// <summary>
     /// Speed at a point: the device's own reading when the source recorded one, otherwise derived
-    /// from the distance and time to the previous point. The first point has no preceding interval,
-    /// so it borrows the first one's speed rather than reading as a standstill.
+    /// from the distance and time to the previous point.
     /// </summary>
+    /// <remarks>
+    /// The first point has no preceding interval and so has no derived speed. It used to borrow the
+    /// second point's, which reads better on a graph but made the opening pair of readings identical
+    /// by construction — and a glitched first interval then produced two matching bogus readings
+    /// that no rate-of-change rule can tell apart. An empty opening reading is honest, and the chart
+    /// spans it.
+    /// </remarks>
     private static double? SpeedAt(IReadOnlyList<GeoPoint> points, int index)
     {
         if (points[index].SpeedKmh is { } recorded)
@@ -137,8 +150,13 @@ public static class SpeedSeries
             return Math.Round(recorded, 2);
         }
 
-        var (from, to) = index == 0 ? (0, 1) : (index - 1, index);
-        if (to >= points.Count || points[from].Time is not { } start || points[to].Time is not { } end)
+        if (index == 0)
+        {
+            return null;
+        }
+
+        var (from, to) = (index - 1, index);
+        if (points[from].Time is not { } start || points[to].Time is not { } end)
         {
             return null;
         }

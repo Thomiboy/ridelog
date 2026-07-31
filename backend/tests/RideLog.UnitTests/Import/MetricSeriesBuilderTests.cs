@@ -68,9 +68,10 @@ public sealed class MetricSeriesBuilderTests
         var series = MetricSeriesBuilder.Build(points);
 
         Assert.Equal(2.22, series[1].SpeedKmh!.Value, 0.15);
-        // The first sample has no preceding interval, so it takes the first one's speed rather than a
-        // fake zero that would dip the chart at the start.
-        Assert.Equal(2.22, series[0].SpeedKmh!.Value, 0.15);
+        // The first sample has no preceding interval, so it has no derived speed. It used to borrow
+        // the second's, which made a glitched opening interval produce two identical bogus readings
+        // that no rate-of-change rule could tell apart; the chart spans the gap instead.
+        Assert.Null(series[0].SpeedKmh);
     }
 
     [Fact]
@@ -237,5 +238,45 @@ public sealed class MetricSeriesBuilderTests
         var series = MetricSeriesBuilder.Build(points);
 
         Assert.Equal(45, series[0].SpeedKmh);
+    }
+
+    /// <summary>A 1 Hz equator track from per-second gaps in metres; 1° of longitude is ~111 195 m.</summary>
+    private static List<GeoPoint> DerivedTrack(params double[] metresPerSecond)
+    {
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        var points = new List<GeoPoint> { new(0, 0, 100, start, 140) };
+        var longitude = 0.0;
+        for (var i = 0; i < metresPerSecond.Length; i++)
+        {
+            longitude += metresPerSecond[i] / (6_371_000 * Math.PI / 180);
+            points.Add(new GeoPoint(0, longitude, 100, start.AddSeconds(i + 1), 140));
+        }
+
+        return points;
+    }
+
+    [Fact]
+    public void Rejects_a_glitched_opening_interval_when_speed_is_derived()
+    {
+        // No device speed, so it's derived from position. The first GPS fix lands 117 m from the
+        // true start — 421 km/h — and the ride then settles into a steady 30 km/h.
+        var points = DerivedTrack(117, 8.33, 8.33, 8.33, 8.33);
+
+        var series = MetricSeriesBuilder.Build(points);
+
+        Assert.Null(series[0].SpeedKmh); // no preceding interval to derive from
+        Assert.Null(series[1].SpeedKmh); // the glitched interval
+        Assert.Equal(30, series[2].SpeedKmh!.Value, 0.5);
+        Assert.Equal(30, SpeedSeries.MaxKmh(points)!.Value, 0.5);
+    }
+
+    [Fact]
+    public void Rejects_an_opening_glitch_that_spans_two_intervals()
+    {
+        // The fix drifts back over a second sample, so the first two derived readings are both
+        // bogus. Condemning the first must not leave the second standing as the new maximum.
+        var points = DerivedTrack(117, 106, 8.33, 8.33, 8.33);
+
+        Assert.Equal(30, SpeedSeries.MaxKmh(points)!.Value, 0.5);
     }
 }
