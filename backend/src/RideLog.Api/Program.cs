@@ -13,6 +13,7 @@ using RideLog.Application.Users;
 using RideLog.Infrastructure.Auth;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
+using RideLog.Infrastructure.Weather;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,7 @@ builder.Services.AddRideLogPersistence(
 builder.Services.AddRideLogAuth(builder.Configuration);
 builder.Services.AddRideLogImport();
 builder.Services.AddRideLogPolar(builder.Configuration);
+builder.Services.AddRideLogWeather();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("JWT configuration ('Jwt') is missing.");
@@ -55,6 +57,10 @@ var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
+// A day's worth of lookups: enough to cover new rides and chip away at the archive, small enough
+// that a backfill cannot run away with the free tier's quota in one morning.
+const int WeatherRidesPerSync = 25;
 
 var app = builder.Build();
 
@@ -236,7 +242,8 @@ app.MapPost("/sync", async (
     IPolarSyncService sync,
     IPolarTokenStore tokenStore,
     ClaimsPrincipal user,
-    IOptions<PolarOptions> polarOptions) =>
+    IOptions<PolarOptions> polarOptions,
+    WeatherTopUpService weatherTopUp) =>
 {
     var secret = polarOptions.Value.SyncSharedSecret;
     var providedSecret = request.Headers["X-Sync-Secret"].ToString();
@@ -253,8 +260,24 @@ app.MapPost("/sync", async (
         return Results.BadRequest("No Polar account is linked.");
     }
 
-    return Results.Ok(await sync.SyncAsync(appUserId));
+    var result = await sync.SyncAsync(appUserId);
+
+    // Weather comes after the sync has committed, never inside it: the import transaction commits
+    // even when an exercise fails, so a lookup failing in there would cost the ride itself
+    // (docs/adr/0005). A bounded batch also backfills the archive a little every day.
+    var weather = await weatherTopUp.TopUpAsync(appUserId, max: WeatherRidesPerSync);
+
+    return Results.Ok(new { sync = result, weather });
 });
+
+// Same operation the daily sync runs, for when the owner would rather not wait for tomorrow.
+app.MapPost("/rides/weather", async (WeatherTopUpService weatherTopUp, ClaimsPrincipal user, int? max) =>
+{
+    var userId = user.FindFirstValue("sub");
+    return userId is null
+        ? Results.Unauthorized()
+        : Results.Ok(await weatherTopUp.TopUpAsync(userId, max ?? WeatherRidesPerSync));
+}).RequireAuthorization(AdminSeedOptions.RoleName);
 
 app.Run();
 

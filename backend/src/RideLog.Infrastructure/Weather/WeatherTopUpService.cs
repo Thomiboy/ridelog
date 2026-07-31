@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using RideLog.Application.Routes;
 using RideLog.Application.Weather;
 using RideLog.Domain.Rides;
@@ -15,16 +16,29 @@ public sealed record WeatherTopUpSummary(int Fetched, int Unavailable, int Faile
 /// it would turn any weather outage into a lost ride (docs/adr/0005). A ride with no weather can be
 /// topped up tomorrow; a ride that never imported cannot.
 /// </summary>
-public sealed class WeatherTopUpService(RideLogDbContext context, IWeatherProvider provider)
+public sealed class WeatherTopUpService(
+    RideLogDbContext context,
+    IWeatherProvider provider,
+    TimeProvider clock,
+    ILogger<WeatherTopUpService> logger)
 {
+    /// <summary>
+    /// How long an empty answer stays worth retrying. The archive was measured serving complete data
+    /// for the previous day, so a week is generous — but "no data" for a ride this recent means the
+    /// archive has not caught up, not that it never will, and the two lead to opposite decisions.
+    /// </summary>
+    private static readonly TimeSpan CatchUpWindow = TimeSpan.FromDays(7);
+
     public async Task<WeatherTopUpSummary> TopUpAsync(
         string userId, int max, CancellationToken cancellationToken = default)
     {
-        // Ordered and bounded client-side: SQLite (the test database) cannot ORDER BY a
-        // DateTimeOffset, so the read side of this codebase materialises first throughout.
         // Never tried, or tried and failed in a way that might not recur. A ride already carrying
         // weather needs nothing, and one the service will never cover must not be asked again —
         // that is the whole reason the outcome is stored (docs/adr/0005).
+        //
+        // Newest first, and bounded, so a day's quota goes to the rides most likely to be looked at.
+        // Both happen client-side because SQLite (the test database) cannot ORDER BY a
+        // DateTimeOffset, matching how the read side of this codebase already works.
         var candidates = (await context.Rides
                 .Where(ride => ride.UserId == userId
                                && ride.RoutePolyline != null
@@ -39,16 +53,33 @@ public sealed class WeatherTopUpService(RideLogDbContext context, IWeatherProvid
         foreach (var ride in candidates)
         {
             var start = PolylineDecoder.Decode(ride.RoutePolyline!)[0];
-            var lookup = await provider.GetHourlyAsync(
-                start.Latitude, start.Longitude, ride.StartTime, ride.EndTime, cancellationToken);
 
-            ride.WeatherOutcome = lookup.Outcome;
-            if (lookup.Outcome == WeatherOutcome.Fetched)
+            // One unreachable service must not cost the batch: a throw is just another failure,
+            // recorded on the ride so tomorrow's run picks it up again.
+            WeatherLookup lookup;
+            try
+            {
+                lookup = await provider.GetHourlyAsync(
+                    start.Latitude, start.Longitude, ride.StartTime, ride.EndTime, cancellationToken);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "Weather lookup failed for ride {RideId}", ride.Id);
+                lookup = WeatherLookup.Failed;
+            }
+
+            var outcome = lookup.Outcome == WeatherOutcome.Unavailable
+                          && clock.GetUtcNow() - ride.EndTime < CatchUpWindow
+                ? WeatherOutcome.Failed
+                : lookup.Outcome;
+
+            ride.WeatherOutcome = outcome;
+            if (outcome == WeatherOutcome.Fetched)
             {
                 ride.Weather = lookup.Readings;
                 fetched++;
             }
-            else if (lookup.Outcome == WeatherOutcome.Unavailable)
+            else if (outcome == WeatherOutcome.Unavailable)
             {
                 unavailable++;
             }

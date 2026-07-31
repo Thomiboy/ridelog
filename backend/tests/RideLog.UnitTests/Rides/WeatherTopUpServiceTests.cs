@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using RideLog.Application.Routes;
 using RideLog.Application.Weather;
@@ -67,6 +68,44 @@ public sealed class WeatherTopUpServiceTests : IDisposable
         Assert.Equal(WeatherOutcome.Unavailable, (await StoredRide(hopeless)).WeatherOutcome);
     }
 
+    // One unreachable service must not cost the whole batch. Without this the run aborts on the
+    // first throw and, because the save comes at the end, the rides already looked up are discarded
+    // too — the caller pays the quota and stores nothing.
+    [Fact]
+    public async Task Records_a_thrown_lookup_as_failed_and_keeps_going()
+    {
+        var throws = await GivenRide(Hour(14));
+        var succeeds = await GivenRide(Hour(8));
+
+        var provider = new ScriptedProvider(from => from == Hour(14)
+            ? throw new HttpRequestException("service unreachable")
+            : WeatherLookup.Fetched([Reading(Hour(8), windSpeedKmh: 5)]));
+
+        var summary = await TopUp(provider);
+
+        Assert.Equal(new WeatherTopUpSummary(Fetched: 1, Unavailable: 0, Failed: 1), summary);
+        Assert.Equal(WeatherOutcome.Failed, (await StoredRide(throws)).WeatherOutcome);
+        Assert.Equal(WeatherOutcome.Fetched, (await StoredRide(succeeds)).WeatherOutcome);
+    }
+
+    // "No data" means two opposite things depending on the ride's age. For an old ride the archive
+    // will never cover it and asking again is waste. For a ride from yesterday it means the archive
+    // has not caught up yet — writing that off as permanent would lose the weather for exactly the
+    // rides the owner just did, and nothing would ever ask again.
+    [Theory]
+    [InlineData(400, WeatherOutcome.Unavailable)] // long past any catching up
+    [InlineData(1, WeatherOutcome.Failed)]        // yesterday: ask again tomorrow
+    public async Task Treats_an_empty_answer_as_permanent_only_once_the_archive_has_had_time(
+        int daysAgo, WeatherOutcome expected)
+    {
+        var now = new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.Zero);
+        var rideId = await GivenRide(now.AddDays(-daysAgo));
+
+        await TopUp(new StubProvider(WeatherLookup.Unavailable), now);
+
+        Assert.Equal(expected, (await StoredRide(rideId)).WeatherOutcome);
+    }
+
     private static DateTimeOffset Hour(int hour) => new(2026, 6, 1, hour, 0, 0, TimeSpan.Zero);
 
     private static WeatherReading Reading(DateTimeOffset hour, double windSpeedKmh) =>
@@ -95,17 +134,31 @@ public sealed class WeatherTopUpServiceTests : IDisposable
         return ride.Id;
     }
 
-    private async Task<WeatherTopUpSummary> TopUp(IWeatherProvider provider)
+    private async Task<WeatherTopUpSummary> TopUp(IWeatherProvider provider, DateTimeOffset? now = null)
     {
         await using var context = new RideLogDbContext(_options);
-        var service = new WeatherTopUpService(context, provider);
+        var clock = new FixedClock(now ?? new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.Zero));
+        var service = new WeatherTopUpService(context, provider, clock, NullLogger<WeatherTopUpService>.Instance);
         return await service.TopUpAsync(UserId, max: 10);
+    }
+
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 
     private async Task<Ride> StoredRide(Guid rideId)
     {
         await using var context = new RideLogDbContext(_options);
         return await context.Rides.SingleAsync(ride => ride.Id == rideId);
+    }
+
+    /// <summary>A provider whose answer — or throw — depends on which ride is being asked about.</summary>
+    private sealed class ScriptedProvider(Func<DateTimeOffset, WeatherLookup> answer) : IWeatherProvider
+    {
+        public Task<WeatherLookup> GetHourlyAsync(
+            double latitude, double longitude, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+            => Task.FromResult(answer(from));
     }
 
     private sealed class StubProvider(WeatherLookup result) : IWeatherProvider
