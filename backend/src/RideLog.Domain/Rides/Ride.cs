@@ -35,6 +35,15 @@ public class Ride
     /// <summary>Sport type exactly as the source reports it (e.g. Polar "ROAD_CYCLING").</summary>
     public required string Sport { get; set; }
 
+    /// <summary>
+    /// Hourly weather reported for where and when this ride happened; null until a lookup has
+    /// stored some. Never a substitute for the measured temperature above — see docs/adr/0005.
+    /// </summary>
+    public IReadOnlyList<WeatherReading>? Weather { get; set; }
+
+    /// <summary>How the last weather lookup ended; null when none has been attempted yet.</summary>
+    public WeatherOutcome? WeatherOutcome { get; set; }
+
     public required RideSource Source { get; init; }
 
     /// <summary>Downsampled route as an encoded polyline; null for rides without GPS data.</summary>
