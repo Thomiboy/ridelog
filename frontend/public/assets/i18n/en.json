@@ -82,7 +82,8 @@
       "speed": "Speed",
       "heartRate": "Heart rate",
       "climbingEnergy": "Climbing & energy",
-      "temperature": "Temperature"
+      "temperature": "Temperature",
+      "weather": "Weather"
     },
     "graph": {
       "title": "Metrics",
@@ -112,6 +113,16 @@
       "maxHeartRate": "Max HR",
       "elevation": "Climbing",
       "calories": "Calories"
+    },
+    "headwind": "Headwind",
+    "weather": {
+      "wind": "Wind",
+      "headwind": "Headwind",
+      "tailwind": "Tailwind",
+      "crosswind": "Crosswind",
+      "temperature": "Reported temperature",
+      "rain": "Rain",
+      "note": "Reported for the area at 10 m, not measured on the bike."
     }
   },
   "admin": {
@@ -148,7 +159,10 @@
       "deleteButton": "Delete all rides",
       "deleteConfirm1": "Delete ALL rides and their stored files? This cannot be undone.",
       "deleteConfirm2": "Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?",
-      "deleteResult": "Deleted {{deleted}} rides."
+      "deleteResult": "Deleted {{deleted}} rides.",
+      "weatherHint": "Fetch weather for rides that still have none. The daily sync does a batch too.",
+      "weatherButton": "Fetch weather",
+      "weatherResult": "Fetched {{fetched}}, no data for {{unavailable}}, failed {{failed}}."
     },
     "settings": {
       "title": "HR zones",

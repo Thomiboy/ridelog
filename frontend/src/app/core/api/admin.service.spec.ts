@@ -62,6 +62,17 @@ describe('AdminService', () => {
     expect(summary!.processed).toBe(5);
   });
 
+  it('tops up weather for rides that still have none', () => {
+    let summary: { fetched: number; unavailable: number; failed: number } | undefined;
+    service.topUpWeather().subscribe((s) => (summary = s));
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/rides/weather`);
+    expect(request.request.method).toBe('POST');
+    request.flush({ fetched: 3, unavailable: 1, failed: 2 });
+
+    expect(summary).toEqual({ fetched: 3, unavailable: 1, failed: 2 });
+  });
+
   it('deletes all rides', () => {
     let deleted: number | undefined;
     service.deleteAllRides().subscribe((r) => (deleted = r.deleted));

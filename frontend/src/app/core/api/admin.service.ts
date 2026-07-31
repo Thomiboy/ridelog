@@ -2,7 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary, UserSettings } from './admin.models';
+import type {
+  ImportSummary,
+  PolarStatus,
+  ReprocessSummary,
+  SyncSummary,
+  UserSettings,
+  WeatherTopUpSummary,
+} from './admin.models';
 
 /** Admin-only actions: link Polar, import files, trigger a sync. */
 @Injectable({ providedIn: 'root' })
@@ -32,6 +39,11 @@ export class AdminService {
 
   reprocess(): Observable<ReprocessSummary> {
     return this.http.post<ReprocessSummary>(`${this.baseUrl}/rides/reprocess`, null);
+  }
+
+  /** Fills in weather for rides that have none — the same batch the daily sync runs. */
+  topUpWeather(): Observable<WeatherTopUpSummary> {
+    return this.http.post<WeatherTopUpSummary>(`${this.baseUrl}/rides/weather`, null);
   }
 
   deleteAllRides(): Observable<{ deleted: number }> {

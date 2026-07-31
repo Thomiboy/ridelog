@@ -114,6 +114,12 @@
           {{ 'admin.maintenance.reprocessResult' | transloco: { processed: result.processed, failed: result.failed } }}
         </p>
       }
+      <p>{{ 'admin.maintenance.weatherHint' | transloco }}</p>
+      @if (weatherResult(); as weather) {
+        <p class="result">
+          {{ 'admin.maintenance.weatherResult' | transloco: { fetched: weather.fetched, unavailable: weather.unavailable, failed: weather.failed } }}
+        </p>
+      }
       <p class="danger-hint">{{ 'admin.maintenance.deleteHint' | transloco }}</p>
       @if (deletedCount(); as deleted) {
         <p class="result">{{ 'admin.maintenance.deleteResult' | transloco: { deleted } }}</p>
@@ -122,6 +128,9 @@
     <mat-card-actions>
       <button mat-flat-button data-reprocess [disabled]="busy()" (click)="reprocess()">
         {{ 'admin.maintenance.reprocessButton' | transloco }}
+      </button>
+      <button mat-flat-button data-weather [disabled]="busy()" (click)="topUpWeather()">
+        {{ 'admin.maintenance.weatherButton' | transloco }}
       </button>
       <button mat-stroked-button color="warn" data-delete-all [disabled]="busy()" (click)="deleteAllRides()">
         {{ 'admin.maintenance.deleteButton' | transloco }}

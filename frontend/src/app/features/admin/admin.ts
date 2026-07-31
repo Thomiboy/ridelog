@@ -8,7 +8,13 @@ import { TranslocoService } from '@jsverse/transloco';
 import { AdminService } from '../../core/api/admin.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
-import type { ImportSummary, PolarStatus, ReprocessSummary, SyncSummary } from '../../core/api/admin.models';
+import type {
+  ImportSummary,
+  PolarStatus,
+  ReprocessSummary,
+  SyncSummary,
+  WeatherTopUpSummary,
+} from '../../core/api/admin.models';
 
 @Component({
   selector: 'app-admin',
@@ -28,6 +34,7 @@ export class Admin {
   readonly importResult = signal<ImportSummary | null>(null);
   readonly syncResult = signal<SyncSummary | null>(null);
   readonly reprocessResult = signal<ReprocessSummary | null>(null);
+  readonly weatherResult = signal<WeatherTopUpSummary | null>(null);
   readonly deletedCount = signal<number | null>(null);
   readonly maxHeartRate = signal<number | null>(null);
   readonly settingsSaved = signal(false);
@@ -112,6 +119,20 @@ export class Admin {
       this.adminService.reprocess().subscribe({
         next: (result) => {
           this.reprocessResult.set(result);
+          this.ridesChanged();
+          this.busy.set(false);
+        },
+        error: () => this.fail(),
+      }),
+    );
+  }
+
+  /** Fetches weather for rides still missing it, without waiting for tomorrow's sync. */
+  topUpWeather(): void {
+    this.run(() =>
+      this.adminService.topUpWeather().subscribe({
+        next: (result) => {
+          this.weatherResult.set(result);
           this.ridesChanged();
           this.busy.set(false);
         },

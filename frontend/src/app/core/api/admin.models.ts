@@ -35,6 +35,13 @@ export interface ReprocessSummary {
   failed: number;
 }
 
+/** Counts from one weather top-up, one per outcome the lookups produced. */
+export interface WeatherTopUpSummary {
+  fetched: number;
+  unavailable: number;
+  failed: number;
+}
+
 /** Editable user settings. Currently just the max heart rate anchoring the HR zones. */
 export interface UserSettings {
   maxHeartRate: number | null;
