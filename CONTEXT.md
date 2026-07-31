@@ -52,8 +52,8 @@ The path a ride took, as positions. Distinct from the metric series, which carri
 _Avoid_: Track, path, polyline
 
 **Top speed**:
-The fastest a ride went, as its own track tells it — not as the recording device summarised it. A
-reading the track cannot physically have produced is not part of the ride.
+The fastest a ride went, as its recording device measured it — unless the ride's own track cannot
+support that figure, in which case the track's.
 _Avoid_: Max speed, peak speed
 
 ### Aggregates

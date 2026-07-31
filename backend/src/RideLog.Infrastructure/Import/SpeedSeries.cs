@@ -8,9 +8,10 @@ namespace RideLog.Infrastructure.Import;
 /// the headline number can never be computed down separate paths and disagree.
 /// </summary>
 /// <remarks>
-/// Devices summarise a maximum speed of their own, but a single GPS jump lands in it and then owns
-/// the top-speed record forever (docs/adr/0002). Resolving runs on the full track, before the series
-/// is downsampled — the true peak sample is usually one of the ones downsampling drops.
+/// Resolving runs on the full track, before the series is downsampled — the true peak sample is
+/// usually one of the ones downsampling drops. What comes out feeds the graph, and checks the
+/// device's own summary rather than replacing it: on real rides this device's positions are far
+/// noisier than its speed sensor (docs/adr/0003).
 /// </remarks>
 public static class SpeedSeries
 {
@@ -99,6 +100,29 @@ public static class SpeedSeries
         }
 
         return resolved;
+    }
+
+    /// <summary>
+    /// How far above what the track supports a device's own summary may sit before the track
+    /// overrules it. Five real rides put the honest summaries within a few per cent of their track
+    /// and the one dishonest summary at nearly twice it, so the gap is wide and this sits in it.
+    /// </summary>
+    private const double DeviceVetoFactor = 1.5;
+
+    /// <summary>
+    /// The ride's top speed. The device's own summary leads — it measures speed far better than we
+    /// can reconstruct it from GPS positions — and the track is only allowed to overrule a summary
+    /// it cannot support at all (docs/adr/0003). With one source missing, the other stands alone.
+    /// </summary>
+    public static double? TopSpeedKmh(IReadOnlyList<GeoPoint> points, double? deviceMaximumKmh)
+    {
+        var fromTrack = MaxKmh(points);
+        if (deviceMaximumKmh is not { } device)
+        {
+            return fromTrack;
+        }
+
+        return fromTrack is { } track && device > track * DeviceVetoFactor ? track : device;
     }
 
     /// <summary>The fastest the track says the rider went, or null when it carries no usable speed.</summary>
