@@ -57,6 +57,18 @@ _Avoid_: Metric, series, field
 The path a ride took, as positions. Distinct from the metric series, which carries no positions.
 _Avoid_: Track, path, polyline
 
+**Weather**:
+The conditions reported for a ride's time and place by a third party. Reported, not measured: it
+describes the area a ride passed through, where a channel describes the ride itself. A ride's own
+temperature reading and the weather's temperature are therefore different quantities, never one.
+_Avoid_: Conditions, climate
+
+**Headwind**:
+How much of the weather's wind opposed the direction actually being ridden. Derived by comparing the
+two, so it exists for any ride that has both a route and weather, and means nothing on its own for a
+loop — a lap returns whatever it borrowed.
+_Avoid_: Wind (that's the weather's), wind resistance, drag
+
 **Top speed**:
 The fastest a ride went, as its recording device measured it — unless the ride's own track cannot
 support that figure, in which case the track's.
