@@ -7,9 +7,6 @@ using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Weather;
 
-/// <summary>Counts from one top-up run, one per outcome the lookups produced.</summary>
-public sealed record WeatherTopUpSummary(int Fetched, int Unavailable, int Failed);
-
 /// <summary>
 /// Fills in weather for rides that have none, a bounded batch at a time. Deliberately separate from
 /// import: the import transaction commits even when an exercise fails, so a third-party call inside
@@ -20,7 +17,7 @@ public sealed class WeatherTopUpService(
     RideLogDbContext context,
     IWeatherProvider provider,
     TimeProvider clock,
-    ILogger<WeatherTopUpService> logger)
+    ILogger<WeatherTopUpService> logger) : IWeatherTopUpService
 {
     /// <summary>
     /// How long an empty answer stays worth retrying. The archive was measured serving complete data
@@ -35,6 +32,9 @@ public sealed class WeatherTopUpService(
         // Never tried, or tried and failed in a way that might not recur. A ride already carrying
         // weather needs nothing, and one the service will never cover must not be asked again —
         // that is the whole reason the outcome is stored (docs/adr/0005).
+        //
+        // A ride with no route has no position to look up, so it is left out rather than asked
+        // about: there is nothing a retry could ever change, and skipping costs no call.
         //
         // Newest first, and bounded, so a day's quota goes to the rides most likely to be looked at.
         // Both happen client-side because SQLite (the test database) cannot ORDER BY a

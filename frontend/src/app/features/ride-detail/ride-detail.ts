@@ -157,18 +157,21 @@ export class RideDetail {
   readonly absHeadwind = computed(() => Math.abs(this.weather()?.meanHeadwindKmh ?? 0));
 
   /**
-   * Under about 2 km/h either way there was no useful wind along the route — on a loop that is the
-   * normal outcome — so it reads as a crosswind rather than claiming a direction it cannot support.
+   * Which way the wind went on balance. Under about 2 km/h either way there was no useful wind
+   * along the route — on a loop that is the normal outcome — so it reads as a crosswind rather than
+   * claiming a direction the numbers cannot support.
    */
-  readonly windLabel = computed(() => {
+  private readonly windDirection = computed<'head' | 'tail' | 'cross'>(() => {
     const mean = this.weather()?.meanHeadwindKmh ?? 0;
     if (Math.abs(mean) < 2) {
-      return 'rideDetail.weather.crosswind';
+      return 'cross';
     }
-    return mean > 0 ? 'rideDetail.weather.headwind' : 'rideDetail.weather.tailwind';
+    return mean > 0 ? 'head' : 'tail';
   });
 
-  readonly windIcon = computed(() => (this.windLabel().endsWith('headwind') ? 'trending_up' : 'trending_flat'));
+  readonly windLabel = computed(() => `rideDetail.weather.${this.windDirection()}wind`);
+
+  readonly windIcon = computed(() => (this.windDirection() === 'head' ? 'trending_up' : 'trending_flat'));
 
   readonly hrZoneChart = computed(() => {
     const zones = this.ride()?.hrZones;

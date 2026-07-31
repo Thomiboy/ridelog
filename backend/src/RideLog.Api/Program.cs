@@ -9,11 +9,11 @@ using RideLog.Application.Import;
 using RideLog.Application.Messaging;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
+using RideLog.Application.Weather;
 using RideLog.Application.Users;
 using RideLog.Infrastructure.Auth;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
-using RideLog.Infrastructure.Weather;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -243,7 +243,7 @@ app.MapPost("/sync", async (
     IPolarTokenStore tokenStore,
     ClaimsPrincipal user,
     IOptions<PolarOptions> polarOptions,
-    WeatherTopUpService weatherTopUp) =>
+    IWeatherTopUpService weatherTopUp) =>
 {
     var secret = polarOptions.Value.SyncSharedSecret;
     var providedSecret = request.Headers["X-Sync-Secret"].ToString();
@@ -271,7 +271,7 @@ app.MapPost("/sync", async (
 });
 
 // Same operation the daily sync runs, for when the owner would rather not wait for tomorrow.
-app.MapPost("/rides/weather", async (WeatherTopUpService weatherTopUp, ClaimsPrincipal user, int? max) =>
+app.MapPost("/rides/weather", async (IWeatherTopUpService weatherTopUp, ClaimsPrincipal user, int? max) =>
 {
     var userId = user.FindFirstValue("sub");
     return userId is null

@@ -90,7 +90,7 @@ public static class InfrastructureServiceCollectionExtensions
     public static IServiceCollection AddRideLogWeather(this IServiceCollection services)
     {
         services.AddSingleton(TimeProvider.System);
-        services.AddScoped<WeatherTopUpService>();
+        services.AddScoped<IWeatherTopUpService, WeatherTopUpService>();
         services.AddHttpClient<IWeatherProvider, OpenMeteoWeatherProvider>(client =>
         {
             client.BaseAddress = new Uri("https://archive-api.open-meteo.com/");
