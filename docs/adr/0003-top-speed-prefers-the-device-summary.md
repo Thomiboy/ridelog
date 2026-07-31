@@ -52,8 +52,17 @@ RideLog's top speed now usually matches Polar Flow and the Bryton app, where bef
 diverged. That is a reversal of ADR 0002's stated consequence, and the better outcome: the two only
 disagree on a ride whose device is demonstrably wrong.
 
-The per-point filter stays exactly as it is. It still decides the graph's speed channel, and it still
-supplies the figure the veto is measured against — it just no longer decides the headline number by
-itself.
+The per-point filter stays exactly as it is, but its remaining job is narrower: it supplies the
+figure the veto is measured against — "how fast could the rider have been going here", an upper bound
+that must not be eroded.
+
+The graph is now derived separately, and deliberately so. It answers a different question — what did
+the ride look like — where per-second GPS noise is the enemy rather than the signal. It averages over
+a nine-second window and drops anything above the ride's top speed. That combination is what a
+point-to-point derivation cannot do: one device here holds its previous position for a sample and then
+advances by two samples' worth, which reads as a standstill followed by double the real pace, and no
+amount of filtering recovers the steady 35 km/h the rider was actually doing. On that ride 42% of the
+plotted line was a hole or a false standstill; it is now 2%, and the zeros that remain are the stops
+the rider actually made.
 
 Existing rides need an admin **Reprocess all** to pick this up.

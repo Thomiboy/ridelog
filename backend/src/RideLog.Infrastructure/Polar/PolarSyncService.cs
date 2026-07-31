@@ -99,6 +99,7 @@ internal sealed class PolarSyncService(
             return ImportOutcome.Skipped;
         }
 
+        var topSpeed = SpeedSeries.TopSpeedKmh(route, metrics.DeviceMaximumSpeedKmh);
         var ride = new Ride
         {
             Id = Guid.NewGuid(),
@@ -108,7 +109,7 @@ internal sealed class PolarSyncService(
             Duration = metrics.Duration,
             DistanceMeters = metrics.DistanceMeters,
             AverageSpeedKmh = metrics.AverageSpeedKmh,
-            MaximumSpeedKmh = SpeedSeries.TopSpeedKmh(route, metrics.DeviceMaximumSpeedKmh),
+            MaximumSpeedKmh = topSpeed,
             AverageHeartRate = metrics.AverageHeartRate,
             MaximumHeartRate = metrics.MaximumHeartRate,
             ElevationGainMeters = metrics.ElevationGainMeters,
@@ -118,7 +119,7 @@ internal sealed class PolarSyncService(
             Source = RideSource.Polar,
             RoutePolyline = PolylineEncoder.Encode(Downsample(route)),
             // Build the elevation/HR graph series at ingest so the chart shows without a reprocess.
-            MetricSeries = MetricSeriesBuilder.BuildStorable(route),
+            MetricSeries = MetricSeriesBuilder.BuildStorable(route, topSpeed),
         };
 
         if (gpxBytes is not null)

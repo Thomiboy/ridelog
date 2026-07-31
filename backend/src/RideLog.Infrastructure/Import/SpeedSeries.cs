@@ -125,6 +125,59 @@ public static class SpeedSeries
         return fromTrack is { } track && device > track * DeviceVetoFactor ? track : device;
     }
 
+    /// <summary>
+    /// How many points either side of a sample the graph averages over. A device that holds its
+    /// previous position for a sample and then advances by two samples' worth reads as a standstill
+    /// followed by double the real pace; over a window that cancels out, which point-to-point
+    /// arithmetic cannot do however it is filtered.
+    /// </summary>
+    private const int GraphWindowPoints = 4;
+
+    /// <summary>
+    /// The speed to plot at each point: the device's own reading where it wrote one, otherwise the
+    /// pace across a window centred on the sample. Readings above <paramref name="topSpeedKmh"/> are
+    /// left empty — the graph must not claim a speed the ride never reached — which is what removes
+    /// the opening stretch where the GPS fix is still settling.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not the same computation as <see cref="Resolve"/>. That answers "how fast could
+    /// the rider have been going here", an upper bound that averaging would erode, and it feeds the
+    /// veto in <see cref="TopSpeedKmh"/>. This one answers "what did the ride look like", where
+    /// per-second GPS noise is the enemy rather than the signal.
+    /// </remarks>
+    public static IReadOnlyList<double?> ForGraph(IReadOnlyList<GeoPoint> points, double? topSpeedKmh)
+    {
+        var cumulativeMeters = new double[points.Count];
+        for (var i = 1; i < points.Count; i++)
+        {
+            cumulativeMeters[i] = cumulativeMeters[i - 1] + GeoMath.DistanceMeters(points[i - 1], points[i]);
+        }
+
+        var plotted = new double?[points.Count];
+        for (var i = 0; i < points.Count; i++)
+        {
+            var speed = points[i].SpeedKmh ?? WindowedSpeed(points, cumulativeMeters, i);
+            plotted[i] = speed is { } kmh && (topSpeedKmh is not { } top || kmh <= top)
+                ? Math.Round(kmh, 2)
+                : null;
+        }
+
+        return plotted;
+    }
+
+    private static double? WindowedSpeed(IReadOnlyList<GeoPoint> points, double[] cumulativeMeters, int index)
+    {
+        var from = Math.Max(0, index - GraphWindowPoints);
+        var to = Math.Min(points.Count - 1, index + GraphWindowPoints);
+        if (points[from].Time is not { } start || points[to].Time is not { } end)
+        {
+            return null;
+        }
+
+        var hours = (end - start).TotalHours;
+        return hours > 0 ? (cumulativeMeters[to] - cumulativeMeters[from]) / 1000.0 / hours : null;
+    }
+
     /// <summary>The fastest the track says the rider went, or null when it carries no usable speed.</summary>
     public static double? MaxKmh(IReadOnlyList<GeoPoint> points) =>
         Resolve(points).Where(s => s is not null).Select(s => s!.Value).DefaultIfEmpty().Max() is var max && max > 0

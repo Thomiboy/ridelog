@@ -123,7 +123,7 @@ internal sealed class RideMaintenanceService(
         ride.Calories = metrics.Calories;
         ride.RoutePolyline = PolylineEncoder.Encode(Downsample(route));
 
-        var series = MetricSeriesBuilder.BuildStorable(route);
+        var series = MetricSeriesBuilder.BuildStorable(route, ride.MaximumSpeedKmh);
         // The GPX/TCX route carries no temperature; re-merge it from the stored Bryton FIT.
         var fit = ParseFirst(ride, RawFileFormat.Fit);
         if (series is not null && fit is not null)

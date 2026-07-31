@@ -12,7 +12,11 @@ public static class MetricSeriesBuilder
 {
     public const int MaxSamples = 500;
 
-    public static IReadOnlyList<MetricSample> Build(IReadOnlyList<GeoPoint> points)
+    /// <param name="topSpeedKmh">
+    /// The ride's top speed, so the plotted line can't claim more than the ride reached. Null leaves
+    /// the speed channel uncapped, which only suits callers with no ride to speak of.
+    /// </param>
+    public static IReadOnlyList<MetricSample> Build(IReadOnlyList<GeoPoint> points, double? topSpeedKmh = null)
     {
         if (points.Count == 0)
         {
@@ -21,7 +25,7 @@ public static class MetricSeriesBuilder
 
         var startTime = points.FirstOrDefault(p => p.Time.HasValue).Time;
 
-        var speeds = SpeedSeries.Resolve(points);
+        var speeds = SpeedSeries.ForGraph(points, topSpeedKmh);
         var samples = new List<MetricSample>(points.Count);
         var cumulativeMeters = 0.0;
         for (var i = 0; i < points.Count; i++)
@@ -48,9 +52,9 @@ public static class MetricSeriesBuilder
     /// Builds the series for storage, returning null when it carries none of elevation, heart rate,
     /// temperature or speed — such a series has nothing to graph, so there's no point keeping it.
     /// </summary>
-    public static IReadOnlyList<MetricSample>? BuildStorable(IReadOnlyList<GeoPoint> points)
+    public static IReadOnlyList<MetricSample>? BuildStorable(IReadOnlyList<GeoPoint> points, double? topSpeedKmh = null)
     {
-        var series = Build(points);
+        var series = Build(points, topSpeedKmh);
         return series.Any(s =>
             s.ElevationMeters is not null
             || s.HeartRate is not null

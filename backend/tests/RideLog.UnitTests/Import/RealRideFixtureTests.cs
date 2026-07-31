@@ -82,4 +82,38 @@ public sealed class RealRideFixtureTests
         Assert.Equal(29, parsed.MaxTemperatureCelsius!.Value, 0.01);
         Assert.All(parsed.RoutePoints, p => Assert.True(p.TemperatureCelsius is null or >= 15));
     }
+
+    [Fact]
+    public void The_graph_shows_the_ride_rather_than_the_sampling()
+    {
+        // This device repeats the previous position on about half its samples, so a point-to-point
+        // derivation alternates between a standstill and double the real pace — and the graph came
+        // out as a row of zeros and holes over a stretch the rider spent at a steady 35 km/h.
+        var parsed = Tcx("berek-2024-08-14.tcx");
+        var top = SpeedSeries.TopSpeedKmh(parsed.RoutePoints, parsed.DeviceMaximumSpeedKmh);
+
+        var series = MetricSeriesBuilder.Build(parsed.RoutePoints, top);
+        var riding = series.Skip(40).Take(30).ToList();
+
+        Assert.True(
+            riding.Count(s => s.SpeedKmh > 10) >= 20,
+            $"only {riding.Count(s => s.SpeedKmh > 10)} of 30 samples show the rider moving");
+    }
+
+    [Fact]
+    public void The_graph_never_claims_a_speed_the_ride_did_not_reach()
+    {
+        foreach (var (file, _) in ExpectedTopSpeeds.Select(row => ((string)row[0]!, row[1])))
+        {
+            var parsed = Tcx(file);
+            var top = SpeedSeries.TopSpeedKmh(parsed.RoutePoints, parsed.DeviceMaximumSpeedKmh)!.Value;
+            var series = MetricSeriesBuilder.Build(parsed.RoutePoints, top);
+
+            Assert.All(series, s => Assert.True(s.SpeedKmh is null or <= 0 || s.SpeedKmh <= top));
+            // And the holes that leaves are a fringe, not the graph.
+            Assert.True(
+                series.Count(s => s.SpeedKmh is null) < series.Count * 0.1,
+                $"{file}: more than a tenth of the speed line is missing");
+        }
+    }
 }

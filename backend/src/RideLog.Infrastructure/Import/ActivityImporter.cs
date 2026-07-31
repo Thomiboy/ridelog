@@ -69,6 +69,7 @@ internal sealed class ActivityImporter(
                 : new FileImportResult(file.FileName, ImportOutcome.Skipped);
         }
 
+        var topSpeed = SpeedSeries.TopSpeedKmh(parsed.RoutePoints, parsed.DeviceMaximumSpeedKmh);
         var ride = new Ride
         {
             Id = Guid.NewGuid(),
@@ -78,7 +79,7 @@ internal sealed class ActivityImporter(
             Duration = parsed.Duration,
             DistanceMeters = parsed.DistanceMeters,
             AverageSpeedKmh = parsed.AverageSpeedKmh,
-            MaximumSpeedKmh = SpeedSeries.TopSpeedKmh(parsed.RoutePoints, parsed.DeviceMaximumSpeedKmh),
+            MaximumSpeedKmh = topSpeed,
             AverageHeartRate = parsed.AverageHeartRate,
             MaximumHeartRate = parsed.MaximumHeartRate,
             ElevationGainMeters = parsed.ElevationGainMeters,
@@ -90,7 +91,7 @@ internal sealed class ActivityImporter(
             Sport = parsed.Sport,
             Source = RideSource.Import,
             RoutePolyline = PolylineEncoder.Encode(Downsample(parsed.RoutePoints)),
-            MetricSeries = MetricSeriesBuilder.BuildStorable(parsed.RoutePoints),
+            MetricSeries = MetricSeriesBuilder.BuildStorable(parsed.RoutePoints, topSpeed),
         };
 
         ride.RawFiles.Add(new RawFile
