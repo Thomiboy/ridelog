@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
 import type { ChartOptions } from 'chart.js';
 import { RidesService } from '../../core/api/rides.service';
@@ -42,6 +43,7 @@ import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ri
     RouterLink,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     MatCardModule,
     SourceChips,
     Chart,

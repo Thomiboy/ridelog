@@ -120,7 +120,7 @@
       "headwind": "Headwind",
       "tailwind": "Tailwind",
       "crosswind": "Crosswind",
-      "temperature": "Reported temperature",
+      "temperature": "Temperature",
       "rain": "Rain",
       "note": "Reported for the area at 10 m, not measured on the bike."
     }

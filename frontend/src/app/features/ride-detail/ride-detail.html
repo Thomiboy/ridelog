@@ -178,7 +178,17 @@
 
       @if (weather(); as weather) {
         <mat-card appearance="outlined" class="metric-card" data-card="weather">
-          <span class="card-title">{{ 'rideDetail.card.weather' | transloco }}</span>
+          <span class="card-title card-title--with-info">
+            {{ 'rideDetail.card.weather' | transloco }}
+            <mat-icon
+              class="card-info"
+              tabindex="0"
+              [attr.aria-label]="'rideDetail.weather.note' | transloco"
+              [matTooltip]="'rideDetail.weather.note' | transloco"
+              matTooltipPosition="above"
+              matTooltipTouchGestures="on"
+            >info_outline</mat-icon>
+          </span>
           @if (weather.windKmh; as wind) {
             <div class="metric">
               <mat-icon>air</mat-icon>
@@ -213,7 +223,6 @@
               <span class="metric-value">{{ weather.precipitationMm | translocoDecimal: { maximumFractionDigits: 1 } }} mm</span>
             </div>
           }
-          <p class="card-note">{{ 'rideDetail.weather.note' | transloco }}</p>
         </mat-card>
       }
     </div>
