@@ -123,7 +123,9 @@
       "temperature": "Hőmérséklet",
       "rain": "Csapadék",
       "note": "A területre jelentett érték 10 méteren, nem a kerékpáron mért."
-    }
+    },
+    "temperatureNote": "A kerékpáros komputer mérte a biciklin, menet közben.",
+    "topSpeedNote": "Az eszköz saját csúcsértéke, kivéve ha a túra nyomvonala nem támasztja alá."
   },
   "admin": {
     "title": "Admin",

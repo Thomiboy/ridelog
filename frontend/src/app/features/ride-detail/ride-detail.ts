@@ -5,7 +5,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
 import type { ChartOptions } from 'chart.js';
 import { RidesService } from '../../core/api/rides.service';
@@ -16,6 +15,7 @@ import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { DurationPipe } from '../../core/format/duration.pipe';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { Chart } from '../../shared/chart/chart';
+import { InfoHint } from '../../shared/info-hint/info-hint';
 import {
   availableChannels,
   buildComparisonMetricChart,
@@ -43,7 +43,7 @@ import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ri
     RouterLink,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
+    InfoHint,
     MatCardModule,
     SourceChips,
     Chart,
