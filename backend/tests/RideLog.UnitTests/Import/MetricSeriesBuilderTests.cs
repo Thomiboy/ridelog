@@ -279,4 +279,40 @@ public sealed class MetricSeriesBuilderTests
 
         Assert.Equal(30, SpeedSeries.MaxKmh(points)!.Value, 0.5);
     }
+
+    /// <summary>A track sampled every <paramref name="intervalSeconds"/> from per-interval metres.</summary>
+    private static List<GeoPoint> SparseTrack(int intervalSeconds, params double[] metresPerInterval)
+    {
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+        var points = new List<GeoPoint> { new(0, 0, 100, start, 140) };
+        var longitude = 0.0;
+        for (var i = 0; i < metresPerInterval.Length; i++)
+        {
+            longitude += metresPerInterval[i] / (6_371_000 * Math.PI / 180);
+            points.Add(new GeoPoint(0, longitude, 100, start.AddSeconds((i + 1) * intervalSeconds), 140));
+        }
+
+        return points;
+    }
+
+    [Fact]
+    public void Rejects_a_jump_on_a_sparsely_sampled_track()
+    {
+        // Polar's smart recording samples every ~10 s. Riding 25 km/h (69.4 m per interval) with one
+        // interval where the fix jumps 300 m — 108 km/h. Judged per second alone, ten seconds would
+        // license a 150 km/h rise and the jump would sail through.
+        var points = SparseTrack(10, 69.4, 69.4, 69.4, 300, 69.4, 69.4);
+
+        Assert.Equal(25, SpeedSeries.MaxKmh(points)!.Value, 0.5);
+    }
+
+    [Fact]
+    public void Rejects_a_jump_in_the_opening_interval_of_a_sparse_track()
+    {
+        // Same sampling, but the jump is the first interval — so the fall to the next reading is
+        // what has to expose it, over an interval long enough to excuse almost anything.
+        var points = SparseTrack(10, 300, 69.4, 69.4, 69.4);
+
+        Assert.Equal(25, SpeedSeries.MaxKmh(points)!.Value, 0.5);
+    }
 }
