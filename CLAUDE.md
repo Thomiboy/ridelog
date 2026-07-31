@@ -63,6 +63,18 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 ### Dev container quirk
 The container ships **Node 22.22.2**, but the Angular CLI's `SUPPORTED_NODE_VERSIONS` starts at `^22.22.3`, so `ng test` / `ng build` refuse to run after a fresh `npm install`. Workaround: relax the range in `frontend/node_modules/@angular/cli/src/utilities/node-version.js` (`'^22.22.3 ...'` → `'^22.22.2 ...'`). `node_modules` is gitignored, so this must be re-applied whenever dependencies are reinstalled.
 
+### Open-Meteo archive (measured, not assumed)
+Two things were checked against real responses rather than taken on trust, both in
+`backend/tests/RideLog.UnitTests/Weather/Fixtures/`:
+- **The archive is not days behind.** A probe over 2026-07-24 → 07-30, run on 07-31, came back complete
+  with no nulls — data existed through the previous day. The "ERA5 lags ~5 days" assumption that shaped
+  the original plan was wrong. (Recent hours may still be preliminary and get revised later; unverified.)
+- **Hourly timestamps carry no offset** (`"2024-05-05T06:00"`) even with `timezone=UTC` requested and
+  `utc_offset_seconds: 0` in the body. Parsed as local time they shift by the running machine's zone and
+  still look plausible — `OpenMeteoResponseReader` pins them to UTC, and a test asserts it.
+- **The response snaps to a grid cell**: asking for 46.24613/20.14038 answered 46.291737/20.127794, ~5 km
+  away, with its own `elevation`. Reported for an area, not measured at the handlebars (docs/adr/0005).
+
 ### Derived metrics come from real files, not invented fixtures
 `backend/tests/RideLog.UnitTests/Import/Fixtures/` holds five real exports (four Polar TCX, one Bryton FIT), committed because hand-made fixtures kept agreeing with whatever the code happened to do. **Reach for them first** when a derived number looks wrong — they carry GPS warm-up, stale repeated positions, positionless records and dishonest device summaries, none of which anyone thinks to invent. Five rounds of fixing top speed from the symptom alone were undone in one sitting once a real file was on disk.
 
