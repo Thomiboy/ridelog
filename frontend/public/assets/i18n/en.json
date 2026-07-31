@@ -123,7 +123,8 @@
       "temperature": "Temperature",
       "rain": "Rain",
       "note": "Reported for the area at 10 m, not measured on the bike."
-    }
+    },
+    "temperatureNote": "Measured on the bike by the cycling computer during the ride."
   },
   "admin": {
     "title": "Admin",

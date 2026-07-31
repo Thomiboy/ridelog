@@ -153,7 +153,17 @@
 
       @if (ride.averageTemperatureCelsius != null) {
         <mat-card appearance="outlined" class="metric-card" data-card="temperature">
-          <span class="card-title">{{ 'rideDetail.card.temperature' | transloco }}</span>
+          <span class="card-title card-title--with-info">
+            {{ 'rideDetail.card.temperature' | transloco }}
+            <mat-icon
+              class="card-info"
+              tabindex="0"
+              [attr.aria-label]="'rideDetail.temperatureNote' | transloco"
+              [matTooltip]="'rideDetail.temperatureNote' | transloco"
+              matTooltipPosition="above"
+              matTooltipTouchGestures="on"
+            >info_outline</mat-icon>
+          </span>
           <div class="metric">
             <mat-icon>device_thermostat</mat-icon>
             <span class="metric-label">{{ 'rideDetail.avg' | transloco }}</span>
