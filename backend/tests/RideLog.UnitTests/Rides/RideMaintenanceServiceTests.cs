@@ -394,4 +394,39 @@ public sealed class RideMaintenanceServiceTests : IDisposable
             Assert.False(await NewService(context).DeleteAsync("user-1", Guid.NewGuid()));
         }
     }
+
+    [Fact]
+    public async Task Reprocess_takes_the_maximum_from_the_route_it_actually_uses()
+    {
+        // A TCX whose trackpoints carry no position: the route (and so the chart) falls back to the
+        // GPX, but the scalar metrics come from the TCX parser — whose own track is empty, so its
+        // maximum falls back to the lap's 16.5 m/s summary. That is how a card can show a speed the
+        // chart beside it never plots.
+        var ride = StaleRide();
+        ride.RawFiles.Clear();
+        ride.RawFiles.Add(Raw(RawFileFormat.Tcx, "exercise.tcx", Encoding.UTF8.GetBytes(
+            Encoding.UTF8.GetString(TcxWithSummary())
+                .Replace("<Position><LatitudeDegrees>47.5</LatitudeDegrees><LongitudeDegrees>19.0</LongitudeDegrees></Position>", "")
+                .Replace("<Position><LatitudeDegrees>47.6</LatitudeDegrees><LongitudeDegrees>19.1</LongitudeDegrees></Position>", ""))));
+        ride.RawFiles.Add(Raw(RawFileFormat.Gpx, "exercise.gpx", GpxWithoutHeartRate()));
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            context.Rides.Add(ride);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new RideLogDbContext(_options))
+        {
+            await NewService(context).ReprocessAsync("user-1");
+        }
+
+        await using (var verify = new RideLogDbContext(_options))
+        {
+            var reloaded = await verify.Rides.SingleAsync();
+            // The GPX track covers ~13.4 km in an hour. The headline number has to come from the
+            // same track the graph does.
+            Assert.Equal(13.42, reloaded.MaximumSpeedKmh!.Value, 0.01);
+        }
+    }
 }
