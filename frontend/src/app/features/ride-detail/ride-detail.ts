@@ -29,9 +29,11 @@ import {
 } from './metric-series-chart';
 import { buildHrZoneChart } from './hr-zone-chart';
 import { WEATHER_AXIS_ID, summariseWeather, withHeadwindLayer } from './weather-layer';
+import { positionAtDistanceKm } from './route-position';
+import { decodePolyline } from './route-map/polyline-decoder';
 import { compareRides, type MetricDelta } from './ride-comparison';
 import { RidePicker } from './ride-picker';
-import type { RideDetail as RideDetailDto, RideSummary } from '../../core/api/ride.models';
+import type { MetricSample, RideDetail as RideDetailDto, RideSummary } from '../../core/api/ride.models';
 
 @Component({
   selector: 'app-ride-detail',
@@ -151,6 +153,49 @@ export class RideDetail {
       ? buildComparisonMetricChart(current, compare, this.metricAxis(), this.shownChannels(), this.metricLabels())
       : null;
   });
+
+  /**
+   * Puts a marker on the route where the graph is being hovered, and takes it off when the pointer
+   * leaves. What travels between the two is the x-value on the active axis — kilometres or minutes —
+   * not the sample index: in a comparison the two rides are different lengths, so the same index is
+   * two different places, while the same x is the same place in both.
+   */
+  showOnMap(index: number | null): void {
+    const series = this.ride()?.metricSeries;
+    if (index === null || !series?.length) {
+      this.mapState.highlight([]);
+      return;
+    }
+
+    const sample = series[index];
+    if (!sample) {
+      this.mapState.highlight([]);
+      return;
+    }
+
+    const x = this.metricAxis() === 'distance' ? sample.distanceKm : sample.elapsedMinutes;
+    const rides = [this.ride(), this.compareRide()].filter((ride) => ride != null);
+
+    this.mapState.highlight(
+      rides
+        .map((ride) => this.positionAtX(ride, x))
+        .filter((position) => position != null),
+    );
+  }
+
+  /** Where a ride was at a given x on the active axis, or null when it has no route to place it on. */
+  private positionAtX(ride: RideDetailDto, x: number): [number, number] | null {
+    if (!ride.routePolyline || !ride.metricSeries?.length) {
+      return null;
+    }
+
+    const byAxis = (sample: MetricSample) => (this.metricAxis() === 'distance' ? sample.distanceKm : sample.elapsedMinutes);
+    const nearest = ride.metricSeries.reduce((best, sample) =>
+      Math.abs(byAxis(sample) - x) < Math.abs(byAxis(best) - x) ? sample : best,
+    );
+
+    return positionAtDistanceKm(decodePolyline(ride.routePolyline), nearest.distanceKm);
+  }
 
   /** The weather card's figures; null when no lookup has stored any for this ride. */
   readonly weather = computed(() => summariseWeather(this.ride()?.weather?.hours));

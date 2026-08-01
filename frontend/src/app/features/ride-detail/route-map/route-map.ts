@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, effect, inject, input, viewChild } from '@angular/core';
 import type * as L from 'leaflet';
-import { createRouteMap, drawRestStops, drawRoutes, setTileLayer, shouldFitView } from './leaflet-map';
+import { createRouteMap, drawHighlights, drawRestStops, drawRoutes, setTileLayer, shouldFitView } from './leaflet-map';
 import type { RestStop } from '../../../core/api/ride.models';
 import { ThemeService } from '../../../core/theme/theme.service';
 
@@ -23,6 +23,9 @@ export class RouteMap implements OnDestroy {
   readonly coverage = input<boolean>(false);
   /** Rest markers for a single displayed route (ride detail). Ignored for coverage/multi-route maps. */
   readonly restStops = input<RestStop[]>([]);
+
+  /** Where the reader is pointing on each route, one entry per route; empty when nothing is. */
+  readonly highlights = input<[number, number][]>([]);
 
   private readonly host = viewChild<ElementRef<HTMLElement>>('map');
   private readonly theme = inject(ThemeService);
@@ -47,6 +50,7 @@ export class RouteMap implements OnDestroy {
       const obscuredBottomFraction = this.obscuredBottomFraction();
       const coverage = this.coverage();
       const restStops = this.restStops();
+      const highlights = this.highlights();
       if (!host) {
         return;
       }
@@ -62,6 +66,11 @@ export class RouteMap implements OnDestroy {
       // Rest markers belong to a single highlighted route, not the coverage or multi-route views.
       if (!coverage && routes.length === 1 && restStops.length > 0) {
         layers.push(...drawRestStops(map, restStops));
+      }
+
+      // Drawn last so the moving marker sits above the fixed ones it may pass over.
+      if (highlights.length > 0) {
+        layers.push(...drawHighlights(map, highlights));
       }
       this.layers = layers;
     });

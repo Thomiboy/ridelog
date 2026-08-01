@@ -156,6 +156,32 @@ export function drawRestStops(map: Leaflet.Map, restStops: readonly RestStop[], 
   return restStops.map((rest) => api.marker([rest.latitude, rest.longitude], { icon, title: 'Rest' }).addTo(map));
 }
 
+/**
+ * Draws "the rider was here" at one position per route, in that route's own colour so a comparison
+ * needs no legend. Distinct from the fixed green start dot, red finish square and amber rest pause:
+ * this one moves as the reader scrubs the graph.
+ *
+ * Returns the markers so the caller can remove them before redrawing.
+ */
+export function drawHighlights(
+  map: Leaflet.Map,
+  positions: readonly [number, number][],
+  api: LeafletApi = Leaflet,
+): Leaflet.Marker[] {
+  return positions.map((position, index) => {
+    const colour = ROUTE_COLORS[index % ROUTE_COLORS.length];
+    const icon = api.divIcon({
+      className: '',
+      html:
+        `<span style="display:block;width:14px;height:14px;border-radius:50%;background:${colour};` +
+        'border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)"></span>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+    return api.marker(position, { icon, title: 'Here' }).addTo(map);
+  });
+}
+
 /** Places a green start marker and a red finish marker at the ends of the route (finish on top). */
 function drawStartFinishMarkers(map: Leaflet.Map, coords: [number, number][], api: LeafletApi): Leaflet.Marker[] {
   const start = api.marker(coords[0], { icon: endpointIcon(api, '#2e7d32', '50%'), title: 'Start' }).addTo(map);

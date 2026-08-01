@@ -1,6 +1,7 @@
 import { vi, type Mock } from 'vitest';
 import {
   createRouteMap,
+  drawHighlights,
   drawRestStops,
   drawRoutes,
   ROUTE_COLORS,
@@ -110,6 +111,21 @@ describe('leaflet-map', () => {
 
     expect(api.marker).toHaveBeenCalledTimes(2);
     expect((api.marker as unknown as Mock).mock.calls[0][0]).toEqual([1, 2]);
+    expect(markers).toHaveLength(2);
+  });
+
+  // The highlight says "the rider was here" for the point being hovered on the graph. In a
+  // comparison there is one per route, and each takes its own route's colour so the eye can tell
+  // which ride it belongs to without a legend.
+  it('draws one highlight per position, in that route\'s colour', () => {
+    const { api, map } = fakeLeaflet();
+
+    const markers = drawHighlights(map as never, [[1, 2], [3, 4]], api);
+
+    expect(api.marker).toHaveBeenCalledTimes(2);
+    expect((api.marker as unknown as Mock).mock.calls[0][0]).toEqual([1, 2]);
+    expect((api.divIcon as unknown as Mock).mock.calls[0][0].html).toContain(ROUTE_COLORS[0]);
+    expect((api.divIcon as unknown as Mock).mock.calls[1][0].html).toContain(ROUTE_COLORS[1]);
     expect(markers).toHaveLength(2);
   });
 

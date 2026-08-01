@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, input, output, viewChild } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart as ChartJs, type ChartData, type ChartOptions, type ChartType } from 'chart.js';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -11,7 +11,7 @@ import { applyChartTheme, chartThemeColors, type ThemeableChart } from './chart-
 @Component({
   selector: 'app-chart',
   imports: [BaseChartDirective],
-  template: `<canvas baseChart [type]="type()" [data]="data()" [options]="options()"></canvas>`,
+  template: `<canvas baseChart [type]="type()" [data]="data()" [options]="hoverAwareOptions()"></canvas>`,
   // Fill the fixed-height chart host. Without this the element stays inline (auto height), so
   // Chart.js falls back to its default canvas height and leaves empty space below the chart.
   styles: `:host { display: block; height: 100%; }`,
@@ -20,6 +20,19 @@ export class Chart {
   readonly type = input.required<ChartType>();
   readonly data = input.required<ChartData>();
   readonly options = input<ChartOptions>({ responsive: true, maintainAspectRatio: false });
+
+  /**
+   * The data index under the pointer, or null when the pointer is off the plot. An index is what a
+   * chart knows; what it means is the caller's business. Emitting it keeps Chart.js's own hover
+   * callback in here, which is the whole point of this component existing.
+   */
+  readonly hovered = output<number | null>();
+
+  /** The caller's options with hover reporting folded in, so callers never touch Chart.js callbacks. */
+  protected readonly hoverAwareOptions = computed<ChartOptions>(() => ({
+    ...this.options(),
+    onHover: (_event, elements) => this.hovered.emit(elements.length > 0 ? elements[0].index : null),
+  }));
 
   private readonly theme = inject(ThemeService);
   private readonly chart = viewChild(BaseChartDirective);
