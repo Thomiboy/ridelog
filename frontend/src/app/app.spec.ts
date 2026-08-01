@@ -15,6 +15,7 @@ import { translocoTesting } from './core/i18n/transloco-testing';
 class RouteMapStub {
   readonly routes = input<string[]>([]);
   readonly restStops = input<unknown[]>([]);
+  readonly highlights = input<unknown[]>([]);
   readonly obscuredBottomFraction = input<number>(0);
   readonly coverage = input<boolean>(false);
 }

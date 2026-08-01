@@ -193,4 +193,39 @@ describe('MapState', () => {
 
     expect(state.routes()).toEqual(['new-latest']);
   });
+
+  // The highlight is where the rider was at the point the reader is hovering on the graph. It is
+  // held parallel to routes — entry i belongs to route i — so comparison mode can mark both rides
+  // at the same place, and matching each marker to its route's colour costs nothing.
+  it('holds a highlight per route, and drops it when the map is told to show something else', () => {
+    state.showRoute('abc');
+    state.highlight([[47.5, 19.04]]);
+
+    expect(state.highlights()).toEqual([[47.5, 19.04]]);
+
+    state.showRoute('def');
+
+    expect(state.highlights()).toEqual([]);
+  });
+
+  // Leaving a page must not leave a marker behind on the background map — including in the moment
+  // before the default background has finished loading, which is a request away.
+  it('clears the highlight on reset, without waiting for the background to load', () => {
+    state.showRoutes(['abc', 'def']);
+    state.highlight([
+      [47.5, 19.04],
+      [47.6, 19.1],
+    ]);
+
+    state.reset();
+
+    expect(state.highlights()).toEqual([]);
+
+    http.expectOne(`${environment.apiBaseUrl}/rides?page=1&pageSize=1`).flush({
+      items: [],
+      page: 1,
+      pageSize: 1,
+      total: 0,
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { Component, input, signal } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
@@ -20,6 +20,7 @@ class ChartStub {
   readonly type = input.required<ChartType>();
   readonly data = input.required<ChartData>();
   readonly options = input<ChartOptions>();
+  readonly hovered = output<number | null>();
 }
 
 describe('RideDetail', () => {
@@ -63,7 +64,7 @@ describe('RideDetail', () => {
       reprocessRide: vi.fn().mockReturnValue(of(void 0)),
       getAllRides: vi.fn().mockReturnValue(of(allRides)),
     };
-    const mapState = { showRoute: vi.fn(), showRoutes: vi.fn() };
+    const mapState = { showRoute: vi.fn(), showRoutes: vi.fn(), highlight: vi.fn() };
     const sheetState = { request: vi.fn() };
     const authService = { isAdmin: signal(admin) };
     const paramMap$ = new BehaviorSubject(convertToParamMap({ id: 'r1' }));
@@ -102,6 +103,10 @@ describe('RideDetail', () => {
       { distanceKm: 2, elapsedMinutes: 10, elevationMeters: 140, heartRate: 150 },
     ],
   });
+
+  function graphChartDebug(fixture: ReturnType<typeof setup>['fixture']) {
+    return fixture.debugElement.query(By.css('[data-graph] app-chart'));
+  }
 
   function graphChart(fixture: ReturnType<typeof setup>['fixture']): ChartStub | null {
     const node = fixture.debugElement.query(By.css('[data-graph] app-chart'));
@@ -394,5 +399,39 @@ describe('RideDetail', () => {
 
     expect(ridesService.reprocessRide).toHaveBeenCalledWith('r1');
     expect(ridesService.getRide).toHaveBeenCalledWith('r1'); // reloaded to show refreshed metrics
+  });
+
+  // Scrubbing the graph puts a marker on the route at the same place. The fixture's polyline starts
+  // at 38.5, -120.2, so hovering the very first sample must land exactly there — nothing else on
+  // this route is at zero kilometres.
+  it('marks the start of the route when the first sample is hovered', () => {
+    const { fixture, mapState } = setup(withSeries());
+
+    graphChartDebug(fixture)!.triggerEventHandler('hovered', 0);
+
+    expect(mapState.highlight).toHaveBeenCalledTimes(1);
+    expect(mapState.highlight.mock.calls[0][0]).toEqual([[38.5, -120.2]]);
+  });
+
+  // And moving along the graph moves the marker along the road: the second sample is 2 km in, which
+  // is part-way down the first leg towards 40.7 rather than still sitting at the start.
+  it('moves the marker along the route as the graph is scrubbed', () => {
+    const { fixture, mapState } = setup(withSeries());
+
+    graphChartDebug(fixture)!.triggerEventHandler('hovered', 1);
+
+    const [[latitude]] = mapState.highlight.mock.calls[0][0];
+    expect(latitude).toBeGreaterThan(38.5);
+    expect(latitude).toBeLessThan(40.7);
+  });
+
+  // Pointing away from the chart takes the marker off the map rather than leaving it where the
+  // pointer happened to leave.
+  it('drops the marker when the pointer leaves the graph', () => {
+    const { fixture, mapState } = setup(withSeries());
+
+    graphChartDebug(fixture)!.triggerEventHandler('hovered', null);
+
+    expect(mapState.highlight).toHaveBeenCalledWith([]);
   });
 });

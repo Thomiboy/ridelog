@@ -19,6 +19,13 @@ export class MapState {
   readonly restStops = signal<RestStop[]>([]);
 
   /**
+   * Where on each route the reader is currently pointing, held parallel to routes: entry i belongs
+   * to route i, so a comparison marks both rides at the same place and each marker can take its
+   * route's colour. Empty when nothing is being pointed at.
+   */
+  readonly highlights = signal<[number, number][]>([]);
+
+  /**
    * Whether the routes are one translucent coverage layer (the Rides "where have I been" backdrop)
    * rather than distinct coloured tracks. Route count can't imply this — Statistics deliberately
    * draws three routes in distinct colours — so the intent travels with the state.
@@ -35,6 +42,7 @@ export class MapState {
   showRoute(polyline: string | null | undefined, restStops: RestStop[] = []): void {
     this.routes.set(polyline ? [polyline] : []);
     this.restStops.set(polyline ? restStops : []);
+    this.highlights.set([]);
     this.coverage.set(false);
   }
 
@@ -42,7 +50,13 @@ export class MapState {
   showRoutes(polylines: string[]): void {
     this.routes.set(polylines.filter((p) => p.length > 0));
     this.restStops.set([]);
+    this.highlights.set([]);
     this.coverage.set(false);
+  }
+
+  /** Points at a place on each displayed route; an empty list means nothing is being pointed at. */
+  highlight(positions: [number, number][]): void {
+    this.highlights.set(positions);
   }
 
   /** Shows every route as one translucent coverage layer, so frequently-ridden roads darken. */
@@ -84,6 +98,10 @@ export class MapState {
 
   /** Restores the default (latest ride) route, from cache when already loaded. */
   reset(): void {
+    // Dropped up front rather than left to whatever this ends up showing: loading the default
+    // background is a request away, and a marker from the page being left must not outlive it.
+    this.highlights.set([]);
+
     if (this.latestLoaded) {
       this.showRoute(this.latest);
     } else {

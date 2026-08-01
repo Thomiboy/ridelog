@@ -264,7 +264,12 @@
           }
         </span>
         <div class="graph-host">
-          <app-chart type="line" [data]="chart" [options]="compareRide() ? comparisonGraphOptions() : graphOptions()" />
+          <app-chart
+            type="line"
+            [data]="chart"
+            [options]="compareRide() ? comparisonGraphOptions() : graphOptions()"
+            (hovered)="showOnMap($event)"
+          />
         </div>
       </mat-card>
     }
