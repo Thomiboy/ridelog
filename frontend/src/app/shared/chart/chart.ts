@@ -28,6 +28,12 @@ export class Chart {
    */
   readonly hovered = output<number | null>();
 
+  /**
+   * The point to show as active — the counterpart of {@link hovered}, for when something other than
+   * the pointer decides where the reader is looking. Null leaves the chart alone.
+   */
+  readonly activeIndex = input<number | null>(null);
+
   /** The caller's options with hover reporting folded in, so callers never touch Chart.js callbacks. */
   protected readonly hoverAwareOptions = computed<ChartOptions>(() => ({
     ...this.options(),
@@ -38,6 +44,21 @@ export class Chart {
   private readonly chart = viewChild(BaseChartDirective);
 
   constructor() {
+    // Driving the active point from outside keeps Chart.js's element API in here, the same way the
+    // hover output keeps its callback in here.
+    effect(() => {
+      const index = this.activeIndex();
+      const chart = this.chart()?.chart;
+      if (!chart) {
+        return;
+      }
+
+      const elements = index === null ? [] : chart.data.datasets.map((_, datasetIndex) => ({ datasetIndex, index }));
+      chart.setActiveElements(elements);
+      chart.tooltip?.setActiveElements(elements, { x: 0, y: 0 });
+      chart.update();
+    });
+
     // Axis text and gridlines follow the theme. Set the global defaults (so charts built later start
     // themed) but NOT `borderColor` — that would defeat the ng2-charts Colors plugin, which
     // auto-assigns a series colour to any dataset without an explicit one. Existing charts don't pick

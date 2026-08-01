@@ -1,5 +1,5 @@
 import { TranslocoDatePipe, TranslocoDecimalPipe } from '@jsverse/transloco-locale';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -21,6 +21,7 @@ import {
   buildComparisonMetricChart,
   buildMetricSeriesChart,
   channelAxisId,
+  sampleIndexAtX,
   defaultChannels,
   hasGraphableSeries,
   toggleChannel,
@@ -29,7 +30,7 @@ import {
 } from './metric-series-chart';
 import { buildHrZoneChart } from './hr-zone-chart';
 import { WEATHER_AXIS_ID, summariseWeather, withHeadwindLayer } from './weather-layer';
-import { positionAtDistanceKm } from './route-position';
+import { nearestOnRoute, positionAtDistanceKm } from './route-position';
 import { decodePolyline } from './route-map/polyline-decoder';
 import { compareRides, type MetricDelta } from './ride-comparison';
 import { RidePicker } from './ride-picker';
@@ -155,32 +156,51 @@ export class RideDetail {
   });
 
   /**
-   * Puts a marker on the route where the graph is being hovered, and takes it off when the pointer
-   * leaves. What travels between the two is the x-value on the active axis — kilometres or minutes —
-   * not the sample index: in a comparison the two rides are different lengths, so the same index is
-   * two different places, while the same x is the same place in both.
+   * Where the reader is looking, as an x on the active axis — kilometres or minutes.
+   *
+   * One value, written by both directions. The graph's hover sets it; pointing at the map sets it;
+   * the route marker and the graph's active point are both derived from it. Sharing an x rather
+   * than a sample index matters in a comparison, where the rides are different lengths so the same
+   * index is two different places. Sharing one value at all is what stops the two directions from
+   * chasing each other: writing the same number twice changes nothing.
    */
+  private readonly lookingAtX = signal<number | null>(null);
+
+  /** How near the pointer has to be to count as pointing at the route, in screen pixels. */
+  private static readonly POINTING_TOLERANCE_PX = 30;
+
+  /** The rides currently drawn: the one being read, plus whatever it is being compared against. */
+  private displayedRides(): RideDetailDto[] {
+    return [this.ride(), this.compareRide()].filter((ride) => ride != null);
+  }
+
+  /** Scrubbing the graph: the hovered sample's x becomes what everything else follows. */
   showOnMap(index: number | null): void {
     const series = this.ride()?.metricSeries;
-    if (index === null || !series?.length) {
-      this.mapState.highlight([]);
-      return;
+    const sample = index === null ? undefined : series?.[index];
+    this.lookingAtX.set(sample ? this.axisValue(sample) : null);
+  }
+
+  /** The point of the graph the reader is looking at, whichever direction put them there. */
+  readonly activeIndex = computed(() => {
+    const x = this.lookingAtX();
+    const series = this.ride()?.metricSeries;
+    return x === null || !series?.length ? null : sampleIndexAtX(series, x, this.metricAxis());
+  });
+
+  private axisValue(sample: MetricSample): number {
+    return this.metricAxis() === 'distance' ? sample.distanceKm : sample.elapsedMinutes;
+  }
+
+  /** Where a pointer position lands on one ride's route, as a shared x plus how far off it was. */
+  private hitOn(ride: RideDetailDto, position: [number, number]): { x: number; offRouteKm: number } | null {
+    if (!ride.routePolyline || !ride.metricSeries?.length) {
+      return null;
     }
 
-    const sample = series[index];
-    if (!sample) {
-      this.mapState.highlight([]);
-      return;
-    }
-
-    const x = this.metricAxis() === 'distance' ? sample.distanceKm : sample.elapsedMinutes;
-    const rides = [this.ride(), this.compareRide()].filter((ride) => ride != null);
-
-    this.mapState.highlight(
-      rides
-        .map((ride) => this.positionAtX(ride, x))
-        .filter((position) => position != null),
-    );
+    const hit = nearestOnRoute(decodePolyline(ride.routePolyline), position);
+    const sample = ride.metricSeries[sampleIndexAtX(ride.metricSeries, hit.distanceKm, 'distance')];
+    return { x: this.axisValue(sample), offRouteKm: hit.offRouteKm };
   }
 
   /** Where a ride was at a given x on the active axis, or null when it has no route to place it on. */
@@ -189,11 +209,7 @@ export class RideDetail {
       return null;
     }
 
-    const byAxis = (sample: MetricSample) => (this.metricAxis() === 'distance' ? sample.distanceKm : sample.elapsedMinutes);
-    const nearest = ride.metricSeries.reduce((best, sample) =>
-      Math.abs(byAxis(sample) - x) < Math.abs(byAxis(best) - x) ? sample : best,
-    );
-
+    const nearest = ride.metricSeries[sampleIndexAtX(ride.metricSeries, x, this.metricAxis())];
     return positionAtDistanceKm(decodePolyline(ride.routePolyline), nearest.distanceKm);
   }
 
@@ -368,6 +384,39 @@ export class RideDetail {
   }
 
   constructor() {
+
+    // Pointing at the map: whichever displayed route the pointer is nearest, if it is near enough,
+    // decides where the reader is looking. The ride that owns that point converts it to the shared x.
+    effect(() => {
+      const pointer = this.mapState.pointer();
+      if (!pointer) {
+        return;
+      }
+
+      const nearest = this.displayedRides()
+        .map((ride) => this.hitOn(ride, pointer.position))
+        .filter((hit) => hit != null)
+        .reduce<{ x: number; offRouteKm: number } | null>(
+          (best, hit) => (best === null || hit.offRouteKm < best.offRouteKm ? hit : best),
+          null,
+        );
+
+      const toleranceKm = (RideDetail.POINTING_TOLERANCE_PX * pointer.metresPerPixel) / 1000;
+      this.lookingAtX.set(nearest && nearest.offRouteKm <= toleranceKm ? nearest.x : null);
+    });
+
+    // The marker follows wherever the reader is looking, from either direction.
+    effect(() => {
+      const x = this.lookingAtX();
+      this.mapState.highlight(
+        x === null
+          ? []
+          : this.displayedRides()
+              .map((ride) => this.positionAtX(ride, x))
+              .filter((position) => position != null),
+      );
+    });
+
     // React to every id change (the stepper navigates between /rides/:id without recreating this
     // component, so reading the snapshot once would leave the page and map on the old ride).
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {

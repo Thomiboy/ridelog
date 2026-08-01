@@ -1,7 +1,8 @@
-import { Component, ElementRef, OnDestroy, effect, inject, input, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, effect, inject, input, output, viewChild } from '@angular/core';
 import type * as L from 'leaflet';
-import { createRouteMap, drawHighlights, drawRestStops, drawRoutes, setTileLayer, shouldFitView } from './leaflet-map';
+import { createRouteMap, drawHighlights, drawRestStops, drawRoutes, setTileLayer, shouldFitView, watchPointer } from './leaflet-map';
 import type { RestStop } from '../../../core/api/ride.models';
+import type { PointerOnMap } from '../../../core/map/map-state';
 import { ThemeService } from '../../../core/theme/theme.service';
 
 /**
@@ -26,6 +27,9 @@ export class RouteMap implements OnDestroy {
 
   /** Where the reader is pointing on each route, one entry per route; empty when nothing is. */
   readonly highlights = input<[number, number][]>([]);
+
+  /** Where the pointer is over the map, and null when it leaves. What it means is not the map's business. */
+  readonly pointerMoved = output<PointerOnMap | null>();
 
   private readonly host = viewChild<ElementRef<HTMLElement>>('map');
   private readonly theme = inject(ThemeService);
@@ -58,6 +62,7 @@ export class RouteMap implements OnDestroy {
       const map = (this.map ??= createRouteMap(host.nativeElement));
       if (created) {
         this.tile = setTileLayer(map, this.theme.resolved());
+        watchPointer(map, (pointer) => this.pointerMoved.emit(pointer));
       }
       this.layers.forEach((layer) => layer.remove());
       const bottomPaddingPx = obscuredBottomFraction * map.getSize().y;

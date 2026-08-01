@@ -7,8 +7,10 @@ import {
   ROUTE_COLORS,
   setTileLayer,
   shouldFitView,
+  watchPointer,
   type LeafletApi,
 } from './leaflet-map';
+import type { PointerOnMap } from '../../../core/map/map-state';
 
 const ENCODED = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 
@@ -20,7 +22,16 @@ function fakeLeaflet() {
     marker['addTo'] = vi.fn(() => marker);
     return marker;
   };
-  const map = { setView: vi.fn(), fitBounds: vi.fn(), remove: vi.fn() };
+  const map = {
+    setView: vi.fn(),
+    fitBounds: vi.fn(),
+    remove: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    // 100 container pixels span 250 m at this pretend zoom, so a pixel is 2.5 m.
+    containerPointToLatLng: vi.fn((point: [number, number]) => ({ lat: 0, lng: point[0] })),
+    distance: vi.fn(() => 250),
+  };
   const makeTile = () => {
     const tile: Record<string, unknown> = { remove: vi.fn() };
     tile['addTo'] = vi.fn(() => tile);
@@ -213,5 +224,20 @@ describe('leaflet-map', () => {
     // Reframing to the world view is still a reframe: with the sheet essentially full the view has
     // to be left alone, or a transient empty state (e.g. mid-navigation) throws it away.
     expect(map.setView).not.toHaveBeenCalled();
+  });
+
+  // Pointing at the map has to reach the graph, and the only thing that knows where the pointer is
+  // is the map instance. Reported as a plain pair so nothing downstream has to know about Leaflet.
+  it('reports where the pointer is over the map, and when it leaves', () => {
+    const { map } = fakeLeaflet();
+    const seen: (PointerOnMap | null)[] = [];
+
+    watchPointer(map as never, (position) => seen.push(position));
+
+    const handlers = Object.fromEntries((map.on as unknown as Mock).mock.calls);
+    handlers['mousemove']({ latlng: { lat: 47.5, lng: 19.04 } });
+    handlers['mouseout']();
+
+    expect(seen).toEqual([{ position: [47.5, 19.04], metresPerPixel: 2.5 }, null]);
   });
 });

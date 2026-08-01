@@ -1,6 +1,7 @@
 import * as Leaflet from 'leaflet';
 import { decodePolyline } from './polyline-decoder';
 import type { RestStop } from '../../../core/api/ride.models';
+import type { PointerOnMap } from '../../../core/map/map-state';
 import type { Theme } from '../../../core/theme/theme.service';
 
 /** Free basemaps per theme: OSM standard for light, CARTO dark for dark. */
@@ -154,6 +155,27 @@ export function drawRestStops(map: Leaflet.Map, restStops: readonly RestStop[], 
     iconAnchor: [10, 10],
   });
   return restStops.map((rest) => api.marker([rest.latitude, rest.longitude], { icon, title: 'Rest' }).addTo(map));
+}
+
+/**
+ * Reports where the pointer is over the map, and null when it leaves.
+ *
+ * Reported as a plain pair plus a scale, so nothing downstream has to know about Leaflet — the
+ * point of keeping the engine behind this file. Registered on the map instance rather than through
+ * the module slice, which only covers the factory functions.
+ */
+export function watchPointer(map: Leaflet.Map, report: (pointer: PointerOnMap | null) => void): void {
+  map.on('mousemove', (event: Leaflet.LeafletMouseEvent) =>
+    report({ position: [event.latlng.lat, event.latlng.lng], metresPerPixel: metresPerPixel(map) }),
+  );
+  map.on('mouseout', () => report(null));
+}
+
+/** Measured across a hundred pixels rather than one, so rounding cannot dominate the answer. */
+function metresPerPixel(map: Leaflet.Map): number {
+  const left = map.containerPointToLatLng([0, 0]);
+  const right = map.containerPointToLatLng([100, 0]);
+  return map.distance(left, right) / 100;
 }
 
 /**

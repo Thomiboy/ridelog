@@ -128,3 +128,22 @@ export function buildComparisonMetricChart(
 
   return { datasets: [...linesFor(current, 'A', false), ...linesFor(compare, 'B', true)] };
 }
+
+/**
+ * The sample nearest a given x on the axis being shown.
+ *
+ * Both halves of the analysis view share one coordinate — the x the reader is looking at — and both
+ * need to turn it back into a point of the series. Nearest rather than exact: the series is
+ * downsampled, so a given x usually falls between two samples.
+ */
+export function sampleIndexAtX(series: readonly MetricSample[], x: number, axis: MetricAxis): number {
+  const at = (sample: MetricSample) => (axis === 'distance' ? sample.distanceKm : sample.elapsedMinutes);
+
+  let best = 0;
+  for (let i = 1; i < series.length; i++) {
+    if (Math.abs(at(series[i]) - x) < Math.abs(at(series[best]) - x)) {
+      best = i;
+    }
+  }
+  return best;
+}

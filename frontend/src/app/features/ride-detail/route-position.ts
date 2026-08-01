@@ -48,3 +48,37 @@ function distanceKm([lat1, lon1]: readonly [number, number], [lat2, lon2]: reado
 
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
 }
+
+/** Where on a route a point on the map lands, and how convincingly. */
+export interface RouteHit {
+  position: [number, number];
+  /** How far along the route that point is — the ride's own coordinate, which the graph shares. */
+  distanceKm: number;
+  /** How far the target was from the route, so the caller can decide whether it was pointing at it. */
+  offRouteKm: number;
+}
+
+/**
+ * The point on a route nearest a position on the map, with its distance along the ride.
+ *
+ * Snapping to a recorded point rather than to the nearest place on a segment: the route is stored
+ * downsampled, so the points are already an approximation of the road and interpolating between
+ * them would add precision the data does not have.
+ *
+ * A straight scan. A route is capped at a thousand points, which is a few tens of microseconds —
+ * far too little to be worth an index that would then need keeping in step with the route.
+ */
+export function nearestOnRoute(route: readonly [number, number][], target: readonly [number, number]): RouteHit {
+  let travelled = 0;
+  let best: RouteHit = { position: route[0], distanceKm: 0, offRouteKm: distanceKm(route[0], target) };
+
+  for (let i = 1; i < route.length; i++) {
+    travelled += distanceKm(route[i - 1], route[i]);
+    const off = distanceKm(route[i], target);
+    if (off < best.offRouteKm) {
+      best = { position: route[i], distanceKm: travelled, offRouteKm: off };
+    }
+  }
+
+  return best;
+}
