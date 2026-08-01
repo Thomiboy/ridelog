@@ -3,6 +3,7 @@
     [routes]="mapState.routes()"
     [restStops]="mapState.restStops()"
     [highlights]="mapState.highlights()"
+    (pointerMoved)="mapState.pointAt($event)"
     [coverage]="mapState.coverage()"
     [obscuredBottomFraction]="obscuredBottomFraction()"
   />

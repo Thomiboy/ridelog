@@ -9,6 +9,16 @@ import type { RestStop } from '../api/ride.models';
  * showRoute (one route) or showRoutes (several, e.g. the Statistics page's longest routes) and
  * return to the default via reset. The map draws one coloured track per entry.
  */
+/** Where the pointer is over the background map, and how much ground a screen pixel covers there. */
+export interface PointerOnMap {
+  position: [number, number];
+  /**
+   * Metres per screen pixel at the current zoom, so a page can say "within about 30 pixels of the
+   * route" without knowing anything about zoom levels. Only the map itself can answer this.
+   */
+  metresPerPixel: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MapState {
   private readonly ridesService = inject(RidesService);
@@ -24,6 +34,13 @@ export class MapState {
    * route's colour. Empty when nothing is being pointed at.
    */
   readonly highlights = signal<[number, number][]>([]);
+
+  /**
+   * Where the pointer currently is over the map, or null when it is elsewhere. The map reports it;
+   * what it means is for whichever page is showing to decide, the same way pages decide what the
+   * map shows.
+   */
+  readonly pointer = signal<PointerOnMap | null>(null);
 
   /**
    * Whether the routes are one translucent coverage layer (the Rides "where have I been" backdrop)
@@ -52,6 +69,11 @@ export class MapState {
     this.restStops.set([]);
     this.highlights.set([]);
     this.coverage.set(false);
+  }
+
+  /** Called by the map as the pointer moves over it. */
+  pointAt(pointer: PointerOnMap | null): void {
+    this.pointer.set(pointer);
   }
 
   /** Points at a place on each displayed route; an empty list means nothing is being pointed at. */

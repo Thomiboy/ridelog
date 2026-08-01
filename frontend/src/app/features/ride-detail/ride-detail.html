@@ -269,6 +269,7 @@
             [data]="chart"
             [options]="compareRide() ? comparisonGraphOptions() : graphOptions()"
             (hovered)="showOnMap($event)"
+            [activeIndex]="activeIndex()"
           />
         </div>
       </mat-card>

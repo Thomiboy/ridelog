@@ -21,6 +21,7 @@ class ChartStub {
   readonly data = input.required<ChartData>();
   readonly options = input<ChartOptions>();
   readonly hovered = output<number | null>();
+  readonly activeIndex = input<number | null>(null);
 }
 
 describe('RideDetail', () => {
@@ -64,7 +65,7 @@ describe('RideDetail', () => {
       reprocessRide: vi.fn().mockReturnValue(of(void 0)),
       getAllRides: vi.fn().mockReturnValue(of(allRides)),
     };
-    const mapState = { showRoute: vi.fn(), showRoutes: vi.fn(), highlight: vi.fn() };
+    const mapState = { showRoute: vi.fn(), showRoutes: vi.fn(), highlight: vi.fn(), pointer: signal<{ position: [number, number]; metresPerPixel: number } | null>(null) };
     const sheetState = { request: vi.fn() };
     const authService = { isAdmin: signal(admin) };
     const paramMap$ = new BehaviorSubject(convertToParamMap({ id: 'r1' }));
@@ -408,9 +409,9 @@ describe('RideDetail', () => {
     const { fixture, mapState } = setup(withSeries());
 
     graphChartDebug(fixture)!.triggerEventHandler('hovered', 0);
+    fixture.detectChanges();
 
-    expect(mapState.highlight).toHaveBeenCalledTimes(1);
-    expect(mapState.highlight.mock.calls[0][0]).toEqual([[38.5, -120.2]]);
+    expect(mapState.highlight.mock.calls.at(-1)![0]).toEqual([[38.5, -120.2]]);
   });
 
   // And moving along the graph moves the marker along the road: the second sample is 2 km in, which
@@ -419,8 +420,9 @@ describe('RideDetail', () => {
     const { fixture, mapState } = setup(withSeries());
 
     graphChartDebug(fixture)!.triggerEventHandler('hovered', 1);
+    fixture.detectChanges();
 
-    const [[latitude]] = mapState.highlight.mock.calls[0][0];
+    const [[latitude]] = mapState.highlight.mock.calls.at(-1)![0];
     expect(latitude).toBeGreaterThan(38.5);
     expect(latitude).toBeLessThan(40.7);
   });
@@ -431,7 +433,31 @@ describe('RideDetail', () => {
     const { fixture, mapState } = setup(withSeries());
 
     graphChartDebug(fixture)!.triggerEventHandler('hovered', null);
+    fixture.detectChanges();
 
     expect(mapState.highlight).toHaveBeenCalledWith([]);
+  });
+
+  // The other direction: pointing at the route puts the reader at that point of the graph. The
+  // fixture's polyline starts at 38.5, -120.2, so a pointer sitting on that corner is at zero
+  // kilometres — the graph's first sample.
+  it('moves the graph to where the map is being pointed at', () => {
+    const { fixture, mapState } = setup(withSeries());
+
+    mapState.pointer.set({ position: [38.5, -120.2], metresPerPixel: 1 });
+    fixture.detectChanges();
+
+    expect(graphChart(fixture)!.activeIndex()).toBe(0);
+  });
+
+  // Pointing well away from the route is not pointing at the ride. Thirty pixels' worth of ground
+  // is the allowance; a whole degree of latitude away is a hundred kilometres past it.
+  it('ignores a pointer that is nowhere near the route', () => {
+    const { fixture, mapState } = setup(withSeries());
+
+    mapState.pointer.set({ position: [39.5, -120.2], metresPerPixel: 1 });
+    fixture.detectChanges();
+
+    expect(graphChart(fixture)!.activeIndex()).toBeNull();
   });
 });

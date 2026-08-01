@@ -1,5 +1,6 @@
 import {
   availableChannels,
+  sampleIndexAtX,
   buildComparisonMetricChart,
   buildMetricSeriesChart,
   defaultChannels,
@@ -162,5 +163,26 @@ describe('metric series chart', () => {
     expect(hasGraphableSeries([sample(0, 0, null, null, 15)])).toBe(true); // temperature-only
     expect(hasGraphableSeries([sample(0, 0, null, null)])).toBe(false);
     expect(hasGraphableSeries([])).toBe(false);
+  });
+});
+
+describe('sampleIndexAtX', () => {
+  // The two directions share one coordinate — the x on the axis the reader is looking at — so both
+  // need to turn an x back into a point of the series. Nearest wins: the series is downsampled, so
+  // an exact match is the exception rather than the rule.
+  const series = [sample(0, 0), sample(5, 30), sample(11, 75)];
+
+  it('finds the sample nearest an x on the distance axis', () => {
+    expect(sampleIndexAtX(series, 6, 'distance')).toBe(1);
+  });
+
+  it('finds the sample nearest an x on the time axis', () => {
+    // 60 minutes is 30 past the second sample but only 15 short of the third.
+    expect(sampleIndexAtX(series, 60, 'time')).toBe(2);
+  });
+
+  it('clamps to the ends rather than answering with nothing', () => {
+    expect(sampleIndexAtX(series, -100, 'distance')).toBe(0);
+    expect(sampleIndexAtX(series, 900, 'distance')).toBe(2);
   });
 });
