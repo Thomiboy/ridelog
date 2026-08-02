@@ -40,6 +40,26 @@ differently, so what the app reasons about is the category the raw name falls in
 not recognise counts as cycling, because an untagged recording here is a ride.
 _Avoid_: Type, discipline
 
+### Getting rides in
+
+**Polar link**:
+The connection between a rider and their Polar account, which is what makes rides arrive on their
+own. It has a moment: Polar only delivers sessions recorded *after* a rider links, so nothing from
+before a link ever arrives automatically, and a rider's automatic history starts the day they made
+one.
+_Avoid_: Connection, integration, pairing
+
+**Sync**:
+Collecting whatever a rider's Polar link has delivered since the last time. Repeatable and
+unattended: a ride already stored is recognised and left alone rather than stored twice.
+_Avoid_: Fetch, pull, refresh
+
+**Import**:
+Adding rides from files rather than from a link — the only way anything from before a Polar link can
+be in a log at all. Distinct from a sync in what it costs someone: a sync happens to a rider, an
+import is something they do.
+_Avoid_: Upload (that's the file), bulk load, backfill
+
 ### Time
 
 **Moving time**:
