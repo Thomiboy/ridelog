@@ -5,6 +5,23 @@ manually uploaded Bryton file, and are presented as statistics, charts and route
 
 ## Language
 
+### People
+
+**Rider**:
+Whoever rode. Every ride belongs to exactly one, and a rider signs in as themselves — the account
+and the person are one thing here, since nobody keeps a log on somebody else's behalf.
+_Avoid_: User, athlete, owner (that's a role, below)
+
+**Public log**:
+The one rider's rides a visitor can see without signing in. A rider's log is private otherwise, so
+this names a single rider deliberately rather than describing a setting each rider has.
+_Avoid_: Profile, public account, showcase
+
+**Admin**:
+A rider who may also run maintenance over stored rides — reprocessing and deleting. What a rider is
+allowed to do, which is a different question from whose log the world can see.
+_Avoid_: Owner, superuser
+
 ### Activities
 
 **Ride**:
