@@ -18,8 +18,10 @@ this names a single rider deliberately rather than describing a setting each rid
 _Avoid_: Profile, public account, showcase
 
 **Admin**:
-A rider who may also run maintenance over stored rides — reprocessing and deleting. What a rider is
-allowed to do, which is a different question from whose log the world can see.
+A rider who may also do things that reach across riders. Tending one's own rides — reprocessing them,
+deleting them — is not among those; that is ordinary and needs no role, since it can only ever touch
+the rider's own log. What a rider is allowed to do, which is a different question from whose log the
+world can see.
 _Avoid_: Owner, superuser
 
 ### Activities
