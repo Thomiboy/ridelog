@@ -1,12 +1,11 @@
 namespace RideLog.Application.Rides;
 
 /// <summary>
-/// The UI shows cycling only, but sport is stored raw and varies by source (Polar "ROAD_BIKING",
-/// TCX "Biking", GPX "cycling" or missing → "Unknown"). Rather than whitelist every cycling
-/// variant, we exclude known non-cycling sports — so untagged historical imports still show up.
+/// The cycling filter the ride queries apply, expressed as the fragments to exclude so it can be
+/// translated to SQL. Same knowledge as <see cref="SportCategories"/> and read from it, so the rides
+/// list and the other-activities list can never disagree about where a recording belongs.
 /// </summary>
 public static class CyclingRides
 {
-    public static readonly IReadOnlyList<string> NonCyclingKeywords =
-        ["run", "jog", "walk", "hik", "swim", "row", "ski", "skat", "strength", "yoga", "elliptical"];
+    public static readonly IReadOnlyList<string> NonCyclingKeywords = SportCategories.NotCyclingFragments;
 }

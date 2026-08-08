@@ -87,6 +87,9 @@ app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
     Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
 
 // The longest cycling routes for the Statistics page's background map (longest first, routes only).
+app.MapGet("/activities", async (IDispatcher dispatcher, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetOtherActivitiesQuery(page ?? 1, pageSize ?? 20))));
+
 app.MapGet("/rides/longest", async (IDispatcher dispatcher, int? take) =>
     Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(take ?? 3))));
 
