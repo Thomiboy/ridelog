@@ -10,7 +10,7 @@ const en = {
     rides: 'Rides',
     activities: 'Other activity',
     statistics: 'Statistics',
-    admin: 'Admin',
+    account: 'Account',
     login: 'Log in',
     logout: 'Log out',
     language: 'Language',
@@ -137,8 +137,8 @@ const en = {
       calories: 'Calories',
     },
   },
-  admin: {
-    title: 'Admin',
+  account: {
+    title: 'Your account',
     error: 'Something went wrong. Please try again.',
     polar: {
       title: 'Polar',
@@ -169,13 +169,12 @@ const en = {
       save: 'Save',
       saved: 'Saved.',
     },
-    account: {
-      title: 'Your account',
-      closeHint:
-        'Close your account: your rides, your stored files, your Polar link and your login go together.',
-      closeButton: 'Close my account',
-      closeConfirm1: 'Close your account? Your rides, files, Polar link and login are all removed.',
-      closeConfirm2: 'This cannot be undone. Are you absolutely sure?',
+    close: {
+      title: 'Close your account',
+      hint: 'Close your account: your rides, your stored files, your Polar link and your login go together.',
+      button: 'Close my account',
+      confirm1: 'Close your account? Your rides, files, Polar link and login are all removed.',
+      confirm2: 'This cannot be undone. Are you absolutely sure?',
       refusedPublicLog:
         'This account is the public log, so closing it would blank the public site. Point that setting at another rider first.',
     },

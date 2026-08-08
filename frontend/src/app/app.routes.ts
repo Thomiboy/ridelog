@@ -9,9 +9,9 @@ export const routes: Routes = [
   { path: 'rides/:id', loadComponent: () => import('./features/ride-detail/ride-detail').then((m) => m.RideDetail) },
   { path: 'login', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
   {
-    path: 'admin',
+    path: 'account',
     canActivate: [signedInGuard],
-    loadComponent: () => import('./features/admin/admin').then((m) => m.Admin),
+    loadComponent: () => import('./features/account/account').then((m) => m.Account),
   },
   { path: '**', redirectTo: '' },
 ];

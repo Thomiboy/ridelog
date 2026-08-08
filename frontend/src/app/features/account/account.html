@@ -1,35 +1,35 @@
-<section class="page admin">
-  <h1>{{ 'admin.title' | transloco }}</h1>
+<section class="page account">
+  <h1>{{ 'account.title' | transloco }}</h1>
 
   @if (failed()) {
-    <p class="error" role="alert">{{ 'admin.error' | transloco }}</p>
+    <p class="error" role="alert">{{ 'account.error' | transloco }}</p>
   }
   @if (justLinked()) {
-    <p class="status ok">{{ 'admin.polar.justLinked' | transloco }}</p>
+    <p class="status ok">{{ 'account.polar.justLinked' | transloco }}</p>
   }
 
   <mat-card appearance="outlined" class="card">
     <mat-card-header>
-      <mat-card-title>{{ 'admin.polar.title' | transloco }}</mat-card-title>
+      <mat-card-title>{{ 'account.polar.title' | transloco }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       @if (status(); as s) {
         @if (s.linked) {
           <p class="status ok" data-polar-status>
-            {{ 'admin.polar.connected' | transloco }}
+            {{ 'account.polar.connected' | transloco }}
             @if (s.connectedAt) {
               ({{ s.connectedAt | translocoDate: { dateStyle: 'medium' } }})
             }
           </p>
         } @else {
-          <p class="status" data-polar-status>{{ 'admin.polar.notConnected' | transloco }}</p>
+          <p class="status" data-polar-status>{{ 'account.polar.notConnected' | transloco }}</p>
         }
       }
-      <p>{{ 'admin.polar.hint' | transloco }}</p>
+      <p>{{ 'account.polar.hint' | transloco }}</p>
     </mat-card-content>
     <mat-card-actions>
       <button mat-flat-button data-connect (click)="connectPolar()">
-        {{ 'admin.polar.connect' | transloco }}
+        {{ 'account.polar.connect' | transloco }}
       </button>
     </mat-card-actions>
   </mat-card>
@@ -38,15 +38,15 @@
   @if (isAdmin()) {
     <mat-card appearance="outlined" class="card">
       <mat-card-header>
-        <mat-card-title>{{ 'admin.import.title' | transloco }}</mat-card-title>
+        <mat-card-title>{{ 'account.import.title' | transloco }}</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <p>{{ 'admin.import.hint' | transloco }}</p>
+        <p>{{ 'account.import.hint' | transloco }}</p>
         <input type="file" multiple accept=".gpx,.tcx,.fit" (change)="onFilesSelected($event)" />
         @if (importResult(); as result) {
           <p class="result">
             {{
-              'admin.import.result'
+              'account.import.result'
                 | transloco
                   : { imported: result.imported, skipped: result.skipped, failed: result.failed }
             }}
@@ -60,7 +60,7 @@
           [disabled]="busy() || selectedFiles().length === 0"
           (click)="importRides()"
         >
-          {{ 'admin.import.button' | transloco }}
+          {{ 'account.import.button' | transloco }}
         </button>
       </mat-card-actions>
     </mat-card>
@@ -68,12 +68,12 @@
 
   <mat-card appearance="outlined" class="card">
     <mat-card-header>
-      <mat-card-title>{{ 'admin.settings.title' | transloco }}</mat-card-title>
+      <mat-card-title>{{ 'account.settings.title' | transloco }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <p>{{ 'admin.settings.hint' | transloco }}</p>
+      <p>{{ 'account.settings.hint' | transloco }}</p>
       <label class="max-hr">
-        {{ 'admin.settings.maxHr' | transloco }}
+        {{ 'account.settings.maxHr' | transloco }}
         <input
           type="number"
           min="0"
@@ -83,34 +83,34 @@
         />
       </label>
       @if (settingsSaved()) {
-        <p class="status ok" data-settings-saved>{{ 'admin.settings.saved' | transloco }}</p>
+        <p class="status ok" data-settings-saved>{{ 'account.settings.saved' | transloco }}</p>
       }
     </mat-card-content>
     <mat-card-actions>
       <button mat-flat-button data-save-settings [disabled]="busy()" (click)="saveSettings()">
-        {{ 'admin.settings.save' | transloco }}
+        {{ 'account.settings.save' | transloco }}
       </button>
     </mat-card-actions>
   </mat-card>
 
   <mat-card appearance="outlined" class="card">
     <mat-card-header>
-      <mat-card-title>{{ 'admin.sync.title' | transloco }}</mat-card-title>
+      <mat-card-title>{{ 'account.sync.title' | transloco }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <p>{{ 'admin.sync.hint' | transloco }}</p>
+      <p>{{ 'account.sync.hint' | transloco }}</p>
       <p class="status" data-last-sync>
-        {{ 'admin.sync.lastSync' | transloco }}
+        {{ 'account.sync.lastSync' | transloco }}
         @if (status()?.lastSyncAt; as lastSync) {
           {{ lastSync | translocoDate: { dateStyle: 'medium', timeStyle: 'short' } }}
         } @else {
-          {{ 'admin.sync.never' | transloco }}
+          {{ 'account.sync.never' | transloco }}
         }
       </p>
       @if (status()?.lastSyncResult; as last) {
         <p class="result" data-last-sync-result [class.has-failures]="last.failed > 0">
           {{
-            'admin.sync.result'
+            'account.sync.result'
               | transloco: { imported: last.imported, skipped: last.skipped, failed: last.failed }
           }}
         </p>
@@ -118,7 +118,7 @@
       @if (syncResult(); as result) {
         <p class="result">
           {{
-            'admin.sync.result'
+            'account.sync.result'
               | transloco
                 : { imported: result.imported, skipped: result.skipped, failed: result.failed }
           }}
@@ -127,30 +127,30 @@
     </mat-card-content>
     <mat-card-actions>
       <button mat-flat-button data-sync [disabled]="busy()" (click)="syncNow()">
-        {{ 'admin.sync.button' | transloco }}
+        {{ 'account.sync.button' | transloco }}
       </button>
     </mat-card-actions>
   </mat-card>
 
   <mat-card appearance="outlined" class="card">
     <mat-card-header>
-      <mat-card-title>{{ 'admin.maintenance.title' | transloco }}</mat-card-title>
+      <mat-card-title>{{ 'account.maintenance.title' | transloco }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <p>{{ 'admin.maintenance.reprocessHint' | transloco }}</p>
+      <p>{{ 'account.maintenance.reprocessHint' | transloco }}</p>
       @if (reprocessResult(); as result) {
         <p class="result">
           {{
-            'admin.maintenance.reprocessResult'
+            'account.maintenance.reprocessResult'
               | transloco: { processed: result.processed, failed: result.failed }
           }}
         </p>
       }
-      <p>{{ 'admin.maintenance.weatherHint' | transloco }}</p>
+      <p>{{ 'account.maintenance.weatherHint' | transloco }}</p>
       @if (weatherResult(); as weather) {
         <p class="result">
           {{
-            'admin.maintenance.weatherResult'
+            'account.maintenance.weatherResult'
               | transloco
                 : {
                     fetched: weather.fetched,
@@ -160,17 +160,17 @@
           }}
         </p>
       }
-      <p class="danger-hint">{{ 'admin.maintenance.deleteHint' | transloco }}</p>
+      <p class="danger-hint">{{ 'account.maintenance.deleteHint' | transloco }}</p>
       @if (deletedCount(); as deleted) {
-        <p class="result">{{ 'admin.maintenance.deleteResult' | transloco: { deleted } }}</p>
+        <p class="result">{{ 'account.maintenance.deleteResult' | transloco: { deleted } }}</p>
       }
     </mat-card-content>
     <mat-card-actions>
       <button mat-flat-button data-reprocess [disabled]="busy()" (click)="reprocess()">
-        {{ 'admin.maintenance.reprocessButton' | transloco }}
+        {{ 'account.maintenance.reprocessButton' | transloco }}
       </button>
       <button mat-flat-button data-weather [disabled]="busy()" (click)="topUpWeather()">
-        {{ 'admin.maintenance.weatherButton' | transloco }}
+        {{ 'account.maintenance.weatherButton' | transloco }}
       </button>
       <button
         mat-stroked-button
@@ -179,20 +179,20 @@
         [disabled]="busy()"
         (click)="deleteAllRides()"
       >
-        {{ 'admin.maintenance.deleteButton' | transloco }}
+        {{ 'account.maintenance.deleteButton' | transloco }}
       </button>
     </mat-card-actions>
   </mat-card>
 
   <mat-card appearance="outlined" class="card">
     <mat-card-header>
-      <mat-card-title>{{ 'admin.account.title' | transloco }}</mat-card-title>
+      <mat-card-title>{{ 'account.close.title' | transloco }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <p class="danger-hint">{{ 'admin.account.closeHint' | transloco }}</p>
+      <p class="danger-hint">{{ 'account.close.hint' | transloco }}</p>
       @if (closeRefused()) {
         <p class="error" role="alert" data-close-refused>
-          {{ 'admin.account.refusedPublicLog' | transloco }}
+          {{ 'account.close.refusedPublicLog' | transloco }}
         </p>
       }
     </mat-card-content>
@@ -204,7 +204,7 @@
         [disabled]="busy()"
         (click)="closeAccount()"
       >
-        {{ 'admin.account.closeButton' | transloco }}
+        {{ 'account.close.button' | transloco }}
       </button>
     </mat-card-actions>
   </mat-card>
