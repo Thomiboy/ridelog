@@ -19,7 +19,8 @@
       "system": "Rendszer",
       "light": "Világos",
       "dark": "Sötét"
-    }
+    },
+    "activities": "Egyéb"
   },
   "dashboard": {
     "title": "Áttekintés",
@@ -223,5 +224,9 @@
       "trend": "Havi átlag"
     },
     "allTime": "· minden idők"
+  },
+  "activities": {
+    "title": "Egyéb tevékenység",
+    "empty": "Eddig csak túrák vannak."
   }
 }

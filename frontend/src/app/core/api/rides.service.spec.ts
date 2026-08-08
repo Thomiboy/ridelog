@@ -105,4 +105,17 @@ describe('RidesService', () => {
 
     expect(result?.map((r) => r.id)).toEqual(['r1', 'r2']);
   });
+
+  // Other activities are a sibling of rides, not a filter over them, so they come from their own
+  // endpoint — the rides call is left exactly as it was.
+  it('asks a separate endpoint for the activities that are not rides', () => {
+    let page: { items: { sport: string }[] } | undefined;
+    service.getOtherActivities().subscribe((p) => (page = p));
+
+    const request = http.expectOne(`${environment.apiBaseUrl}/activities?page=1&pageSize=20`);
+    expect(request.request.method).toBe('GET');
+    request.flush({ items: [{ id: 'a1', sport: 'RUNNING' }], page: 1, pageSize: 20, total: 1 });
+
+    expect(page!.items[0].sport).toBe('RUNNING');
+  });
 });
