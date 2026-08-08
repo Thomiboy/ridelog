@@ -32,6 +32,7 @@ describe('RideDetail', () => {
     distanceKm: 61.5,
     durationMinutes: 118,
     sport: 'ROAD_BIKING',
+    sportCategory: 'Cycling',
     sources: ['PolarAutoSync'],
     averageSpeedKmh: 31.3,
     maximumSpeedKmh: 58.9,
@@ -51,6 +52,7 @@ describe('RideDetail', () => {
     distanceKm,
     durationMinutes: 90,
     sport: 'ROAD_BIKING',
+    sportCategory: 'Cycling',
     sources: [],
   });
 
@@ -64,6 +66,7 @@ describe('RideDetail', () => {
       getRide: getRideImpl ? vi.fn().mockImplementation(getRideImpl) : vi.fn().mockReturnValue(of(ride)),
       reprocessRide: vi.fn().mockReturnValue(of(void 0)),
       getAllRides: vi.fn().mockReturnValue(of(allRides)),
+      getAllOtherActivities: vi.fn().mockReturnValue(of([])),
     };
     const mapState = { showRoute: vi.fn(), showRoutes: vi.fn(), highlight: vi.fn(), pointer: signal<{ position: [number, number]; metresPerPixel: number } | null>(null) };
     const sheetState = { request: vi.fn() };
@@ -459,5 +462,52 @@ describe('RideDetail', () => {
     fixture.detectChanges();
 
     expect(graphChart(fixture)!.activeIndex()).toBeNull();
+  });
+
+  // Arriving from the other-activity list and stepping back has to land there, not in the rides
+  // list where this recording does not appear. The page reads that off the recording itself, so a
+  // deep link answers the same as a click.
+  it('sends an other activity back to the list it belongs to', () => {
+    const { fixture, el } = setup({ ...detail, sport: 'RUNNING', sportCategory: 'Running' });
+
+    expect(el.querySelector('.back')!.getAttribute('href')).toBe('/activities');
+    expect(fixture).toBeTruthy();
+  });
+
+  it('sends a ride back to the rides list', () => {
+    const { el } = setup({ ...detail, sport: 'ROAD_BIKING', sportCategory: 'Cycling' });
+
+    expect(el.querySelector('.back')!.getAttribute('href')).toBe('/rides');
+  });
+
+  // Comparing a 9 km run against a 60 km ride puts two averages side by side that mean different
+  // things — the comparison #120 called meaningless when it kept the statistics cycling-only. The
+  // picker offers only recordings of the same kind.
+  it('offers only recordings of the same kind to compare against', () => {
+    const { fixture, ridesService } = setup({ ...detail, sport: 'RUNNING', sportCategory: 'Running' });
+    // The other-activity list holds runs, walks and swims together, so the picker still has to pick
+    // the kind out of it.
+    ridesService.getAllOtherActivities.mockReturnValue(
+      of([
+        { id: 'run-2', startTime: '2026-05-01T08:00:00Z', distanceKm: 8, durationMinutes: 50, sport: 'RUNNING', sportCategory: 'Running', sources: [] },
+        { id: 'walk-1', startTime: '2026-05-03T08:00:00Z', distanceKm: 4, durationMinutes: 60, sport: 'WALKING', sportCategory: 'Walking', sources: [] },
+      ]),
+    );
+
+    fixture.componentInstance.openPicker();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.comparableRides().map((r) => r.id)).toEqual(['run-2']);
+  });
+
+  // Filtering the right list is only half of it: the rides endpoint cannot return a run at all, so
+  // a run's picker would come back empty however well it filtered. It has to ask the other list.
+  it('asks the other-activity list when comparing an other activity', () => {
+    const { fixture, ridesService } = setup({ ...detail, sport: 'RUNNING', sportCategory: 'Running' });
+
+    fixture.componentInstance.openPicker();
+
+    expect(ridesService.getAllOtherActivities).toHaveBeenCalled();
+    expect(ridesService.getAllRides).not.toHaveBeenCalled();
   });
 });

@@ -13,7 +13,7 @@ namespace RideLog.UnitTests.Rides;
 /// </summary>
 public class OtherActivityListEndpointTests(RideLogApiFactory factory) : IClassFixture<RideLogApiFactory>
 {
-    private sealed record ActivityListItemDto(Guid Id, DateTimeOffset StartTime, string Sport);
+    private sealed record ActivityListItemDto(Guid Id, DateTimeOffset StartTime, string Sport, string SportCategory);
 
     private sealed record PagedDto(IReadOnlyList<ActivityListItemDto> Items, int Page, int PageSize, int Total);
 
@@ -71,5 +71,19 @@ public class OtherActivityListEndpointTests(RideLogApiFactory factory) : IClassF
         var rides = await factory.CreateClient().GetFromJsonAsync<PagedDto>("/rides");
 
         Assert.Equal(["Unknown", "ROAD_BIKING"], rides!.Items.Select(item => item.Sport));
+    }
+
+    /// <summary>
+    /// The list carries the reading of each sport, not just the raw name, so callers that need to
+    /// group or compare within a kind never reimplement the table that decides it.
+    /// </summary>
+    [Fact]
+    public async Task Says_what_each_raw_sport_name_reads_as()
+    {
+        await ResetAndSeedAsync(Activity(At(1), "RUNNING"), Activity(At(2), "POOL_SWIMMING"));
+
+        var page = await factory.CreateClient().GetFromJsonAsync<PagedDto>("/activities");
+
+        Assert.Equal(["Swimming", "Running"], page!.Items.Select(item => item.SportCategory));
     }
 }

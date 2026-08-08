@@ -28,6 +28,7 @@ describe('RidesService', () => {
           distanceKm: 61.5,
           durationMinutes: 118,
           sport: 'ROAD_BIKING',
+          sportCategory: 'Cycling',
           sources: ['PolarAutoSync'],
         },
       ],
@@ -68,6 +69,7 @@ describe('RidesService', () => {
     distanceKm: 40,
     durationMinutes: 60,
     sport: 'ROAD_BIKING',
+    sportCategory: 'Cycling',
     sources: [],
   });
 

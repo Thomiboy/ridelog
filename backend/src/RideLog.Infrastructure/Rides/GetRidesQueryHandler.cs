@@ -54,6 +54,7 @@ internal sealed class GetRidesQueryHandler(RideLogDbContext context)
             AverageSpeedKmh = row.AverageSpeedKmh,
             ElevationGainMeters = row.ElevationGainMeters,
             Sport = row.Sport,
+            SportCategory = SportCategories.Of(row.Sport),
             Sources = RideSourceLabels.Derive(row.Source, row.Formats),
         }).ToList();
 

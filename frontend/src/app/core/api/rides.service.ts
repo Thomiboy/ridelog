@@ -23,6 +23,11 @@ export class RidesService {
     return this.http.get<Paged<RideSummary>>(`${this.baseUrl}/activities?page=${page}&pageSize=${pageSize}`);
   }
 
+  /** Every other activity, for the comparison picker — the sibling of {@link getAllRides}. */
+  getAllOtherActivities(): Observable<RideSummary[]> {
+    return this.getOtherActivities(1, 100).pipe(map((page) => page.items));
+  }
+
   getRide(id: string): Observable<RideDetail> {
     return this.http.get<RideDetail>(`${this.baseUrl}/rides/${id}`);
   }
