@@ -316,8 +316,8 @@ app.MapDelete("/rides/{id:guid}", async (Guid id, IRideMaintenanceService mainte
 // Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
 const string OAuthStatePurpose = "Polar.OAuthState";
 
-app.MapGet("/polar/status", async (IPolarTokenStore tokenStore) =>
-    Results.Ok(await tokenStore.GetStatusAsync()))
+app.MapGet("/polar/status", async (IPolarTokenStore tokenStore, ClaimsPrincipal user) =>
+    Results.Ok(await tokenStore.GetStatusAsync(user.FindFirstValue("sub")!)))
     .RequireAuthorization(AdminSeedOptions.RoleName);
 
 // Returns the Polar URL as JSON so the SPA can navigate the browser to it (a bearer-authorized
@@ -384,20 +384,34 @@ app.MapPost("/sync", async (
         return Results.Unauthorized();
     }
 
-    var appUserId = user.FindFirstValue("sub") ?? (await tokenStore.GetConnectionAsync())?.AppUserId;
-    if (appUserId is null)
-    {
-        return Results.BadRequest("No Polar account is linked.");
-    }
-
-    var result = await sync.SyncAsync(appUserId);
-
     // Weather comes after the sync has committed, never inside it: the import transaction commits
     // even when an exercise fails, so a lookup failing in there would cost the ride itself
     // (docs/adr/0005). A bounded batch also backfills the archive a little every day.
-    var weather = await weatherTopUp.TopUpAsync(appUserId, max: WeatherRidesPerSync);
+    var appUserId = user.FindFirstValue("sub");
+    if (appUserId is not null)
+    {
+        var result = await sync.SyncAsync(appUserId);
+        var weather = await weatherTopUp.TopUpAsync(appUserId, max: WeatherRidesPerSync);
+        return Results.Ok(new { sync = result, weather });
+    }
 
-    return Results.Ok(new { sync = result, weather });
+    // The cron speaks for nobody in particular, so it runs for everyone who has linked.
+    var riders = await sync.SyncAllAsync();
+    foreach (var rider in riders)
+    {
+        try
+        {
+            await weatherTopUp.TopUpAsync(rider.RiderId, max: WeatherRidesPerSync);
+        }
+        catch (Exception ex)
+        {
+            // An archive outage on one rider's turn is theirs, exactly as an expired token is: the
+            // rides are already committed, and every rider after this one still has a turn coming.
+            app.Logger.LogError(ex, "The daily weather top-up failed for rider {RiderId}.", rider.RiderId);
+        }
+    }
+
+    return Results.Ok(new { riders });
 });
 
 // Same operation the daily sync runs, for when the owner would rather not wait for tomorrow.

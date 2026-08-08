@@ -2,83 +2,135 @@
   <h1>{{ 'dashboard.title' | transloco }}</h1>
 
   @if (stats(); as stats) {
-    <div class="tiles">
-      <mat-card appearance="outlined" class="tile" data-tile="month-distance">
-        <span class="label">{{ 'dashboard.tiles.monthDistance' | transloco }}</span>
-        <span class="value">{{ stats.thisMonth.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
-      </mat-card>
-      <mat-card appearance="outlined" class="tile" data-tile="month-rides">
-        <span class="label">{{ 'dashboard.tiles.monthRides' | transloco }}</span>
-        <span class="value">{{ stats.thisMonth.rideCount }}</span>
-      </mat-card>
-      <mat-card appearance="outlined" class="tile" data-tile="year-distance">
-        <span class="label">{{ 'dashboard.tiles.yearDistance' | transloco }}</span>
-        <span class="value">{{ stats.thisYear.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
-      </mat-card>
-      <mat-card appearance="outlined" class="tile" data-tile="year-rides">
-        <span class="label">{{ 'dashboard.tiles.yearRides' | transloco }}</span>
-        <span class="value">{{ stats.thisYear.rideCount }}</span>
-      </mat-card>
-      <mat-card appearance="outlined" class="tile" data-tile="year-elevation">
-        <span class="label">{{ 'dashboard.tiles.yearElevation' | transloco }}</span>
-        <span class="value">{{ stats.thisYear.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 } }} m</span>
-      </mat-card>
-    </div>
+    @if (!stats.hasRides) {
+      <app-first-run [ownLog]="isOwnLog()" />
+    } @else {
+      <div class="tiles">
+        <mat-card appearance="outlined" class="tile" data-tile="month-distance">
+          <span class="label">{{ 'dashboard.tiles.monthDistance' | transloco }}</span>
+          <span class="value"
+            >{{
+              stats.thisMonth.distanceKm
+                | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+            }}
+            km</span
+          >
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-tile="month-rides">
+          <span class="label">{{ 'dashboard.tiles.monthRides' | transloco }}</span>
+          <span class="value">{{ stats.thisMonth.rideCount }}</span>
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-tile="year-distance">
+          <span class="label">{{ 'dashboard.tiles.yearDistance' | transloco }}</span>
+          <span class="value"
+            >{{
+              stats.thisYear.distanceKm
+                | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+            }}
+            km</span
+          >
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-tile="year-rides">
+          <span class="label">{{ 'dashboard.tiles.yearRides' | transloco }}</span>
+          <span class="value">{{ stats.thisYear.rideCount }}</span>
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-tile="year-elevation">
+          <span class="label">{{ 'dashboard.tiles.yearElevation' | transloco }}</span>
+          <span class="value"
+            >{{
+              stats.thisYear.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 }
+            }}
+            m</span
+          >
+        </mat-card>
+      </div>
 
-    @if (stats.lastYear; as lastYear) {
-      @if (lastYear.rideCount > 0) {
-        <div class="tiles last-year">
-          <!-- The same month a year ago, for a like-for-like comparison with "this month" above. -->
-          @if (stats.sameMonthLastYear; as sameMonth) {
-            <mat-card appearance="outlined" class="tile" data-tile="same-month-last-year-distance">
-              <span class="label">
-                {{ 'dashboard.tiles.sameMonthLastYearDistance' | transloco: { month: sameMonthLabel() } }}
-              </span>
-              <span class="value">{{ sameMonth.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
+      @if (stats.lastYear; as lastYear) {
+        @if (lastYear.rideCount > 0) {
+          <div class="tiles last-year">
+            <!-- The same month a year ago, for a like-for-like comparison with "this month" above. -->
+            @if (stats.sameMonthLastYear; as sameMonth) {
+              <mat-card
+                appearance="outlined"
+                class="tile"
+                data-tile="same-month-last-year-distance"
+              >
+                <span class="label">
+                  {{
+                    'dashboard.tiles.sameMonthLastYearDistance'
+                      | transloco: { month: sameMonthLabel() }
+                  }}
+                </span>
+                <span class="value"
+                  >{{
+                    sameMonth.distanceKm
+                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+                  }}
+                  km</span
+                >
+              </mat-card>
+              <mat-card appearance="outlined" class="tile" data-tile="same-month-last-year-rides">
+                <span class="label">
+                  {{
+                    'dashboard.tiles.sameMonthLastYearRides'
+                      | transloco: { month: sameMonthLabel() }
+                  }}
+                </span>
+                <span class="value">{{ sameMonth.rideCount }}</span>
+              </mat-card>
+            }
+            <mat-card appearance="outlined" class="tile" data-tile="last-year-distance">
+              <span class="label">{{ 'dashboard.tiles.lastYearDistance' | transloco }}</span>
+              <span class="value"
+                >{{
+                  lastYear.distanceKm
+                    | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+                }}
+                km</span
+              >
             </mat-card>
-            <mat-card appearance="outlined" class="tile" data-tile="same-month-last-year-rides">
-              <span class="label">
-                {{ 'dashboard.tiles.sameMonthLastYearRides' | transloco: { month: sameMonthLabel() } }}
-              </span>
-              <span class="value">{{ sameMonth.rideCount }}</span>
+            <mat-card appearance="outlined" class="tile" data-tile="last-year-rides">
+              <span class="label">{{ 'dashboard.tiles.lastYearRides' | transloco }}</span>
+              <span class="value">{{ lastYear.rideCount }}</span>
             </mat-card>
-          }
-          <mat-card appearance="outlined" class="tile" data-tile="last-year-distance">
-            <span class="label">{{ 'dashboard.tiles.lastYearDistance' | transloco }}</span>
-            <span class="value">{{ lastYear.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
-          </mat-card>
-          <mat-card appearance="outlined" class="tile" data-tile="last-year-rides">
-            <span class="label">{{ 'dashboard.tiles.lastYearRides' | transloco }}</span>
-            <span class="value">{{ lastYear.rideCount }}</span>
-          </mat-card>
-          <mat-card appearance="outlined" class="tile" data-tile="last-year-elevation">
-            <span class="label">{{ 'dashboard.tiles.lastYearElevation' | transloco }}</span>
-            <span class="value">{{ lastYear.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 } }} m</span>
-          </mat-card>
-        </div>
+            <mat-card appearance="outlined" class="tile" data-tile="last-year-elevation">
+              <span class="label">{{ 'dashboard.tiles.lastYearElevation' | transloco }}</span>
+              <span class="value"
+                >{{
+                  lastYear.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 }
+                }}
+                m</span
+              >
+            </mat-card>
+          </div>
+        }
       }
-    }
 
-    @if (distanceChart(); as distance) {
-      <mat-card appearance="outlined" class="chart-card">
-        <mat-card-header>
-          <mat-card-title>{{ 'dashboard.charts.monthlyDistance' | transloco }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="chart-host"><app-chart type="bar" [data]="distance" /></div>
-        </mat-card-content>
-      </mat-card>
-    }
+      @if (distanceChart(); as distance) {
+        <mat-card appearance="outlined" class="chart-card">
+          <mat-card-header>
+            <mat-card-title>{{ 'dashboard.charts.monthlyDistance' | transloco }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-host"><app-chart type="bar" [data]="distance" /></div>
+          </mat-card-content>
+        </mat-card>
+      }
 
-    @if (speedChart(); as speed) {
-      <mat-card appearance="outlined" class="chart-card">
-        <mat-card-header>
-          <mat-card-title>{{ 'dashboard.charts.speedAndTemperatureTrend' | transloco }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="chart-host"><app-chart type="line" [data]="speed" [options]="speedChartOptions" /></div>
-        </mat-card-content>
-      </mat-card>
+      @if (speedChart(); as speed) {
+        <mat-card appearance="outlined" class="chart-card">
+          <mat-card-header>
+            <mat-card-title>{{
+              'dashboard.charts.speedAndTemperatureTrend' | transloco
+            }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-host">
+              <app-chart type="line" [data]="speed" [options]="speedChartOptions" />
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
     }
   }
 </section>

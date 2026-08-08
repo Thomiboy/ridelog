@@ -3,6 +3,7 @@ import type { DashboardStats } from '../../core/api/dashboard.models';
 
 describe('dashboard chart builders', () => {
   const stats: DashboardStats = {
+    hasRides: true,
     thisMonth: { distanceKm: 100, rideCount: 2, elevationGainMeters: 600 },
     thisYear: { distanceKm: 200, rideCount: 3, elevationGainMeters: 1100 },
     lastYear: { distanceKm: 80, rideCount: 1, elevationGainMeters: 300 },

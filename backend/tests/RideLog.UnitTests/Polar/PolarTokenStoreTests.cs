@@ -38,7 +38,7 @@ public sealed class PolarTokenStoreTests : IDisposable
 
         await using (var context = new RideLogDbContext(_options))
         {
-            var connection = await NewStore(context).GetConnectionAsync();
+            var connection = await NewStore(context).GetConnectionAsync("admin-1");
 
             Assert.NotNull(connection);
             Assert.Equal("admin-1", connection.AppUserId);
@@ -67,7 +67,7 @@ public sealed class PolarTokenStoreTests : IDisposable
     {
         await using var context = new RideLogDbContext(_options);
 
-        var status = await NewStore(context).GetStatusAsync();
+        var status = await NewStore(context).GetStatusAsync("admin-1");
 
         Assert.False(status.Linked);
         Assert.Null(status.ConnectedAt);
@@ -84,7 +84,7 @@ public sealed class PolarTokenStoreTests : IDisposable
 
         await using (var verify = new RideLogDbContext(_options))
         {
-            var status = await NewStore(verify).GetStatusAsync();
+            var status = await NewStore(verify).GetStatusAsync("admin-1");
 
             Assert.True(status.Linked);
             Assert.NotNull(status.ConnectedAt);
@@ -108,7 +108,7 @@ public sealed class PolarTokenStoreTests : IDisposable
 
         await using (var verify = new RideLogDbContext(_options))
         {
-            var status = await NewStore(verify).GetStatusAsync();
+            var status = await NewStore(verify).GetStatusAsync("admin-1");
 
             Assert.NotNull(status.LastSyncResult);
             Assert.Equal(2, status.LastSyncResult!.Imported);
@@ -127,7 +127,7 @@ public sealed class PolarTokenStoreTests : IDisposable
 
         await using (var verify = new RideLogDbContext(_options))
         {
-            Assert.Null((await NewStore(verify).GetStatusAsync()).LastSyncResult);
+            Assert.Null((await NewStore(verify).GetStatusAsync("admin-1")).LastSyncResult);
         }
     }
 
@@ -146,7 +146,7 @@ public sealed class PolarTokenStoreTests : IDisposable
         await using (var verify = new RideLogDbContext(_options))
         {
             Assert.Equal(1, await verify.Set<PolarConnection>().CountAsync());
-            var connection = await NewStore(verify).GetConnectionAsync();
+            var connection = await NewStore(verify).GetConnectionAsync("admin-1");
             Assert.Equal("second", connection!.Token.AccessToken);
         }
     }

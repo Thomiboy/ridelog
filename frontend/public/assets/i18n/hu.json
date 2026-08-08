@@ -44,7 +44,6 @@
   },
   "rides": {
     "title": "Túrák",
-    "empty": "Még nincs túra. Jelentkezz be adminként a történet importálásához vagy a Polar-szinkronhoz.",
     "next": "Következő",
     "prev": "Előző",
     "delete": "Túra törlése",
@@ -231,5 +230,9 @@
   "activities": {
     "title": "Egyéb tevékenység",
     "empty": "Eddig csak túrák vannak."
+  },
+  "firstRun": {
+    "title": "Itt még nincs egy túra sem.",
+    "horizon": "A túrák maguktól érkeznek, amint összekötöd a Polar-fiókodat — de csak azok, amiket az összekötés után rögzítettél. Ami korábbi, azt fájlból lehet betölteni."
   }
 }

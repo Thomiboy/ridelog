@@ -114,7 +114,7 @@
         </button>
       </nav>
     } @else {
-      <p class="empty">{{ 'rides.empty' | transloco }}</p>
+      <app-first-run [ownLog]="isLoggedIn()" />
     }
   }
 </section>

@@ -80,7 +80,6 @@ const en = {
   },
   rides: {
     title: 'Rides',
-    empty: 'No rides yet. Sign in as admin to import history or sync from Polar.',
     next: 'Next',
     prev: 'Previous',
     delete: 'Delete ride',
@@ -181,6 +180,11 @@ const en = {
       deleteConfirm2: 'Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?',
       deleteResult: 'Deleted {{deleted}} rides.',
     },
+  },
+  firstRun: {
+    title: 'No rides here yet.',
+    horizon:
+      'Rides arrive on their own once you link Polar — but only ones recorded after you link. Anything from before that has to be imported from a file.',
   },
   login: {
     title: 'Log in',

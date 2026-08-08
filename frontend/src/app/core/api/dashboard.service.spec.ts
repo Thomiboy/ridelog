@@ -22,6 +22,7 @@ describe('DashboardService', () => {
       thisYear: { distanceKm: 200, rideCount: 3, elevationGainMeters: 1100 },
       monthlyDistance: [],
       averageSpeedTrend: [],
+      hasRides: true,
     });
 
     expect(distance).toBe(100);

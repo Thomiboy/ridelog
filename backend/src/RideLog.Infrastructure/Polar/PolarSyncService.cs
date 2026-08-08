@@ -15,6 +15,7 @@ namespace RideLog.Infrastructure.Polar;
 /// </summary>
 internal sealed class PolarSyncService(
     IPolarClient client,
+    IPolarTokenStore tokenStore,
     RideLogDbContext context,
     IEnumerable<IActivityFileParser> parsers,
     ILogger<PolarSyncService> logger) : IPolarSyncService
@@ -23,7 +24,16 @@ internal sealed class PolarSyncService(
 
     public async Task<SyncSummary> SyncAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var transaction = await client.StartTransactionAsync(cancellationToken);
+        // The rider's own link, not "the" link: pulling with somebody else's would land their
+        // exercises in this rider's log.
+        var connection = await tokenStore.GetConnectionAsync(userId, cancellationToken);
+        if (connection is null)
+        {
+            return new SyncSummary(0, 0, 0);
+        }
+
+        var link = connection.Token;
+        var transaction = await client.StartTransactionAsync(link, cancellationToken);
         if (transaction is null)
         {
             return new SyncSummary(0, 0, 0);
@@ -37,7 +47,7 @@ internal sealed class PolarSyncService(
         {
             try
             {
-                switch (await ImportExerciseAsync(exerciseUrl, userId, cancellationToken))
+                switch (await ImportExerciseAsync(link, exerciseUrl, userId, cancellationToken))
                 {
                     case ImportOutcome.Imported: imported++; break;
                     case ImportOutcome.Skipped: skipped++; break;
@@ -55,12 +65,34 @@ internal sealed class PolarSyncService(
         }
 
         // Acknowledge only after processing, so a crash mid-run re-serves the exercises next time.
-        await client.CommitTransactionAsync(transaction, cancellationToken);
+        await client.CommitTransactionAsync(link, transaction, cancellationToken);
 
         var summary = new SyncSummary(imported, skipped, failed);
         await StampLastSyncAsync(userId, summary, cancellationToken);
 
         return summary;
+    }
+
+    public async Task<IReadOnlyList<RiderSyncResult>> SyncAllAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<RiderSyncResult>();
+
+        foreach (var riderId in await tokenStore.GetLinkedRidersAsync(cancellationToken))
+        {
+            try
+            {
+                results.Add(new RiderSyncResult(riderId, await SyncAsync(riderId, cancellationToken)));
+            }
+            catch (Exception ex)
+            {
+                // One rider's expired token or outage is theirs. The run is for everyone who linked,
+                // and stopping here would silently cost every rider after them.
+                logger.LogError(ex, "The daily Polar sync failed for rider {RiderId}.", riderId);
+                results.Add(new RiderSyncResult(riderId, new SyncSummary(0, 0, 0), ex.Message));
+            }
+        }
+
+        return results;
     }
 
     private async Task StampLastSyncAsync(string userId, SyncSummary summary, CancellationToken cancellationToken)
@@ -77,11 +109,12 @@ internal sealed class PolarSyncService(
         }
     }
 
-    private async Task<ImportOutcome> ImportExerciseAsync(string exerciseUrl, string userId, CancellationToken cancellationToken)
+    private async Task<ImportOutcome> ImportExerciseAsync(
+        PolarToken link, string exerciseUrl, string userId, CancellationToken cancellationToken)
     {
-        var exercise = await client.GetExerciseAsync(exerciseUrl, cancellationToken);
-        var gpxBytes = await client.DownloadGpxAsync(exerciseUrl, cancellationToken);
-        var tcxBytes = await client.DownloadTcxAsync(exerciseUrl, cancellationToken);
+        var exercise = await client.GetExerciseAsync(link, exerciseUrl, cancellationToken);
+        var gpxBytes = await client.DownloadGpxAsync(link, exerciseUrl, cancellationToken);
+        var tcxBytes = await client.DownloadTcxAsync(link, exerciseUrl, cancellationToken);
 
         var tcx = Parse(tcxBytes, "exercise.tcx");
         var gpx = Parse(gpxBytes, "exercise.gpx");

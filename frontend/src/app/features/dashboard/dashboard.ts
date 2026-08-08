@@ -7,6 +7,8 @@ import type { DashboardStats } from '../../core/api/dashboard.models';
 import { LanguageService } from '../../core/i18n/language.service';
 import { monthLabels } from '../../core/i18n/month-labels';
 import { Chart } from '../../shared/chart/chart';
+import { FirstRun } from '../../shared/first-run/first-run';
+import { AuthService } from '../../core/auth/auth.service';
 import {
   buildMonthlyDistanceChart,
   buildSpeedAndTemperatureTrendChart,
@@ -15,13 +17,17 @@ import {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Chart, TranslocoPipe, TranslocoDecimalPipe, MatCardModule],
+  imports: [Chart, FirstRun, TranslocoPipe, TranslocoDecimalPipe, MatCardModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
   private readonly dashboardService = inject(DashboardService);
   private readonly language = inject(LanguageService);
+  private readonly auth = inject(AuthService);
+
+  /** An empty log only has something to do about it for the rider it belongs to. */
+  readonly isOwnLog = this.auth.isLoggedIn;
 
   /** Localized short month names; recomputes when the language changes. */
   private readonly months = computed(() => monthLabels(this.language.current()));

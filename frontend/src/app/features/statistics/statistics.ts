@@ -11,6 +11,8 @@ import { monthLabels } from '../../core/i18n/month-labels';
 import { DurationPipe } from '../../core/format/duration.pipe';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
+import { FirstRun } from '../../shared/first-run/first-run';
+import { AuthService } from '../../core/auth/auth.service';
 import {
   buildMonthlyMetricChart,
   buildRidesByYearChart,
@@ -24,7 +26,16 @@ import { buildHrZoneChart } from '../ride-detail/hr-zone-chart';
 
 @Component({
   selector: 'app-statistics',
-  imports: [Chart, RouterLink, TranslocoPipe, TranslocoDecimalPipe, TranslocoDatePipe, DurationPipe, MatCardModule],
+  imports: [
+    Chart,
+    FirstRun,
+    RouterLink,
+    TranslocoPipe,
+    TranslocoDecimalPipe,
+    TranslocoDatePipe,
+    DurationPipe,
+    MatCardModule,
+  ],
   templateUrl: './statistics.html',
   styleUrl: './statistics.scss',
 })
@@ -42,6 +53,12 @@ export class Statistics implements OnDestroy {
   private static readonly BackgroundRouteCount = 3;
 
   readonly stats = signal<StatisticsResult | null>(null);
+
+  /** The monthly aggregates come from rides, so none of them means none of those. */
+  readonly isEmptyLog = computed(() => this.stats()?.monthlyAggregates.length === 0);
+
+  /** An empty log only has something to do about it for the rider it belongs to. */
+  readonly isOwnLog = inject(AuthService).isLoggedIn;
 
   /** null until the user picks; the active year then falls back to the latest year with data. */
   private readonly selectedYear = signal<number | null>(null);
@@ -62,7 +79,9 @@ export class Statistics implements OnDestroy {
   private readonly compareYear = signal<number | null>(null);
 
   /** Years offered for comparison — never the primary year, so the same year can't be picked twice. */
-  readonly compareYearOptions = computed(() => this.years().filter((year) => year !== this.activeYear()));
+  readonly compareYearOptions = computed(() =>
+    this.years().filter((year) => year !== this.activeYear()),
+  );
 
   /**
    * The comparison year actually in force: it drops back to "none" if the primary year is moved onto
@@ -70,7 +89,9 @@ export class Statistics implements OnDestroy {
    */
   readonly activeCompareYear = computed(() => {
     const picked = this.compareYear();
-    return picked !== null && picked !== this.activeYear() && this.years().includes(picked) ? picked : null;
+    return picked !== null && picked !== this.activeYear() && this.years().includes(picked)
+      ? picked
+      : null;
   });
 
   readonly distanceChart = this.metricChart('distanceKm');
@@ -87,7 +108,12 @@ export class Statistics implements OnDestroy {
   readonly ridesByYearChart = computed(() => {
     const stats = this.stats();
     this.language.current(); // re-localize the legend when the language changes
-    return stats ? buildRidesByYearChart(stats.monthlyAggregates, this.transloco.translate('statistics.trends.rides')) : null;
+    return stats
+      ? buildRidesByYearChart(
+          stats.monthlyAggregates,
+          this.transloco.translate('statistics.trends.rides'),
+        )
+      : null;
   });
 
   /** Distance by temperature for the selected year (Trends), unlike the all-time Temperature section. */
@@ -95,7 +121,11 @@ export class Statistics implements OnDestroy {
     const temp = this.temperature();
     const year = this.activeYear();
     return temp && year !== null
-      ? buildYearTemperatureDistributionChart(temp.yearlyDistribution, year, this.activeCompareYear())
+      ? buildYearTemperatureDistributionChart(
+          temp.yearlyDistribution,
+          year,
+          this.activeCompareYear(),
+        )
       : null;
   });
 
@@ -123,7 +153,9 @@ export class Statistics implements OnDestroy {
 
   readonly temperatureTrendChart = computed(() => {
     const temp = this.temperature();
-    return temp && temp.monthlyAverage.length > 0 ? buildTemperatureTrendChart(temp.monthlyAverage) : null;
+    return temp && temp.monthlyAverage.length > 0
+      ? buildTemperatureTrendChart(temp.monthlyAverage)
+      : null;
   });
 
   constructor() {
@@ -153,7 +185,13 @@ export class Statistics implements OnDestroy {
       const stats = this.stats();
       const year = this.activeYear();
       return stats && year !== null
-        ? buildMonthlyMetricChart(stats.monthlyAggregates, year, metric, this.months(), this.activeCompareYear())
+        ? buildMonthlyMetricChart(
+            stats.monthlyAggregates,
+            year,
+            metric,
+            this.months(),
+            this.activeCompareYear(),
+          )
         : null;
     });
   }
