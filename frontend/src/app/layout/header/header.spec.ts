@@ -44,10 +44,10 @@ describe('Header', () => {
     expect(link).not.toBeNull();
   });
 
-  it('shows logout and the admin link for a logged-in admin', () => {
+  it('shows logout and the account link for a logged-in admin', () => {
     const { text } = setup({ loggedIn: true, admin: true });
     expect(text()).toContain('Log out');
-    expect(text()).toContain('Admin');
+    expect(text()).toContain('Account');
   });
 
   /**
@@ -56,12 +56,12 @@ describe('Header', () => {
    */
   it('shows the link to any signed-in rider', () => {
     const { text } = setup({ loggedIn: true, admin: false });
-    expect(text()).toContain('Admin');
+    expect(text()).toContain('Account');
   });
 
   it('hides the link from a visitor who is not signed in', () => {
     const { text } = setup({ loggedIn: false, admin: false });
-    expect(text()).not.toContain('Admin');
+    expect(text()).not.toContain('Account');
   });
 
   it('logs out when the logout button is clicked', () => {

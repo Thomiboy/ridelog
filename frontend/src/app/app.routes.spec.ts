@@ -63,7 +63,7 @@ describe('app routing', () => {
   });
 
   it('serves the admin page to admins', async () => {
-    expect(await navigate('/admin', true)).toContain('Polar');
+    expect(await navigate('/account', true)).toContain('Polar');
   });
 
   /**
@@ -71,10 +71,10 @@ describe('app routing', () => {
    * their rides. Only the bulk import crosses riders, and that is hidden rather than the page.
    */
   it('serves the page to an ordinary signed-in rider', async () => {
-    expect(await navigate('/admin', false, true)).toContain('Polar');
+    expect(await navigate('/account', false, true)).toContain('Polar');
   });
 
   it('sends a visitor who is not signed in to the login page', async () => {
-    expect(await navigate('/admin', false, false)).toContain('Log in');
+    expect(await navigate('/account', false, false)).toContain('Log in');
   });
 });

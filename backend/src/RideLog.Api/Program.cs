@@ -346,11 +346,11 @@ app.MapGet("/polar/callback", async (
     string code, string state, IPolarOAuth oauth, IPolarTokenStore tokenStore,
     IDataProtectionProvider protection, ILogger<Program> logger) =>
 {
-    // Polar redirected the browser here, so always send the admin back to the app's admin
-    // page — with an error flag instead of a raw 500 when the exchange fails.
+    // Polar redirected the browser here, so always send the rider back to their account page —
+    // with an error flag instead of a raw 500 when the exchange fails.
     var frontend = allowedOrigins.FirstOrDefault();
-    string AdminUrl(string result) =>
-        frontend is null ? string.Empty : $"{frontend.TrimEnd('/')}/admin?polar={result}";
+    string AccountUrl(string result) =>
+        frontend is null ? string.Empty : $"{frontend.TrimEnd('/')}/account?polar={result}";
 
     string appUserId;
     try
@@ -360,7 +360,7 @@ app.MapGet("/polar/callback", async (
     catch (System.Security.Cryptography.CryptographicException)
     {
         logger.LogWarning("Polar callback received an invalid OAuth state.");
-        return frontend is null ? Results.BadRequest("Invalid OAuth state.") : Results.Redirect(AdminUrl("error"));
+        return frontend is null ? Results.BadRequest("Invalid OAuth state.") : Results.Redirect(AccountUrl("error"));
     }
 
     try
@@ -371,12 +371,12 @@ app.MapGet("/polar/callback", async (
     catch (Exception ex)
     {
         logger.LogError(ex, "Polar code exchange failed.");
-        return frontend is null ? Results.Problem("Polar code exchange failed.") : Results.Redirect(AdminUrl("error"));
+        return frontend is null ? Results.Problem("Polar code exchange failed.") : Results.Redirect(AccountUrl("error"));
     }
 
     return frontend is null
         ? Results.Ok(new { linked = true })
-        : Results.Redirect(AdminUrl("linked"));
+        : Results.Redirect(AccountUrl("linked"));
 });
 
 // Sync accepts an admin JWT (manual trigger) or the shared secret header (the cron).

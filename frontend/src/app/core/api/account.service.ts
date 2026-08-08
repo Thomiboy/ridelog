@@ -9,11 +9,11 @@ import type {
   SyncSummary,
   UserSettings,
   WeatherTopUpSummary,
-} from './admin.models';
+} from './account.models';
 
 /** Admin-only actions: link Polar, import files, trigger a sync. */
 @Injectable({ providedIn: 'root' })
-export class AdminService {
+export class AccountService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 

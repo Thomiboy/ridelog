@@ -3,20 +3,20 @@ import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
-import { Admin } from './admin';
-import { AdminService } from '../../core/api/admin.service';
+import { Account } from './account';
+import { AccountService } from '../../core/api/account.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import { AuthService } from '../../core/auth/auth.service';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
-describe('Admin', () => {
+describe('Account', () => {
   function setup(
-    overrides: Partial<Record<keyof AdminService, unknown>> = {},
+    overrides: Partial<Record<keyof AccountService, unknown>> = {},
     polarParam?: string,
     isAdmin = true,
   ) {
-    const adminService = {
+    const accountService = {
       getPolarStatus: vi
         .fn()
         .mockReturnValue(of({ linked: true, connectedAt: '2026-07-17T10:00:00Z', lastSyncAt: '2026-07-17T11:30:00Z' })),
@@ -35,9 +35,9 @@ describe('Admin', () => {
     const router = { navigateByUrl: vi.fn() };
     const mapState = { invalidate: vi.fn() };
     TestBed.configureTestingModule({
-      imports: [Admin, translocoTesting()],
+      imports: [Account, translocoTesting()],
       providers: [
-        { provide: AdminService, useValue: adminService },
+        { provide: AccountService, useValue: accountService },
         { provide: MapState, useValue: mapState },
         { provide: ExternalNavigator, useValue: navigator },
         { provide: AuthService, useValue: auth },
@@ -50,9 +50,9 @@ describe('Admin', () => {
         },
       ],
     });
-    const fixture = TestBed.createComponent(Admin);
+    const fixture = TestBed.createComponent(Account);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator, mapState, auth, router };
+    return { fixture, el: fixture.nativeElement as HTMLElement, accountService, navigator, mapState, auth, router };
   }
 
   /**
@@ -66,12 +66,12 @@ describe('Admin', () => {
    */
   it('closes the account after both confirmations', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const { el, adminService, auth } = setup();
+    const { el, accountService, auth } = setup();
 
     (el.querySelector('[data-close-account]') as HTMLButtonElement).click();
 
     expect(confirm).toHaveBeenCalledTimes(2);
-    expect(adminService.closeAccount).toHaveBeenCalled();
+    expect(accountService.closeAccount).toHaveBeenCalled();
     // Nothing is left to be signed in as, so the session goes with it.
     expect(auth.logout).toHaveBeenCalled();
     confirm.mockRestore();
@@ -79,11 +79,11 @@ describe('Admin', () => {
 
   it('leaves the account alone when the rider backs out', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const { el, adminService } = setup();
+    const { el, accountService } = setup();
 
     (el.querySelector('[data-close-account]') as HTMLButtonElement).click();
 
-    expect(adminService.closeAccount).not.toHaveBeenCalled();
+    expect(accountService.closeAccount).not.toHaveBeenCalled();
     confirm.mockRestore();
   });
 
@@ -151,7 +151,7 @@ describe('Admin', () => {
   });
 
   it('shows the configured max heart rate and saves an update', () => {
-    const { el, adminService } = setup();
+    const { el, accountService } = setup();
 
     const input = el.querySelector('[data-max-hr]') as HTMLInputElement;
     expect(input.value).toBe('190');
@@ -160,7 +160,7 @@ describe('Admin', () => {
     input.dispatchEvent(new Event('input'));
     (el.querySelector('[data-save-settings]') as HTMLButtonElement).click();
 
-    expect(adminService.updateSettings).toHaveBeenCalledWith({ maxHeartRate: 185 });
+    expect(accountService.updateSettings).toHaveBeenCalledWith({ maxHeartRate: 185 });
   });
 
   it('accepts .fit uploads alongside .gpx and .tcx', () => {
@@ -173,11 +173,11 @@ describe('Admin', () => {
   });
 
   it('starts the Polar connect flow and navigates to the returned url', () => {
-    const { el, adminService, navigator } = setup();
+    const { el, accountService, navigator } = setup();
 
     (el.querySelector('[data-connect]') as HTMLButtonElement).click();
 
-    expect(adminService.getPolarAuthorizeUrl).toHaveBeenCalled();
+    expect(accountService.getPolarAuthorizeUrl).toHaveBeenCalled();
     expect(navigator.navigate).toHaveBeenCalledWith('https://flow.polar.com/x');
   });
 
@@ -200,12 +200,12 @@ describe('Admin', () => {
   });
 
   it('triggers a sync and shows the summary', () => {
-    const { fixture, el, adminService } = setup();
+    const { fixture, el, accountService } = setup();
 
     (el.querySelector('[data-sync]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(adminService.sync).toHaveBeenCalled();
+    expect(accountService.sync).toHaveBeenCalled();
     expect(el.textContent).toContain('3');
   });
 
@@ -235,13 +235,13 @@ describe('Admin', () => {
   });
 
   it('refreshes the status after a sync', () => {
-    const { fixture, el, adminService } = setup();
-    expect(adminService.getPolarStatus).toHaveBeenCalledTimes(1);
+    const { fixture, el, accountService } = setup();
+    expect(accountService.getPolarStatus).toHaveBeenCalledTimes(1);
 
     (el.querySelector('[data-sync]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(adminService.getPolarStatus).toHaveBeenCalledTimes(2);
+    expect(accountService.getPolarStatus).toHaveBeenCalledTimes(2);
   });
 
   it('shows an error message when the sync fails', () => {
@@ -254,7 +254,7 @@ describe('Admin', () => {
   });
 
   it('imports selected files and shows the result', () => {
-    const { fixture, el, adminService } = setup();
+    const { fixture, el, accountService } = setup();
     const component = fixture.componentInstance;
 
     const file = new File(['<gpx/>'], 'ride.gpx');
@@ -263,39 +263,39 @@ describe('Admin', () => {
     (el.querySelector('[data-import]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(adminService.importRides).toHaveBeenCalledWith([file]);
+    expect(accountService.importRides).toHaveBeenCalledWith([file]);
     expect(el.textContent).toContain('2');
   });
 
   it('reprocesses stored rides and shows the counts', () => {
-    const { fixture, el, adminService } = setup();
+    const { fixture, el, accountService } = setup();
 
     (el.querySelector('[data-reprocess]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(adminService.reprocess).toHaveBeenCalled();
+    expect(accountService.reprocess).toHaveBeenCalled();
     expect(el.textContent).toContain('5'); // processed count
   });
 
   it('deletes all rides after a double confirmation', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const { fixture, el, adminService } = setup();
+    const { fixture, el, accountService } = setup();
 
     (el.querySelector('[data-delete-all]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(confirm).toHaveBeenCalledTimes(2); // double confirmation for a destructive action
-    expect(adminService.deleteAllRides).toHaveBeenCalled();
+    expect(accountService.deleteAllRides).toHaveBeenCalled();
     confirm.mockRestore();
   });
 
   it('does not delete when the confirmation is declined', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const { el, adminService } = setup();
+    const { el, accountService } = setup();
 
     (el.querySelector('[data-delete-all]') as HTMLButtonElement).click();
 
-    expect(adminService.deleteAllRides).not.toHaveBeenCalled();
+    expect(accountService.deleteAllRides).not.toHaveBeenCalled();
     confirm.mockRestore();
   });
 });

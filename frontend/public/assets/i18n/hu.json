@@ -9,7 +9,6 @@
   "nav": {
     "dashboard": "Áttekintés",
     "rides": "Túrák",
-    "admin": "Admin",
     "login": "Bejelentkezés",
     "logout": "Kijelentkezés",
     "statistics": "Statisztika",
@@ -20,7 +19,8 @@
       "light": "Világos",
       "dark": "Sötét"
     },
-    "activities": "Egyéb"
+    "activities": "Egyéb",
+    "account": "Fiók"
   },
   "dashboard": {
     "title": "Áttekintés",
@@ -127,61 +127,6 @@
     "temperatureNote": "A kerékpáros komputer mérte a biciklin, menet közben.",
     "topSpeedNote": "Az eszköz saját csúcsértéke, kivéve ha a túra nyomvonala nem támasztja alá."
   },
-  "admin": {
-    "title": "Admin",
-    "error": "Valami hiba történt. Próbáld újra.",
-    "polar": {
-      "title": "Polar",
-      "hint": "Kösd össze a Polar-fiókodat, hogy az új túrák automatikusan szinkronizálódjanak.",
-      "connect": "Polar összekötése",
-      "connected": "Összekötve",
-      "notConnected": "Nincs összekötve",
-      "justLinked": "A Polar-fiók sikeresen összekötve."
-    },
-    "import": {
-      "title": "Történet importálása",
-      "hint": "Tölts fel GPX/TCX fájlokat, vagy egy Bryton FIT-et a hőmérséklethez.",
-      "button": "Import",
-      "result": "Importálva: {{imported}}, kihagyva: {{skipped}}, sikertelen: {{failed}}."
-    },
-    "sync": {
-      "title": "Szinkron",
-      "hint": "Új túrák behúzása a Polarból most.",
-      "button": "Szinkron most",
-      "lastSync": "Utolsó szinkron:",
-      "never": "soha",
-      "result": "Importálva: {{imported}}, kihagyva: {{skipped}}, sikertelen: {{failed}}."
-    },
-    "maintenance": {
-      "title": "Karbantartás",
-      "reprocessHint": "Minden túra metrikáinak újraszámítása a tárolt fájlokból. Használd parser-változtatás után a meglévő túrák javításához — beleértve a Polar-szinkronizáltakat is.",
-      "reprocessButton": "Összes újrafeldolgozása",
-      "reprocessResult": "Újrafeldolgozva: {{processed}}, sikertelen: {{failed}}.",
-      "deleteHint": "Veszélyes: minden túra és a hozzájuk tárolt fájlok törlése. Ez kiüríti a naplódat — a fiókodat nem zárja le. A Polar-kapcsolatod megmarad, így a következő szinkron újra tölteni kezdi.",
-      "deleteButton": "Összes túra törlése",
-      "deleteConfirm1": "Törlöd az ÖSSZES túrát és a tárolt fájljaikat? Ez nem vonható vissza.",
-      "deleteConfirm2": "A Polar-szinkronizált túrák nem húzhatók vissza a Polarból. Biztosan folytatod?",
-      "deleteResult": "{{deleted}} túra törölve.",
-      "weatherHint": "Időjárás lekérése az még hiányzó túrákhoz. A napi szinkron is feltölt egy adagot.",
-      "weatherButton": "Időjárás lekérése",
-      "weatherResult": "{{fetched}} lekérve, {{unavailable}} túrához nincs adat, {{failed}} sikertelen."
-    },
-    "settings": {
-      "title": "Pulzuszónák",
-      "hint": "Add meg a maximális pulzusod; az öt zóna ennek 50/60/70/80/90%-a.",
-      "maxHr": "Max pulzus (bpm)",
-      "save": "Mentés",
-      "saved": "Mentve."
-    },
-    "account": {
-      "title": "A fiókod",
-      "closeHint": "A fiók lezárása: a túráid, a tárolt fájljaid, a Polar-kapcsolatod és a belépésed együtt szűnik meg. Nem vonható vissza, és a Polarból szinkronizált túrák nem jönnek vissza.",
-      "closeButton": "Fiók lezárása",
-      "closeConfirm1": "Lezárod a fiókod? A túráid, fájljaid, a Polar-kapcsolatod és a belépésed is megszűnik.",
-      "closeConfirm2": "Ez nem vonható vissza, és a Polar nem szolgálja ki újra a szinkronizált túráidat. Biztosan folytatod?",
-      "refusedPublicLog": "Ez a fiók a nyilvános napló, a lezárása kiürítené a nyilvános oldalt. Előbb állítsd át a beállítást egy másik riderre."
-    }
-  },
   "login": {
     "title": "Bejelentkezés",
     "email": "E-mail",
@@ -242,5 +187,60 @@
   "firstRun": {
     "title": "Itt még nincs egy túra sem.",
     "horizon": "A túrák maguktól érkeznek, amint összekötöd a Polar-fiókodat — de csak azok, amiket az összekötés után rögzítettél. Ami korábbi, azt fájlból lehet betölteni."
+  },
+  "account": {
+    "title": "A fiókod",
+    "error": "Valami hiba történt. Próbáld újra.",
+    "polar": {
+      "title": "Polar",
+      "hint": "Kösd össze a Polar-fiókodat, hogy az új túrák automatikusan szinkronizálódjanak.",
+      "connect": "Polar összekötése",
+      "connected": "Összekötve",
+      "notConnected": "Nincs összekötve",
+      "justLinked": "A Polar-fiók sikeresen összekötve."
+    },
+    "import": {
+      "title": "Történet importálása",
+      "hint": "Tölts fel GPX/TCX fájlokat, vagy egy Bryton FIT-et a hőmérséklethez.",
+      "button": "Import",
+      "result": "Importálva: {{imported}}, kihagyva: {{skipped}}, sikertelen: {{failed}}."
+    },
+    "sync": {
+      "title": "Szinkron",
+      "hint": "Új túrák behúzása a Polarból most.",
+      "button": "Szinkron most",
+      "lastSync": "Utolsó szinkron:",
+      "never": "soha",
+      "result": "Importálva: {{imported}}, kihagyva: {{skipped}}, sikertelen: {{failed}}."
+    },
+    "maintenance": {
+      "title": "Karbantartás",
+      "reprocessHint": "Minden túra metrikáinak újraszámítása a tárolt fájlokból. Használd parser-változtatás után a meglévő túrák javításához — beleértve a Polar-szinkronizáltakat is.",
+      "reprocessButton": "Összes újrafeldolgozása",
+      "reprocessResult": "Újrafeldolgozva: {{processed}}, sikertelen: {{failed}}.",
+      "deleteHint": "Veszélyes: minden túra és a hozzájuk tárolt fájlok törlése. Ez kiüríti a naplódat — a fiókodat nem zárja le. A Polar-kapcsolatod megmarad, így a következő szinkron újra tölteni kezdi.",
+      "deleteButton": "Összes túra törlése",
+      "deleteConfirm1": "Törlöd az ÖSSZES túrát és a tárolt fájljaikat? Ez nem vonható vissza.",
+      "deleteConfirm2": "A Polar-szinkronizált túrák nem húzhatók vissza a Polarból. Biztosan folytatod?",
+      "deleteResult": "{{deleted}} túra törölve.",
+      "weatherHint": "Időjárás lekérése az még hiányzó túrákhoz. A napi szinkron is feltölt egy adagot.",
+      "weatherButton": "Időjárás lekérése",
+      "weatherResult": "{{fetched}} lekérve, {{unavailable}} túrához nincs adat, {{failed}} sikertelen."
+    },
+    "settings": {
+      "title": "Pulzuszónák",
+      "hint": "Add meg a maximális pulzusod; az öt zóna ennek 50/60/70/80/90%-a.",
+      "maxHr": "Max pulzus (bpm)",
+      "save": "Mentés",
+      "saved": "Mentve."
+    },
+    "close": {
+      "title": "Fiók lezárása",
+      "hint": "A fiók lezárása: a túráid, a tárolt fájljaid, a Polar-kapcsolatod és a belépésed együtt szűnik meg. Nem vonható vissza, és a Polarból szinkronizált túrák nem jönnek vissza.",
+      "button": "Fiók lezárása",
+      "confirm1": "Lezárod a fiókod? A túráid, fájljaid, a Polar-kapcsolatod és a belépésed is megszűnik.",
+      "confirm2": "Ez nem vonható vissza, és a Polar nem szolgálja ki újra a szinkronizált túráidat. Biztosan folytatod?",
+      "refusedPublicLog": "Ez a fiók a nyilvános napló, a lezárása kiürítené a nyilvános oldalt. Előbb állítsd át a beállítást egy másik riderre."
+    }
   }
 }

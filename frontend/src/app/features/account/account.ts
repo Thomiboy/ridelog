@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
-import { AdminService } from '../../core/api/admin.service';
+import { AccountService } from '../../core/api/account.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import type {
@@ -15,16 +15,16 @@ import type {
   ReprocessSummary,
   SyncSummary,
   WeatherTopUpSummary,
-} from '../../core/api/admin.models';
+} from '../../core/api/account.models';
 
 @Component({
-  selector: 'app-admin',
+  selector: 'app-account',
   imports: [TranslocoPipe, TranslocoDatePipe, MatButtonModule, MatCardModule],
-  templateUrl: './admin.html',
-  styleUrl: './admin.scss',
+  templateUrl: './account.html',
+  styleUrl: './account.scss',
 })
-export class Admin {
-  private readonly adminService = inject(AdminService);
+export class Account {
+  private readonly accountService = inject(AccountService);
   private readonly navigator = inject(ExternalNavigator);
   private readonly route = inject(ActivatedRoute);
   private readonly transloco = inject(TranslocoService);
@@ -59,7 +59,7 @@ export class Admin {
     this.failed.set(polar === 'error');
 
     this.loadStatus();
-    this.adminService
+    this.accountService
       .getSettings()
       .subscribe((settings) => this.maxHeartRate.set(settings.maxHeartRate));
   }
@@ -72,7 +72,7 @@ export class Admin {
 
   saveSettings(): void {
     this.run(() =>
-      this.adminService.updateSettings({ maxHeartRate: this.maxHeartRate() }).subscribe({
+      this.accountService.updateSettings({ maxHeartRate: this.maxHeartRate() }).subscribe({
         next: () => {
           this.settingsSaved.set(true);
           this.busy.set(false);
@@ -84,7 +84,7 @@ export class Admin {
 
   connectPolar(): void {
     this.failed.set(false);
-    this.adminService.getPolarAuthorizeUrl().subscribe({
+    this.accountService.getPolarAuthorizeUrl().subscribe({
       next: (r) => this.navigator.navigate(r.authorizeUrl),
       error: () => this.failed.set(true),
     });
@@ -101,7 +101,7 @@ export class Admin {
       return;
     }
     this.run(() =>
-      this.adminService.importRides(files).subscribe({
+      this.accountService.importRides(files).subscribe({
         next: (result) => {
           this.importResult.set(result);
           this.ridesChanged();
@@ -114,7 +114,7 @@ export class Admin {
 
   syncNow(): void {
     this.run(() =>
-      this.adminService.sync().subscribe({
+      this.accountService.sync().subscribe({
         next: (result) => {
           this.syncResult.set(result);
           this.ridesChanged();
@@ -128,7 +128,7 @@ export class Admin {
 
   reprocess(): void {
     this.run(() =>
-      this.adminService.reprocess().subscribe({
+      this.accountService.reprocess().subscribe({
         next: (result) => {
           this.reprocessResult.set(result);
           this.ridesChanged();
@@ -142,7 +142,7 @@ export class Admin {
   /** Fetches weather for rides still missing it, without waiting for tomorrow's sync. */
   topUpWeather(): void {
     this.run(() =>
-      this.adminService.topUpWeather().subscribe({
+      this.accountService.topUpWeather().subscribe({
         next: (result) => {
           this.weatherResult.set(result);
           this.ridesChanged();
@@ -156,14 +156,14 @@ export class Admin {
   deleteAllRides(): void {
     // Destructive and unrecoverable for Polar-synced rides (AccessLink never re-serves them),
     // so require two explicit confirmations before calling the API.
-    if (!confirm(this.transloco.translate('admin.maintenance.deleteConfirm1'))) {
+    if (!confirm(this.transloco.translate('account.maintenance.deleteConfirm1'))) {
       return;
     }
-    if (!confirm(this.transloco.translate('admin.maintenance.deleteConfirm2'))) {
+    if (!confirm(this.transloco.translate('account.maintenance.deleteConfirm2'))) {
       return;
     }
     this.run(() =>
-      this.adminService.deleteAllRides().subscribe({
+      this.accountService.deleteAllRides().subscribe({
         next: (result) => {
           this.deletedCount.set(result.deleted);
           this.ridesChanged();
@@ -179,15 +179,15 @@ export class Admin {
    * because a closed account cannot be reopened and its rides do not come back from Polar.
    */
   closeAccount(): void {
-    if (!confirm(this.transloco.translate('admin.account.closeConfirm1'))) {
+    if (!confirm(this.transloco.translate('account.close.confirm1'))) {
       return;
     }
-    if (!confirm(this.transloco.translate('admin.account.closeConfirm2'))) {
+    if (!confirm(this.transloco.translate('account.close.confirm2'))) {
       return;
     }
 
     this.run(() =>
-      this.adminService.closeAccount().subscribe({
+      this.accountService.closeAccount().subscribe({
         next: () => {
           this.auth.logout();
           this.busy.set(false);
@@ -215,7 +215,7 @@ export class Admin {
   }
 
   private loadStatus(): void {
-    this.adminService.getPolarStatus().subscribe({
+    this.accountService.getPolarStatus().subscribe({
       next: (status) => this.status.set(status),
       error: () => this.status.set(null),
     });

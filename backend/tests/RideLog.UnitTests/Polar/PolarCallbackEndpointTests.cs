@@ -28,7 +28,7 @@ public sealed class FailingOAuthApiFactory : RideLogApiFactory
 public class PolarCallbackEndpointTests(FailingOAuthApiFactory factory) : IClassFixture<FailingOAuthApiFactory>
 {
     [Fact]
-    public async Task A_failed_exchange_redirects_back_to_the_admin_page_with_an_error_flag()
+    public async Task A_failed_exchange_redirects_back_to_the_account_page_with_an_error_flag()
     {
         // A state protected with the app's own keyring, as /polar/authorize would issue.
         var state = factory.Services.GetRequiredService<IDataProtectionProvider>()
@@ -43,6 +43,6 @@ public class PolarCallbackEndpointTests(FailingOAuthApiFactory factory) : IClass
         var response = await client.GetAsync($"/polar/callback?code=bad-code&state={Uri.EscapeDataString(state)}");
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Contains("/admin?polar=error", response.Headers.Location!.ToString());
+        Assert.Contains("/account?polar=error", response.Headers.Location!.ToString());
     }
 }

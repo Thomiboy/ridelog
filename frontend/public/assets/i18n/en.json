@@ -9,7 +9,6 @@
   "nav": {
     "dashboard": "Dashboard",
     "rides": "Rides",
-    "admin": "Admin",
     "login": "Log in",
     "logout": "Log out",
     "statistics": "Statistics",
@@ -20,7 +19,8 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "activities": "Other activity"
+    "activities": "Other activity",
+    "account": "Account"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -127,61 +127,6 @@
     "temperatureNote": "Measured on the bike by the cycling computer during the ride.",
     "topSpeedNote": "The recording device's own maximum, unless the ride's track cannot support it."
   },
-  "admin": {
-    "title": "Admin",
-    "error": "Something went wrong. Please try again.",
-    "polar": {
-      "title": "Polar",
-      "hint": "Connect your Polar account so new rides sync automatically.",
-      "connect": "Connect Polar",
-      "connected": "Connected",
-      "notConnected": "Not connected",
-      "justLinked": "Polar account linked successfully."
-    },
-    "import": {
-      "title": "Import history",
-      "hint": "Upload GPX/TCX files, or a Bryton FIT to add temperature.",
-      "button": "Import",
-      "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
-    },
-    "sync": {
-      "title": "Sync",
-      "hint": "Pull new rides from Polar now.",
-      "button": "Sync now",
-      "lastSync": "Last sync:",
-      "never": "never",
-      "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
-    },
-    "maintenance": {
-      "title": "Maintenance",
-      "reprocessHint": "Recompute metrics for every ride from its stored files. Use this after a parser change to fix existing rides — including Polar-synced ones.",
-      "reprocessButton": "Reprocess all",
-      "reprocessResult": "Reprocessed {{processed}}, failed {{failed}}.",
-      "deleteHint": "Danger: delete every ride and its stored files. This empties your log — it does not close your account. Your Polar link stays connected, so the next sync starts refilling it.",
-      "deleteButton": "Delete all rides",
-      "deleteConfirm1": "Delete ALL rides and their stored files? This cannot be undone.",
-      "deleteConfirm2": "Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?",
-      "deleteResult": "Deleted {{deleted}} rides.",
-      "weatherHint": "Fetch weather for rides that still have none. The daily sync does a batch too.",
-      "weatherButton": "Fetch weather",
-      "weatherResult": "Fetched {{fetched}}, no data for {{unavailable}}, failed {{failed}}."
-    },
-    "settings": {
-      "title": "HR zones",
-      "hint": "Set your maximum heart rate; the five zones are 50/60/70/80/90% of it.",
-      "maxHr": "Max heart rate (bpm)",
-      "save": "Save",
-      "saved": "Saved."
-    },
-    "account": {
-      "title": "Your account",
-      "closeHint": "Close your account: your rides, your stored files, your Polar link and your login go together. This cannot be undone, and Polar-synced rides do not come back.",
-      "closeButton": "Close my account",
-      "closeConfirm1": "Close your account? Your rides, files, Polar link and login are all removed.",
-      "closeConfirm2": "This cannot be undone and Polar cannot re-serve your synced rides. Are you absolutely sure?",
-      "refusedPublicLog": "This account is the public log, so closing it would blank the public site. Point that setting at another rider first."
-    }
-  },
   "login": {
     "title": "Log in",
     "email": "Email",
@@ -242,5 +187,60 @@
   "firstRun": {
     "title": "No rides here yet.",
     "horizon": "Rides arrive on their own once you link Polar — but only ones recorded after you link. Anything from before that has to be imported from a file."
+  },
+  "account": {
+    "title": "Your account",
+    "error": "Something went wrong. Please try again.",
+    "polar": {
+      "title": "Polar",
+      "hint": "Connect your Polar account so new rides sync automatically.",
+      "connect": "Connect Polar",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "justLinked": "Polar account linked successfully."
+    },
+    "import": {
+      "title": "Import history",
+      "hint": "Upload GPX/TCX files, or a Bryton FIT to add temperature.",
+      "button": "Import",
+      "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
+    },
+    "sync": {
+      "title": "Sync",
+      "hint": "Pull new rides from Polar now.",
+      "button": "Sync now",
+      "lastSync": "Last sync:",
+      "never": "never",
+      "result": "Imported {{imported}}, skipped {{skipped}}, failed {{failed}}."
+    },
+    "maintenance": {
+      "title": "Maintenance",
+      "reprocessHint": "Recompute metrics for every ride from its stored files. Use this after a parser change to fix existing rides — including Polar-synced ones.",
+      "reprocessButton": "Reprocess all",
+      "reprocessResult": "Reprocessed {{processed}}, failed {{failed}}.",
+      "deleteHint": "Danger: delete every ride and its stored files. This empties your log — it does not close your account. Your Polar link stays connected, so the next sync starts refilling it.",
+      "deleteButton": "Delete all rides",
+      "deleteConfirm1": "Delete ALL rides and their stored files? This cannot be undone.",
+      "deleteConfirm2": "Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?",
+      "deleteResult": "Deleted {{deleted}} rides.",
+      "weatherHint": "Fetch weather for rides that still have none. The daily sync does a batch too.",
+      "weatherButton": "Fetch weather",
+      "weatherResult": "Fetched {{fetched}}, no data for {{unavailable}}, failed {{failed}}."
+    },
+    "settings": {
+      "title": "HR zones",
+      "hint": "Set your maximum heart rate; the five zones are 50/60/70/80/90% of it.",
+      "maxHr": "Max heart rate (bpm)",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "close": {
+      "title": "Close your account",
+      "hint": "Close your account: your rides, your stored files, your Polar link and your login go together. This cannot be undone, and Polar-synced rides do not come back.",
+      "button": "Close my account",
+      "confirm1": "Close your account? Your rides, files, Polar link and login are all removed.",
+      "confirm2": "This cannot be undone and Polar cannot re-serve your synced rides. Are you absolutely sure?",
+      "refusedPublicLog": "This account is the public log, so closing it would blank the public site. Point that setting at another rider first."
+    }
   }
 }
