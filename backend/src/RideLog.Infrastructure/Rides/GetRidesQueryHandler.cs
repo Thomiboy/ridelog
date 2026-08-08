@@ -15,7 +15,7 @@ internal sealed class GetRidesQueryHandler(RideLogDbContext context)
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize <= 0 ? 20 : query.PageSize, 1, MaxPageSize);
 
-        var cycling = context.Rides.AsQueryable();
+        var cycling = context.Rides.Where(ride => ride.UserId == query.RiderId);
         foreach (var keyword in CyclingRides.NonCyclingKeywords)
         {
             // Exclude known non-cycling sports; untagged rides ("Unknown") pass through.

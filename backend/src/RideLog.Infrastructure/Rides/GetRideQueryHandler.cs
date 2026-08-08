@@ -12,7 +12,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
     public async Task<RideDetail?> HandleAsync(GetRideQuery query, CancellationToken cancellationToken = default)
     {
         var ride = await context.Rides
-            .Where(r => r.Id == query.Id)
+            .Where(r => r.Id == query.Id && r.UserId == query.RiderId)
             .Select(r => new
             {
                 r.Id,
@@ -71,6 +71,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
         var isRide = SportCategories.Of(ride.Sport) == SportCategory.Cycling;
 
         var ordered = (await context.Rides
+                .Where(r => r.UserId == query.RiderId)
                 .Select(r => new { r.Id, r.StartTime, r.Sport })
                 .ToListAsync(cancellationToken))
             .Where(r => (SportCategories.Of(r.Sport) == SportCategory.Cycling) == isRide)

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using RideLog.Api;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
 using RideLog.Application.Messaging;
@@ -68,6 +69,8 @@ builder.Services.AddCors(options =>
 // that a backfill cannot run away with the free tier's quota in one morning.
 const int WeatherRidesPerSync = 25;
 
+builder.Services.Configure<PublicLogOptions>(builder.Configuration.GetSection(PublicLogOptions.SectionName));
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -89,30 +92,34 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("HealthCheck");
 
-app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
+// Signed in, a rider reads their own log; otherwise the one log that is public.
+static string RiderFor(ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    user.FindFirstValue("sub") ?? publicLog.Value.RiderId;
+
+app.MapGet("/rides", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(RiderFor(user, publicLog), page ?? 1, pageSize ?? 20))));
 
 // The longest cycling routes for the Statistics page's background map (longest first, routes only).
-app.MapGet("/activities", async (IDispatcher dispatcher, int? page, int? pageSize) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetOtherActivitiesQuery(page ?? 1, pageSize ?? 20))));
+app.MapGet("/activities", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetOtherActivitiesQuery(RiderFor(user, publicLog), page ?? 1, pageSize ?? 20))));
 
-app.MapGet("/rides/longest", async (IDispatcher dispatcher, int? take) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(take ?? 3))));
+app.MapGet("/rides/longest", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog, int? take) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(RiderFor(user, publicLog), take ?? 3))));
 
 // Every cycling route for the Rides page's all-routes coverage map.
-app.MapGet("/rides/routes", async (IDispatcher dispatcher) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetRideRoutesQuery())));
+app.MapGet("/rides/routes", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetRideRoutesQuery(RiderFor(user, publicLog)))));
 
-app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
-    await dispatcher.QueryAsync(new GetRideQuery(id)) is { } ride
+app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    await dispatcher.QueryAsync(new GetRideQuery(id, RiderFor(user, publicLog))) is { } ride
         ? Results.Ok(ride)
         : Results.NotFound());
 
-app.MapGet("/dashboard", async (IDispatcher dispatcher) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery())));
+app.MapGet("/dashboard", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery(RiderFor(user, publicLog)))));
 
-app.MapGet("/statistics", async (IDispatcher dispatcher) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetStatisticsQuery())));
+app.MapGet("/statistics", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetStatisticsQuery(RiderFor(user, publicLog)))));
 
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {

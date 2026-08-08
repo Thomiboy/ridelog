@@ -35,6 +35,8 @@ public class RideLogApiFactory : WebApplicationFactory<Program>
             ["Jwt:Audience"] = "ridelog-web",
             ["Jwt:SigningKey"] = "integration-test-signing-key-32-bytes!!",
             ["Jwt:TokenLifetimeMinutes"] = "60",
+            // The rides these tests seed belong to "admin-1", so that is the public log here.
+            ["PublicLog:RiderId"] = "admin-1",
             ["AdminUser:Email"] = AdminEmail,
             ["AdminUser:Password"] = AdminPassword,
             ["Cors:AllowedOrigins:0"] = "https://localhost:4200",

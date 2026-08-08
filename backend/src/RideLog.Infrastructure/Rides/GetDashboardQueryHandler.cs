@@ -17,7 +17,7 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
         var now = clock.GetUtcNow();
         var currentYear = now.Year;
 
-        var cycling = context.Rides.AsQueryable();
+        var cycling = context.Rides.Where(ride => ride.UserId == query.RiderId);
         foreach (var keyword in CyclingRides.NonCyclingKeywords)
         {
             cycling = cycling.Where(ride => !ride.Sport.ToLower().Contains(keyword));

@@ -11,7 +11,7 @@ internal sealed class GetRideRoutesQueryHandler(RideLogDbContext context)
     public async Task<IReadOnlyList<RideRoute>> HandleAsync(
         GetRideRoutesQuery query, CancellationToken cancellationToken = default)
     {
-        var cycling = context.Rides.Where(ride => ride.RoutePolyline != null);
+        var cycling = context.Rides.Where(ride => ride.UserId == query.RiderId && ride.RoutePolyline != null);
         foreach (var keyword in CyclingRides.NonCyclingKeywords)
         {
             // Exclude known non-cycling sports; untagged rides ("Unknown") pass through.
