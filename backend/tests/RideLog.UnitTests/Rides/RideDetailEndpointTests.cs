@@ -308,6 +308,76 @@ public class RideDetailEndpointTests(RideLogApiFactory factory) : IClassFixture<
         Assert.Equal("_p~iF~ps|U_ulLnnqC_mqNvxq`@", detail.RoutePolyline);
     }
 
+    /// <summary>
+    /// Stepping through a log follows the list you are in. A run's neighbours are the other runs and
+    /// walks, not the rides they happen to sit between by date — otherwise the arrows walk you out of
+    /// the list you came from and into one where this recording does not appear at all.
+    /// </summary>
+    [Fact]
+    public async Task Steps_an_other_activity_between_other_activities_rather_than_rides()
+    {
+        var olderRun = ActivityAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), "RUNNING");
+        var rideBetween = CyclingRideAt(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero));
+        var theRun = ActivityAt(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero), "RUNNING");
+        var newerWalk = ActivityAt(new DateTimeOffset(2026, 6, 4, 8, 0, 0, TimeSpan.Zero), "WALKING");
+        await SeedRidesAsync(olderRun, rideBetween, theRun, newerWalk);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<RideDetailDto>($"/rides/{theRun.Id}");
+
+        Assert.Equal(olderRun.Id, detail!.PreviousId);
+        Assert.Equal(newerWalk.Id, detail.NextId);
+    }
+
+    /// <summary>And a ride still steps between rides, with the runs in between passed over.</summary>
+    [Fact]
+    public async Task Steps_a_ride_past_the_other_activities_that_fall_between()
+    {
+        var olderRide = CyclingRideAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero));
+        var runBetween = ActivityAt(new DateTimeOffset(2026, 6, 2, 8, 0, 0, TimeSpan.Zero), "RUNNING");
+        var theRide = CyclingRideAt(new DateTimeOffset(2026, 6, 3, 8, 0, 0, TimeSpan.Zero));
+        var newerRide = CyclingRideAt(new DateTimeOffset(2026, 6, 4, 8, 0, 0, TimeSpan.Zero));
+        await SeedRidesAsync(olderRide, runBetween, theRide, newerRide);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<RideDetailDto>($"/rides/{theRide.Id}");
+
+        Assert.Equal(olderRide.Id, detail!.PreviousId);
+        Assert.Equal(newerRide.Id, detail.NextId);
+    }
+
+    private sealed record CategoryDto(string Sport, string SportCategory);
+
+    /// <summary>
+    /// The page has to know which list it belongs to, and the reading of a raw sport name lives in
+    /// one place — here. Sending it means the frontend never reimplements the same table, which is
+    /// how the two would drift into disagreeing about where a recording belongs.
+    /// </summary>
+    [Theory]
+    [InlineData("ROAD_BIKING", "Cycling")]
+    [InlineData("Unknown", "Cycling")]
+    [InlineData("RUNNING", "Running")]
+    [InlineData("WALKING", "Walking")]
+    public async Task Says_which_category_the_recording_falls_into(string sport, string expected)
+    {
+        var activity = ActivityAt(new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero), sport);
+        await SeedRidesAsync(activity);
+
+        var detail = await factory.CreateClient().GetFromJsonAsync<CategoryDto>($"/rides/{activity.Id}");
+
+        Assert.Equal(expected, detail!.SportCategory);
+    }
+
+    private static Ride ActivityAt(DateTimeOffset start, string sport) => new()
+    {
+        Id = Guid.NewGuid(),
+        UserId = "admin-1",
+        StartTime = start,
+        EndTime = start.AddHours(1),
+        Duration = TimeSpan.FromMinutes(55),
+        DistanceMeters = 9000,
+        Sport = sport,
+        Source = RideSource.Polar,
+    };
+
     [Fact]
     public async Task Exposes_the_chronological_neighbours_of_a_ride()
     {

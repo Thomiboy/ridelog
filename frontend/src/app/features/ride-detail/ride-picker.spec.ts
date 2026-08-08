@@ -10,6 +10,7 @@ const ride = (id: string, startTime: string, distanceKm: number): RideSummary =>
   distanceKm,
   durationMinutes: 90,
   sport: 'ROAD_BIKING',
+  sportCategory: 'Cycling',
   sources: [],
 });
 

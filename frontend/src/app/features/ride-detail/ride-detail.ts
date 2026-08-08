@@ -213,6 +213,33 @@ export class RideDetail {
     return positionAtDistanceKm(decodePolyline(ride.routePolyline), nearest.distanceKm);
   }
 
+  /**
+   * Whether what is on screen belongs to the other-activity list rather than the rides list. Read
+   * from the recording itself, so a deep link or a refresh answers the same as a click — nothing has
+   * to be carried along, and the page cannot disagree with what it is showing.
+   */
+  readonly isOtherActivity = computed(() => {
+    const category = this.ride()?.sportCategory;
+    return category !== undefined && category !== 'Cycling';
+  });
+
+  /**
+   * What the picker may offer: recordings of the same kind as the one on screen, and never the one
+   * being read. Putting a 9 km run beside a 60 km ride would compare two averages that mean
+   * different things — the comparison #120 called meaningless when it kept statistics to cycling.
+   */
+  readonly comparableRides = computed(() => {
+    const category = this.ride()?.sportCategory;
+    const currentId = this.ride()?.id;
+    return (this.allRides() ?? []).filter(
+      (candidate) => candidate.sportCategory === category && candidate.id !== currentId,
+    );
+  });
+
+  readonly backLink = computed(() => (this.isOtherActivity() ? '/activities' : '/rides'));
+
+  readonly backLabel = computed(() => (this.isOtherActivity() ? 'activities.title' : 'rideDetail.back'));
+
   /** The weather card's figures; null when no lookup has stored any for this ride. */
   readonly weather = computed(() => summariseWeather(this.ride()?.weather?.hours));
 
@@ -322,7 +349,12 @@ export class RideDetail {
 
   openPicker(): void {
     if (this.allRides() === null) {
-      this.ridesService.getAllRides().subscribe((rides) => this.allRides.set(rides));
+      // The rides endpoint cannot return a run, so an other activity has to ask the other list —
+      // filtering the wrong source would leave the picker empty however well it filtered.
+      const candidates = this.isOtherActivity()
+        ? this.ridesService.getAllOtherActivities()
+        : this.ridesService.getAllRides();
+      candidates.subscribe((rides) => this.allRides.set(rides));
     }
     this.pickerOpen.set(true);
   }

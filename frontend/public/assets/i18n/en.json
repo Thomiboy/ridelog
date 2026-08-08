@@ -19,7 +19,8 @@
       "system": "System",
       "light": "Light",
       "dark": "Dark"
-    }
+    },
+    "activities": "Other activity"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -223,5 +224,9 @@
       "trend": "Monthly average"
     },
     "allTime": "· all-time"
+  },
+  "activities": {
+    "title": "Other activity",
+    "empty": "Nothing but rides so far."
   }
 }

@@ -8,6 +8,7 @@ const base: RideDetail = {
   distanceKm: 60,
   durationMinutes: 120,
   sport: 'ROAD_BIKING',
+  sportCategory: 'Cycling',
   sources: [],
   averageSpeedKmh: 30,
   maximumSpeedKmh: 55,

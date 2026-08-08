@@ -40,6 +40,12 @@ describe('app routing', () => {
     expect(await navigate('/rides')).toContain('Rides');
   });
 
+  // Other activities get a page of their own rather than a tab inside the rides list, because they
+  // are a sibling of rides and not a view over them.
+  it('serves the other activities list', async () => {
+    expect(await navigate('/activities')).toContain('Other activity');
+  });
+
   it('serves the ride detail', async () => {
     configure(false);
     const harness = await RouterTestingHarness.create();

@@ -72,6 +72,7 @@ describe('Rides', () => {
     distanceKm: 61.5,
     durationMinutes: 118,
     sport: 'ROAD_BIKING',
+    sportCategory: 'Cycling',
     averageSpeedKmh: 31.3,
     elevationGainMeters: 460,
     sources,

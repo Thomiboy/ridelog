@@ -15,6 +15,19 @@ export class RidesService {
     return this.http.get<Paged<RideSummary>>(`${this.baseUrl}/rides?page=${page}&pageSize=${pageSize}`);
   }
 
+  /**
+   * Everything the log has kept that is not a ride — runs, walks, swims. Its own endpoint rather
+   * than a filter on the rides one: they are siblings, and nothing is a term for both.
+   */
+  getOtherActivities(page = 1, pageSize = 20): Observable<Paged<RideSummary>> {
+    return this.http.get<Paged<RideSummary>>(`${this.baseUrl}/activities?page=${page}&pageSize=${pageSize}`);
+  }
+
+  /** Every other activity, for the comparison picker — the sibling of {@link getAllRides}. */
+  getAllOtherActivities(): Observable<RideSummary[]> {
+    return this.getOtherActivities(1, 100).pipe(map((page) => page.items));
+  }
+
   getRide(id: string): Observable<RideDetail> {
     return this.http.get<RideDetail>(`${this.baseUrl}/rides/${id}`);
   }

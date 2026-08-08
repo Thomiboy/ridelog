@@ -7,7 +7,7 @@
   }
 
   <nav class="toolbar">
-    <a mat-button routerLink="/rides" class="back">← {{ 'rideDetail.back' | transloco }}</a>
+    <a mat-button [routerLink]="backLink()" class="back">← {{ backLabel() | transloco }}</a>
     <span class="stepper">
       <button
         mat-icon-button
@@ -44,7 +44,7 @@
 
   @if (pickerOpen() && ride(); as ride) {
     <app-ride-picker
-      [rides]="allRides() ?? []"
+      [rides]="comparableRides()"
       [excludeId]="ride.id"
       (pick)="choose($event)"
       (close)="closePicker()"

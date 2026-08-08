@@ -8,6 +8,7 @@ const en = {
   nav: {
     dashboard: 'Dashboard',
     rides: 'Rides',
+    activities: 'Other activity',
     statistics: 'Statistics',
     admin: 'Admin',
     login: 'Log in',
@@ -15,6 +16,7 @@ const en = {
     language: 'Language',
     theme: { label: 'Theme', system: 'System', light: 'Light', dark: 'Dark' },
   },
+  activities: { title: 'Other activity', empty: 'Nothing but rides so far.' },
   statistics: {
     title: 'Statistics',
     records: {

@@ -5,6 +5,25 @@ manually uploaded Bryton file, and are presented as statistics, charts and route
 
 ## Language
 
+### People
+
+**Rider**:
+Whoever rode. Every ride belongs to exactly one, and a rider signs in as themselves — the account
+and the person are one thing here, since nobody keeps a log on somebody else's behalf.
+_Avoid_: User, athlete, owner (that's a role, below)
+
+**Public log**:
+The one rider's rides a visitor can see without signing in. A rider's log is private otherwise, so
+this names a single rider deliberately rather than describing a setting each rider has.
+_Avoid_: Profile, public account, showcase
+
+**Admin**:
+A rider who may also do things that reach across riders. Tending one's own rides — reprocessing them,
+deleting them — is not among those; that is ordinary and needs no role, since it can only ever touch
+the rider's own log. What a rider is allowed to do, which is a different question from whose log the
+world can see.
+_Avoid_: Owner, superuser
+
 ### Activities
 
 **Ride**:
@@ -22,6 +41,26 @@ What kind of activity was recorded, as the source reported it. Sources name the 
 differently, so what the app reasons about is the category the raw name falls into; a name it does
 not recognise counts as cycling, because an untagged recording here is a ride.
 _Avoid_: Type, discipline
+
+### Getting rides in
+
+**Polar link**:
+The connection between a rider and their Polar account, which is what makes rides arrive on their
+own. It has a moment: Polar only delivers sessions recorded *after* a rider links, so nothing from
+before a link ever arrives automatically, and a rider's automatic history starts the day they made
+one.
+_Avoid_: Connection, integration, pairing
+
+**Sync**:
+Collecting whatever a rider's Polar link has delivered since the last time. Repeatable and
+unattended: a ride already stored is recognised and left alone rather than stored twice.
+_Avoid_: Fetch, pull, refresh
+
+**Import**:
+Adding rides from files rather than from a link — the only way anything from before a Polar link can
+be in a log at all. Distinct from a sync in what it costs someone: a sync happens to a rider, an
+import is something they do.
+_Avoid_: Upload (that's the file), bulk load, backfill
 
 ### Time
 

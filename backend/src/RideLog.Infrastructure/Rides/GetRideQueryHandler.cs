@@ -58,15 +58,22 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             ? RestStopDetector.RestStops(restSeries, PolylineDecoder.Decode(polyline))
             : [];
 
-        // Chronological neighbours within the cycling set the list shows. Ordered in memory because
-        // SQLite can't ORDER BY DateTimeOffset; at single-user scale the row set is small.
-        var cycling = context.Rides.AsQueryable();
-        foreach (var keyword in CyclingRides.NonCyclingKeywords)
-        {
-            cycling = cycling.Where(r => !r.Sport.ToLower().Contains(keyword));
-        }
+        // Chronological neighbours within the list this recording belongs to — rides step between
+        // rides, other activities between other activities. Stepping across the two would walk the
+        // reader out of the list they arrived from and into one this recording isn't in.
+        //
+        // Read in memory because the category is a plain function of the raw sport name and EF cannot
+        // translate it; ordering has to happen here anyway, since SQLite can't ORDER BY a
+        // DateTimeOffset, and at single-rider scale the row set is small.
+        // Membership is the list, not the fine category: the other-activity list holds runs, walks
+        // and swims together, so a run steps to the walk beside it. Which run or walk it is matters
+        // for reading the page, not for which list the reader is stepping through.
+        var isRide = SportCategories.Of(ride.Sport) == SportCategory.Cycling;
 
-        var ordered = (await cycling.Select(r => new { r.Id, r.StartTime }).ToListAsync(cancellationToken))
+        var ordered = (await context.Rides
+                .Select(r => new { r.Id, r.StartTime, r.Sport })
+                .ToListAsync(cancellationToken))
+            .Where(r => (SportCategories.Of(r.Sport) == SportCategory.Cycling) == isRide)
             .OrderBy(r => r.StartTime)
             .ToList();
         var index = ordered.FindIndex(r => r.Id == query.Id);
@@ -81,6 +88,7 @@ internal sealed class GetRideQueryHandler(RideLogDbContext context)
             DistanceKm = Math.Round(ride.DistanceMeters / 1000.0, 1),
             DurationMinutes = Math.Round(ride.Duration.TotalMinutes),
             Sport = ride.Sport,
+            SportCategory = SportCategories.Of(ride.Sport),
             Sources = RideSourceLabels.Derive(ride.Source, ride.Formats),
             AverageSpeedKmh = ride.AverageSpeedKmh,
             MaximumSpeedKmh = ride.MaximumSpeedKmh,

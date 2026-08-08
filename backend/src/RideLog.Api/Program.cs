@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -16,6 +17,11 @@ using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Enums travel as their names. An ordinal would make the wire format depend on the order members
+// happen to be declared in, so reordering them would silently change what clients receive.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -87,6 +93,9 @@ app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
     Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
 
 // The longest cycling routes for the Statistics page's background map (longest first, routes only).
+app.MapGet("/activities", async (IDispatcher dispatcher, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetOtherActivitiesQuery(page ?? 1, pageSize ?? 20))));
+
 app.MapGet("/rides/longest", async (IDispatcher dispatcher, int? take) =>
     Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(take ?? 3))));
 

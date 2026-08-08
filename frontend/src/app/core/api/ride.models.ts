@@ -7,12 +7,29 @@ export interface Paged<T> {
 }
 
 /** Summary of a ride for list views. Mirrors the backend RideListItem DTO. */
+/**
+ * What a raw sport name reads as, decided by the API. Sent rather than worked out here, so the
+ * reading of a sport lives in one place — two copies would drift into disagreeing about which list
+ * a recording belongs to.
+ */
+export type SportCategory =
+  | 'Cycling'
+  | 'Running'
+  | 'Walking'
+  | 'Hiking'
+  | 'Swimming'
+  | 'Rowing'
+  | 'Skiing'
+  | 'Skating'
+  | 'Other';
+
 export interface RideSummary {
   id: string;
   startTime: string;
   distanceKm: number;
   durationMinutes: number;
   sport: string;
+  sportCategory: SportCategory;
   averageSpeedKmh?: number;
   averageHeartRate?: number;
   elevationGainMeters?: number;

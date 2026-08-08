@@ -1,0 +1,22 @@
+<section class="activities">
+  <h1>{{ 'activities.title' | transloco }}</h1>
+
+  @if (loaded() && activities().length === 0) {
+    <p class="empty">{{ 'activities.empty' | transloco }}</p>
+  }
+
+  @for (activity of activities(); track activity.id) {
+    <a
+      mat-card
+      appearance="outlined"
+      class="activity"
+      data-activity
+      [routerLink]="['/rides', activity.id]"
+    >
+      <span class="sport">{{ activity.sport }}</span>
+      <span class="date">{{ activity.startTime | translocoDate: { dateStyle: 'medium' } }}</span>
+      <span class="distance">{{ activity.distanceKm | translocoDecimal: { maximumFractionDigits: 1 } }} km</span>
+      <span class="duration">{{ activity.durationMinutes | duration }}</span>
+    </a>
+  }
+</section>
