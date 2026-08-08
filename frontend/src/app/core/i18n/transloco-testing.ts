@@ -188,6 +188,9 @@ const en = {
     password: 'Password',
     submit: 'Log in',
     error: 'Login failed. Check your credentials.',
+    continueWith: 'Continue with {{provider}}',
+    orAdmin: 'or sign in with a password',
+    externalError: 'Login failed. The provider did not confirm your account.',
   },
 };
 

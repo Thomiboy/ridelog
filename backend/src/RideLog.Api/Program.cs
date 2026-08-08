@@ -141,13 +141,115 @@ app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
         : Results.Ok(new LoginResponse(token.Token, token.ExpiresAt));
 });
 
-// Protected endpoint: proves a JWT authorizes an admin-only route. Write endpoints reuse this policy.
+// Sign-in with a provider. New riders arrive this way and no other: nothing here sends email, so a
+// local password would have neither verification nor reset (docs/adr/0007).
+const string SignInStatePurpose = "ExternalSignIn.State";
+var signInStateLifetime = TimeSpan.FromMinutes(10);
+
+// A redirect rather than the URL as JSON — unlike the Polar link, whoever asks is not signed in yet,
+// so this is a plain link the browser follows.
+app.MapGet("/auth/{provider}/authorize", (
+    string provider, IExternalProviders providers, IDataProtectionProvider protection, TimeProvider clock) =>
+{
+    if (!providers.Knows(provider))
+    {
+        return Results.NotFound();
+    }
+
+    var state = protection.CreateProtector(SignInStatePurpose)
+        .Protect($"{provider}|{clock.GetUtcNow().ToUnixTimeSeconds()}");
+
+    return Results.Redirect(providers.BuildAuthorizeUrl(provider, state));
+});
+
+app.MapGet("/auth/{provider}/callback", async (
+    string provider, string? code, string? state,
+    IExternalProviders providers, IExternalSignIn signIn, ISignInCodes codes,
+    IDataProtectionProvider protection, TimeProvider clock, ILogger<Program> logger) =>
+{
+    // The provider redirected a browser here, so a refusal has to arrive as a page that says so.
+    var frontend = allowedOrigins.FirstOrDefault();
+    IResult BackToSignIn(string query, string whenHeadless) =>
+        frontend is null ? Results.BadRequest(whenHeadless) : Results.Redirect($"{frontend.TrimEnd('/')}/login{query}");
+
+    // State is what ties this callback to a sign-in this app started; without it a crafted link
+    // signs a rider in as whoever the sender's provider account names.
+    if (!IsOurState(state, provider, protection, clock, signInStateLifetime))
+    {
+        logger.LogWarning("A {Provider} sign-in callback carried a state this app did not issue.", provider);
+        return BackToSignIn("?error=state", "Invalid sign-in state.");
+    }
+
+    ExternalIdentity? identity;
+    try
+    {
+        identity = code is null ? null : await providers.IdentityForAsync(provider, code);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "The {Provider} code exchange failed.", provider);
+        return BackToSignIn("?error=provider", "The sign-in provider could not be reached.");
+    }
+
+    var rider = identity is null ? null : await signIn.SignInAsync(identity);
+    if (rider is null)
+    {
+        logger.LogWarning("A {Provider} sign-in was refused.", provider);
+        return BackToSignIn("?error=refused", "Sign-in refused.");
+    }
+
+    return BackToSignIn($"?code={Uri.EscapeDataString(codes.Issue(rider.RiderId))}", "Signed in.");
+});
+
+// The token is handed over here rather than in the callback's URL, where it would outlive the
+// sign-in in browser history — on a shared machine that loses accounts.
+app.MapPost("/auth/exchange", async (ExchangeRequest request, ISignInCodes codes, IAuthService auth) =>
+{
+    var riderId = codes.Redeem(request.Code);
+    if (riderId is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var token = await auth.TokenForAsync(riderId);
+    return token is null
+        ? Results.Unauthorized()
+        : Results.Ok(new LoginResponse(token.Token, token.ExpiresAt));
+});
+
+static bool IsOurState(
+    string? state, string provider, IDataProtectionProvider protection, TimeProvider clock, TimeSpan lifetime)
+{
+    if (string.IsNullOrEmpty(state))
+    {
+        return false;
+    }
+
+    string unprotected;
+    try
+    {
+        unprotected = protection.CreateProtector(SignInStatePurpose).Unprotect(state);
+    }
+    catch (System.Security.Cryptography.CryptographicException)
+    {
+        return false;
+    }
+
+    var parts = unprotected.Split('|');
+    return parts.Length == 2
+        && string.Equals(parts[0], provider, StringComparison.OrdinalIgnoreCase)
+        && long.TryParse(parts[1], out var issuedAt)
+        && clock.GetUtcNow() - DateTimeOffset.FromUnixTimeSeconds(issuedAt) < lifetime;
+}
+
+// Any signed-in rider, not just the admin: this is how the app knows who is signed in, and the roles
+// it answers with are the caller's own — being told you are not an admin is not a privilege.
 app.MapGet("/auth/me", (ClaimsPrincipal user) => Results.Ok(new
     {
         email = user.FindFirstValue("email"),
         roles = user.FindAll(ClaimTypes.Role).Select(c => c.Value),
     }))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 // Admin-only historical GPX/TCX bulk import; returns a per-file result.
 app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, ClaimsPrincipal user) =>
@@ -310,6 +412,7 @@ app.MapPost("/rides/weather", async (IWeatherTopUpService weatherTopUp, ClaimsPr
 app.Run();
 
 internal sealed record LoginRequest(string Email, string Password);
+internal sealed record ExchangeRequest(string Code);
 internal sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
 
 // Exposed so WebApplicationFactory<Program> can boot the API in integration tests.

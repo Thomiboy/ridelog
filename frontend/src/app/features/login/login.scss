@@ -9,6 +9,20 @@
     gap: 0.5rem;
   }
 
+  .providers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  // A quiet divider: the password form is the seeded admin's way in, not the usual one.
+  .or {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.875rem;
+    margin: 1.25rem 0 0.5rem;
+    text-align: center;
+  }
+
   .error {
     color: var(--mat-sys-error);
     margin: 0 0 0.5rem;

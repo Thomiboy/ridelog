@@ -180,7 +180,10 @@
     "email": "E-mail",
     "password": "Jelszó",
     "submit": "Bejelentkezés",
-    "error": "Sikertelen bejelentkezés. Ellenőrizd az adataidat."
+    "error": "Sikertelen bejelentkezés. Ellenőrizd az adataidat.",
+    "continueWith": "Belépés {{provider}}-fiókkal",
+    "orAdmin": "vagy jelszóval",
+    "externalError": "Sikertelen bejelentkezés. A szolgáltató nem erősítette meg a fiókodat."
   },
   "statistics": {
     "title": "Statisztika",

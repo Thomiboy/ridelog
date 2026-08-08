@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
 using RideLog.Application.Polar;
@@ -37,6 +38,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<AdminSeedOptions>(configuration.GetSection(AdminSeedOptions.SectionName));
+        services.Configure<ExternalSignInOptions>(configuration.GetSection(ExternalSignInOptions.SectionName));
 
         services.AddIdentityCore<IdentityUser>(options =>
             {
@@ -47,6 +49,13 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IExternalSignIn, ExternalSignIn>();
+        // Singleton because a code issued by the callback is redeemed by a later, separate request.
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<ISignInCodes, SignInCodes>();
+        services.AddHttpClient<IExternalProviders, ExternalProviders>();
+        // The sign-in state crosses the redirect protected, exactly as the Polar link's does.
+        services.AddDataProtection();
         services.AddScoped<RideLogInitializer>();
 
         return services;

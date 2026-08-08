@@ -19,7 +19,12 @@ describe('app routing', () => {
         provideHttpClientTesting(),
         {
           provide: AuthService,
-          useValue: { isAdmin: signal(admin), isLoggedIn: signal(admin), logout: () => {} },
+          useValue: {
+            isAdmin: signal(admin),
+            isLoggedIn: signal(admin),
+            logout: () => {},
+            authorizeUrl: (provider: string) => `/auth/${provider}/authorize`,
+          },
         },
       ],
     });

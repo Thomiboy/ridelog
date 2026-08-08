@@ -36,6 +36,25 @@ export class AuthService {
     );
   }
 
+  /**
+   * Where to send the browser to sign in with a provider. The API holds the client id and the
+   * registered redirect, so the round trip starts there rather than here.
+   */
+  authorizeUrl(provider: string): string {
+    return `${this.baseUrl}/auth/${provider}/authorize`;
+  }
+
+  /**
+   * Trades the single-use code the provider callback left in the URL for a token. The token is
+   * never in the URL itself, where it would outlive the sign-in in browser history.
+   */
+  completeExternalSignIn(code: string): Observable<Profile> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/auth/exchange`, { code }).pipe(
+      tap((response) => this.setToken(response.token)),
+      switchMap(() => this.loadProfile()),
+    );
+  }
+
   loadProfile(): Observable<Profile> {
     return this.http
       .get<Profile>(`${this.baseUrl}/auth/me`)
