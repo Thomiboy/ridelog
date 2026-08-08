@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
-using RideLog.Api;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
 using RideLog.Application.Messaging;
@@ -276,49 +275,63 @@ app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, C
     .RequireAuthorization(AdminSeedOptions.RoleName)
     .DisableAntiforgery();
 
-// Admin settings: the max heart rate that anchors the HR-zone boundaries.
+// A rider's own settings: the max heart rate that anchors their HR-zone boundaries.
 app.MapGet("/settings", async (IUserSettingsService settings, ClaimsPrincipal user) =>
     Results.Ok(await settings.GetAsync(user.FindFirstValue("sub")!)))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 app.MapPut("/settings", async (UserSettingsDto body, IUserSettingsService settings, ClaimsPrincipal user) =>
 {
     await settings.SetMaxHeartRateAsync(user.FindFirstValue("sub")!, body.MaxHeartRate);
     return Results.Ok();
 })
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin maintenance: re-parse every ride's stored raw files to refresh metrics in place. The only
-// way to fix Polar-synced rides, which AccessLink never re-serves.
+// Maintenance needs no role: every operation here filters on the caller's own id, so the most it
+// can reach is the caller's own log. Re-parsing a ride's stored raw files is also the only way to
+// fix a Polar-synced ride, which AccessLink never re-serves — withholding that is hard to justify.
 app.MapPost("/rides/reprocess", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     Results.Ok(await maintenance.ReprocessAsync(user.FindFirstValue("sub")!)))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin re-parses a single ride's stored files; 404 when the user has no such ride.
+// Re-parses a single ride's stored files; 404 when the rider has no such ride.
 app.MapPost("/rides/{id:guid}/reprocess", async (Guid id, IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     await maintenance.ReprocessAsync(user.FindFirstValue("sub")!, id)
         ? Results.Ok()
         : Results.NotFound())
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin danger action: delete every ride (and its raw files) for the user.
+// Danger action, but only ever to the caller's own log: every ride of theirs, and its raw files.
 app.MapDelete("/rides", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     Results.Ok(new { deleted = await maintenance.DeleteAllAsync(user.FindFirstValue("sub")!) }))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin deletes a single ride (and its raw files); 404 when the user has no such ride.
+// Deletes a single ride (and its raw files); 404 when the rider has no such ride.
 app.MapDelete("/rides/{id:guid}", async (Guid id, IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     await maintenance.DeleteAsync(user.FindFirstValue("sub")!, id)
         ? Results.Ok()
         : Results.NotFound())
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
+// Leaving. Distinct from "delete all my rides", which is maintenance and leaves the Polar link
+// delivering — this takes the rides, the link and the login together.
+app.MapDelete("/account", async (IRiderAccounts accounts, ClaimsPrincipal user) =>
+    await accounts.CloseAsync(user.FindFirstValue("sub")!) switch
+    {
+        AccountClosure.Closed => Results.Ok(),
+        AccountClosure.RefusedPublicLog => Results.Conflict(
+            "This account is the public log. Point that setting at another rider first."),
+        _ => Results.NotFound(),
+    })
+    .RequireAuthorization();
+
+// A rider links their own Polar account; the initiating rider id is carried in a protected state
+// value. No role: a rider who cannot link has a log that never fills.
 const string OAuthStatePurpose = "Polar.OAuthState";
 
 app.MapGet("/polar/status", async (IPolarTokenStore tokenStore, ClaimsPrincipal user) =>
     Results.Ok(await tokenStore.GetStatusAsync(user.FindFirstValue("sub")!)))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 // Returns the Polar URL as JSON so the SPA can navigate the browser to it (a bearer-authorized
 // fetch can't be a redirect the browser follows).
@@ -327,7 +340,7 @@ app.MapGet("/polar/authorize", (IPolarOAuth oauth, IDataProtectionProvider prote
     var state = protection.CreateProtector(OAuthStatePurpose).Protect(user.FindFirstValue("sub")!);
     return Results.Ok(new { authorizeUrl = oauth.BuildAuthorizeUrl(state) });
 })
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 app.MapGet("/polar/callback", async (
     string code, string state, IPolarOAuth oauth, IPolarTokenStore tokenStore,
@@ -377,7 +390,9 @@ app.MapPost("/sync", async (
 {
     var secret = polarOptions.Value.SyncSharedSecret;
     var providedSecret = request.Headers["X-Sync-Secret"].ToString();
-    var authorized = user.IsInRole(AdminSeedOptions.RoleName)
+    // Any signed-in rider may sync themselves — it pulls their own link into their own log — or the
+    // cron may sync everyone with the shared secret.
+    var authorized = user.FindFirstValue("sub") is not null
         || (!string.IsNullOrEmpty(secret) && providedSecret == secret);
     if (!authorized)
     {
@@ -421,7 +436,7 @@ app.MapPost("/rides/weather", async (IWeatherTopUpService weatherTopUp, ClaimsPr
     return userId is null
         ? Results.Unauthorized()
         : Results.Ok(await weatherTopUp.TopUpAsync(userId, max ?? WeatherRidesPerSync));
-}).RequireAuthorization(AdminSeedOptions.RoleName);
+}).RequireAuthorization();
 
 app.Run();
 

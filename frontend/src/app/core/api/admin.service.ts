@@ -46,6 +46,14 @@ export class AdminService {
     return this.http.post<WeatherTopUpSummary>(`${this.baseUrl}/rides/weather`, null);
   }
 
+  /**
+   * Leaving. Not the same as deleting every ride: that empties the log and leaves the Polar link
+   * delivering, whereas this takes the rides, the link and the login together.
+   */
+  closeAccount(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/account`);
+  }
+
   deleteAllRides(): Observable<{ deleted: number }> {
     return this.http.delete<{ deleted: number }>(`${this.baseUrl}/rides`);
   }

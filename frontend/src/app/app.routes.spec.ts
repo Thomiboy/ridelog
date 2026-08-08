@@ -10,7 +10,7 @@ import { RideDetail } from './features/ride-detail/ride-detail';
 import { translocoTesting } from './core/i18n/transloco-testing';
 
 describe('app routing', () => {
-  function configure(admin: boolean) {
+  function configure(admin: boolean, signedIn = admin) {
     TestBed.configureTestingModule({
       imports: [translocoTesting()],
       providers: [
@@ -21,7 +21,7 @@ describe('app routing', () => {
           provide: AuthService,
           useValue: {
             isAdmin: signal(admin),
-            isLoggedIn: signal(admin),
+            isLoggedIn: signal(signedIn),
             logout: () => {},
             authorizeUrl: (provider: string) => `/auth/${provider}/authorize`,
           },
@@ -30,8 +30,8 @@ describe('app routing', () => {
     });
   }
 
-  async function navigate(url: string, admin = false) {
-    configure(admin);
+  async function navigate(url: string, admin = false, signedIn = admin) {
+    configure(admin, signedIn);
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url);
     return harness.routeNativeElement?.textContent ?? '';
@@ -63,10 +63,18 @@ describe('app routing', () => {
   });
 
   it('serves the admin page to admins', async () => {
-    expect(await navigate('/admin', true)).toContain('Admin');
+    expect(await navigate('/admin', true)).toContain('Polar');
   });
 
-  it('redirects non-admins away from the admin page', async () => {
-    expect(await navigate('/admin', false)).toContain('Log in');
+  /**
+   * Nearly everything on this page is about the rider's own log — their Polar link, their zones,
+   * their rides. Only the bulk import crosses riders, and that is hidden rather than the page.
+   */
+  it('serves the page to an ordinary signed-in rider', async () => {
+    expect(await navigate('/admin', false, true)).toContain('Polar');
+  });
+
+  it('sends a visitor who is not signed in to the login page', async () => {
+    expect(await navigate('/admin', false, false)).toContain('Log in');
   });
 });

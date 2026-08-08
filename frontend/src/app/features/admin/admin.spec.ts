@@ -1,15 +1,21 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { Admin } from './admin';
 import { AdminService } from '../../core/api/admin.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
+import { AuthService } from '../../core/auth/auth.service';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Admin', () => {
-  function setup(overrides: Partial<Record<keyof AdminService, unknown>> = {}, polarParam?: string) {
+  function setup(
+    overrides: Partial<Record<keyof AdminService, unknown>> = {},
+    polarParam?: string,
+    isAdmin = true,
+  ) {
     const adminService = {
       getPolarStatus: vi
         .fn()
@@ -19,11 +25,14 @@ describe('Admin', () => {
       importRides: vi.fn().mockReturnValue(of({ files: [], imported: 2, skipped: 0, failed: 0 })),
       reprocess: vi.fn().mockReturnValue(of({ processed: 5, failed: 0 })),
       deleteAllRides: vi.fn().mockReturnValue(of({ deleted: 7 })),
+      closeAccount: vi.fn().mockReturnValue(of(void 0)),
       getSettings: vi.fn().mockReturnValue(of({ maxHeartRate: 190 })),
       updateSettings: vi.fn().mockReturnValue(of(void 0)),
       ...overrides,
     };
     const navigator = { navigate: vi.fn() };
+    const auth = { isAdmin: signal(isAdmin), isLoggedIn: signal(true), logout: vi.fn() };
+    const router = { navigateByUrl: vi.fn() };
     const mapState = { invalidate: vi.fn() };
     TestBed.configureTestingModule({
       imports: [Admin, translocoTesting()],
@@ -31,6 +40,8 @@ describe('Admin', () => {
         { provide: AdminService, useValue: adminService },
         { provide: MapState, useValue: mapState },
         { provide: ExternalNavigator, useValue: navigator },
+        { provide: AuthService, useValue: auth },
+        { provide: Router, useValue: router },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -41,8 +52,75 @@ describe('Admin', () => {
     });
     const fixture = TestBed.createComponent(Admin);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator, mapState };
+    return { fixture, el: fixture.nativeElement as HTMLElement, adminService, navigator, mapState, auth, router };
   }
+
+  /**
+   * The bulk import is the one thing here that crosses riders: raw files live in the database and
+   * every rider's history competes for the same 32 GB. It stays closed for that reason, not because
+   * of ownership — everything else on this page can only ever reach the caller's own log.
+   */
+  /**
+   * The way out. Distinct from deleting rides, which leaves the Polar link delivering — this takes
+   * the rides, the link and the login together, so it asks twice like the other unrecoverable one.
+   */
+  it('closes the account after both confirmations', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { el, adminService, auth } = setup();
+
+    (el.querySelector('[data-close-account]') as HTMLButtonElement).click();
+
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(adminService.closeAccount).toHaveBeenCalled();
+    // Nothing is left to be signed in as, so the session goes with it.
+    expect(auth.logout).toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it('leaves the account alone when the rider backs out', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { el, adminService } = setup();
+
+    (el.querySelector('[data-close-account]') as HTMLButtonElement).click();
+
+    expect(adminService.closeAccount).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  /**
+   * The API refuses when this rider is the configured public log. A generic "something went wrong"
+   * would send the owner looking for a bug instead of at the setting.
+   */
+  it('says why closing was refused when this account is the public log', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { fixture, el } = setup({
+      closeAccount: vi.fn().mockReturnValue(throwError(() => ({ status: 409 }))),
+    });
+
+    (el.querySelector('[data-close-account]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('public log');
+    confirm.mockRestore();
+  });
+
+  it('offers the bulk import to an admin', () => {
+    expect(setup({}, undefined, true).el.querySelector('[data-import]')).not.toBeNull();
+  });
+
+  it('does not offer the bulk import to an ordinary rider', () => {
+    expect(setup({}, undefined, false).el.querySelector('[data-import]')).toBeNull();
+  });
+
+  /**
+   * Deleting rides is not leaving: the Polar link survives and the next sync starts refilling. A
+   * rider who deleted in order to go would otherwise find their rides back the next morning.
+   */
+  it('warns that deleting rides leaves the Polar link delivering', () => {
+    const { el } = setup();
+
+    expect(el.querySelector('.danger-hint')?.textContent).toContain('Polar link stays');
+  });
 
   // The Rides coverage map and the latest-ride background are cached for the session, so every
   // operation that adds, rebuilds or removes rides has to drop those caches.

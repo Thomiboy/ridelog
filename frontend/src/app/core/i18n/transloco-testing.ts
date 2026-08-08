@@ -169,12 +169,23 @@ const en = {
       save: 'Save',
       saved: 'Saved.',
     },
+    account: {
+      title: 'Your account',
+      closeHint:
+        'Close your account: your rides, your stored files, your Polar link and your login go together.',
+      closeButton: 'Close my account',
+      closeConfirm1: 'Close your account? Your rides, files, Polar link and login are all removed.',
+      closeConfirm2: 'This cannot be undone. Are you absolutely sure?',
+      refusedPublicLog:
+        'This account is the public log, so closing it would blank the public site. Point that setting at another rider first.',
+    },
     maintenance: {
       title: 'Maintenance',
       reprocessHint: 'Recompute metrics for every ride from its stored files.',
       reprocessButton: 'Reprocess all',
       reprocessResult: 'Reprocessed {{processed}}, failed {{failed}}.',
-      deleteHint: 'Danger: delete every ride and its stored files.',
+      deleteHint:
+        'Danger: delete every ride and its stored files. This empties your log — it does not close your account. Your Polar link stays connected, so the next sync starts refilling it.',
       deleteButton: 'Delete all rides',
       deleteConfirm1: 'Delete ALL rides and their stored files? This cannot be undone.',
       deleteConfirm2: 'Polar-synced rides cannot be re-synced from Polar. Are you absolutely sure?',

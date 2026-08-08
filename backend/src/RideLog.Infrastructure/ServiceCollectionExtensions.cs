@@ -50,6 +50,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IExternalSignIn, ExternalSignIn>();
+        services.AddScoped<IRiderAccounts, RiderAccounts>();
         // Singleton because a code issued by the callback is redeemed by a later, separate request.
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<ISignInCodes, SignInCodes>();

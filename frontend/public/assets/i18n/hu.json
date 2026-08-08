@@ -157,7 +157,7 @@
       "reprocessHint": "Minden túra metrikáinak újraszámítása a tárolt fájlokból. Használd parser-változtatás után a meglévő túrák javításához — beleértve a Polar-szinkronizáltakat is.",
       "reprocessButton": "Összes újrafeldolgozása",
       "reprocessResult": "Újrafeldolgozva: {{processed}}, sikertelen: {{failed}}.",
-      "deleteHint": "Veszélyes: minden túra és a tárolt fájljaik törlése. A Polar-szinkronizált túrák utána nem húzhatók vissza a Polarból — csak az újratöltött exportok állíthatók helyre.",
+      "deleteHint": "Veszélyes: minden túra és a hozzájuk tárolt fájlok törlése. Ez kiüríti a naplódat — a fiókodat nem zárja le. A Polar-kapcsolatod megmarad, így a következő szinkron újra tölteni kezdi.",
       "deleteButton": "Összes túra törlése",
       "deleteConfirm1": "Törlöd az ÖSSZES túrát és a tárolt fájljaikat? Ez nem vonható vissza.",
       "deleteConfirm2": "A Polar-szinkronizált túrák nem húzhatók vissza a Polarból. Biztosan folytatod?",
@@ -172,6 +172,14 @@
       "maxHr": "Max pulzus (bpm)",
       "save": "Mentés",
       "saved": "Mentve."
+    },
+    "account": {
+      "title": "A fiókod",
+      "closeHint": "A fiók lezárása: a túráid, a tárolt fájljaid, a Polar-kapcsolatod és a belépésed együtt szűnik meg. Nem vonható vissza, és a Polarból szinkronizált túrák nem jönnek vissza.",
+      "closeButton": "Fiók lezárása",
+      "closeConfirm1": "Lezárod a fiókod? A túráid, fájljaid, a Polar-kapcsolatod és a belépésed is megszűnik.",
+      "closeConfirm2": "Ez nem vonható vissza, és a Polar nem szolgálja ki újra a szinkronizált túráidat. Biztosan folytatod?",
+      "refusedPublicLog": "Ez a fiók a nyilvános napló, a lezárása kiürítené a nyilvános oldalt. Előbb állítsd át a beállítást egy másik riderre."
     }
   },
   "login": {
