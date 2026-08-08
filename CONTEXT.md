@@ -24,6 +24,11 @@ the rider's own log. What a rider is allowed to do, which is a different questio
 world can see.
 _Avoid_: Owner, superuser
 
+**Sign-in provider**:
+Google or Microsoft, who say who a rider is and vouch for their email address. New riders arrive
+only this way; the one seeded admin keeps a password because it predates them.
+_Avoid_: Identity provider, social login, IdP
+
 ### Activities
 
 **Ride**:
