@@ -10,23 +10,14 @@ public class PolarApiClientTests
 {
     private const string BaseUrl = "https://api.polar.test";
 
-    private sealed class StubTokenStore : IPolarTokenStore
-    {
-        public Task SaveAsync(string appUserId, PolarToken token, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
-
-        public Task<PolarConnectionInfo?> GetConnectionAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<PolarConnectionInfo?>(new PolarConnectionInfo("admin-1", new PolarToken("access-tok", "pu-1")));
-
-        public Task<PolarStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new PolarStatus(true, DateTimeOffset.UtcNow, null, null));
-    }
+    /// <summary>The link every call is made with; the client no longer looks one up for itself.</summary>
+    private static readonly PolarToken Link = new("access-tok", "pu-1");
 
     private static PolarApiClient NewClient(MockHttpMessageHandler handler)
     {
         var http = new HttpClient(handler);
         var options = Options.Create(new PolarOptions { ApiBaseUrl = BaseUrl });
-        return new PolarApiClient(http, new StubTokenStore(), options);
+        return new PolarApiClient(http, options);
     }
 
     [Fact]
@@ -37,7 +28,7 @@ public class PolarApiClientTests
                 ? MockHttpMessageHandler.Json("""{ "transaction-id": 4242 }""")
                 : MockHttpMessageHandler.Json("""{ "exercises": ["https://api.polar.test/ex/1", "https://api.polar.test/ex/2"] }"""));
 
-        var transaction = await NewClient(handler).StartTransactionAsync();
+        var transaction = await NewClient(handler).StartTransactionAsync(Link);
 
         Assert.NotNull(transaction);
         Assert.Equal("4242", transaction.Id);
@@ -55,7 +46,7 @@ public class PolarApiClientTests
     {
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Status(HttpStatusCode.NoContent));
 
-        Assert.Null(await NewClient(handler).StartTransactionAsync());
+        Assert.Null(await NewClient(handler).StartTransactionAsync(Link));
     }
 
     [Fact]
@@ -64,7 +55,7 @@ public class PolarApiClientTests
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Json(
             """{ "start-time": "2026-06-10T06:00:00.000Z", "detailed-sport-info": "ROAD_BIKING" }"""));
 
-        var exercise = await NewClient(handler).GetExerciseAsync($"{BaseUrl}/ex/1");
+        var exercise = await NewClient(handler).GetExerciseAsync(Link, $"{BaseUrl}/ex/1");
 
         Assert.Equal(new DateTimeOffset(2026, 6, 10, 6, 0, 0, TimeSpan.Zero), exercise.StartTime);
         Assert.Equal("ROAD_BIKING", exercise.Sport);
@@ -76,7 +67,7 @@ public class PolarApiClientTests
         var payload = Encoding.UTF8.GetBytes("<gpx/>");
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Bytes(payload));
 
-        var bytes = await NewClient(handler).DownloadGpxAsync($"{BaseUrl}/ex/1");
+        var bytes = await NewClient(handler).DownloadGpxAsync(Link, $"{BaseUrl}/ex/1");
 
         Assert.Equal(payload, bytes);
         Assert.Equal($"{BaseUrl}/ex/1/gpx", handler.Requests[0].RequestUri!.ToString());
@@ -87,7 +78,7 @@ public class PolarApiClientTests
     {
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Bytes(Encoding.UTF8.GetBytes("<gpx/>")));
 
-        await NewClient(handler).DownloadGpxAsync($"{BaseUrl}/ex/1");
+        await NewClient(handler).DownloadGpxAsync(Link, $"{BaseUrl}/ex/1");
 
         // Polar returns 406 Not Acceptable if we ask for application/json on the GPX sub-resource.
         var accept = handler.Requests[0].Headers.Accept.ToString();
@@ -100,7 +91,7 @@ public class PolarApiClientTests
     {
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Bytes(Encoding.UTF8.GetBytes("<tcx/>")));
 
-        await NewClient(handler).DownloadTcxAsync($"{BaseUrl}/ex/1");
+        await NewClient(handler).DownloadTcxAsync(Link, $"{BaseUrl}/ex/1");
 
         var accept = handler.Requests[0].Headers.Accept.ToString();
         Assert.DoesNotContain("application/json", accept);
@@ -112,7 +103,7 @@ public class PolarApiClientTests
     {
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Status(HttpStatusCode.NotFound));
 
-        Assert.Null(await NewClient(handler).DownloadTcxAsync($"{BaseUrl}/ex/1"));
+        Assert.Null(await NewClient(handler).DownloadTcxAsync(Link, $"{BaseUrl}/ex/1"));
     }
 
     [Fact]
@@ -120,7 +111,7 @@ public class PolarApiClientTests
     {
         var handler = new MockHttpMessageHandler(_ => MockHttpMessageHandler.Status(HttpStatusCode.OK));
 
-        await NewClient(handler).CommitTransactionAsync(new PolarTransaction("4242", []));
+        await NewClient(handler).CommitTransactionAsync(Link, new PolarTransaction("4242", []));
 
         Assert.Equal(HttpMethod.Put, handler.Requests[0].Method);
         Assert.Equal($"{BaseUrl}/v3/users/pu-1/exercise-transactions/4242", handler.Requests[0].RequestUri!.ToString());

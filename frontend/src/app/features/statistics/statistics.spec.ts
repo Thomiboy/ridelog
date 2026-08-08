@@ -42,6 +42,17 @@ describe('Statistics', () => {
     { id: 'ride-c', date: '2026-04-01T08:00:00+00:00', distanceKm: 60, routePolyline: 'poly-c' },
   ];
 
+  /**
+   * Blank charts and a records section with nothing in it read as a page that failed to load.
+   * Statistics can tell an empty log from its own data: the monthly aggregates come from rides.
+   */
+  it('shows the first-run state instead of empty charts when there are no rides', () => {
+    const { el } = setup({ monthlyAggregates: [] });
+
+    expect(el.querySelector('.first-run')).not.toBeNull();
+    expect(el.querySelectorAll('app-chart').length).toBe(0);
+  });
+
   function setup(override: Partial<StatisticsResult> = {}, routes: LongestRideRoute[] = longestRoutes) {
     const statisticsService = { getStatistics: vi.fn().mockReturnValue(of({ ...stats, ...override })) };
     const ridesService = { getLongestRides: vi.fn().mockReturnValue(of(routes)) };

@@ -10,6 +10,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { SheetState } from '../../layout/bottom-sheet/sheet-state';
 import { DurationPipe } from '../../core/format/duration.pipe';
 import { LanguageService } from '../../core/i18n/language.service';
+import { FirstRun } from '../../shared/first-run/first-run';
 import { SourceChips } from '../../shared/source-chips/source-chips';
 import { buildCalendarMonth, type CalendarDay } from './rides-calendar';
 import { RidesViewState, type RidesView } from './rides-view-state';
@@ -29,6 +30,7 @@ const PAGE_SIZE: Record<string, number> = { full: 18, half: 8, collapsed: 8 };
     MatButtonModule,
     MatIconModule,
     SourceChips,
+    FirstRun,
   ],
   templateUrl: './rides.html',
   styleUrl: './rides.scss',

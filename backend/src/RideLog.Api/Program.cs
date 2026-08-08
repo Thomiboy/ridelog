@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
 using RideLog.Application.Messaging;
@@ -68,11 +69,24 @@ builder.Services.AddCors(options =>
 // that a backfill cannot run away with the free tier's quota in one morning.
 const int WeatherRidesPerSync = 25;
 
+builder.Services.Configure<PublicLogOptions>(builder.Configuration.GetSection(PublicLogOptions.SectionName));
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<RideLogInitializer>().InitializeAsync();
+
+    // A public log nobody remembered to configure is a blank site, so the setting fills itself in
+    // with the rider whose log has always been the public one. Resolved here, once the admin is
+    // seeded and its id exists, which keeps reading it from an endpoint a plain property access.
+    var publicLog = scope.ServiceProvider.GetRequiredService<IOptions<PublicLogOptions>>().Value;
+    if (string.IsNullOrEmpty(publicLog.RiderId))
+    {
+        var adminEmail = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value.Email;
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        publicLog.RiderId = (await users.FindByEmailAsync(adminEmail))?.Id ?? string.Empty;
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -89,30 +103,34 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("HealthCheck");
 
-app.MapGet("/rides", async (IDispatcher dispatcher, int? page, int? pageSize) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(page ?? 1, pageSize ?? 20))));
+// Signed in, a rider reads their own log; otherwise the one log that is public.
+static string RiderFor(ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    user.FindFirstValue("sub") ?? publicLog.Value.RiderId;
+
+app.MapGet("/rides", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetRidesQuery(RiderFor(user, publicLog), page ?? 1, pageSize ?? 20))));
 
 // The longest cycling routes for the Statistics page's background map (longest first, routes only).
-app.MapGet("/activities", async (IDispatcher dispatcher, int? page, int? pageSize) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetOtherActivitiesQuery(page ?? 1, pageSize ?? 20))));
+app.MapGet("/activities", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog, int? page, int? pageSize) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetOtherActivitiesQuery(RiderFor(user, publicLog), page ?? 1, pageSize ?? 20))));
 
-app.MapGet("/rides/longest", async (IDispatcher dispatcher, int? take) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(take ?? 3))));
+app.MapGet("/rides/longest", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog, int? take) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetLongestRidesQuery(RiderFor(user, publicLog), take ?? 3))));
 
 // Every cycling route for the Rides page's all-routes coverage map.
-app.MapGet("/rides/routes", async (IDispatcher dispatcher) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetRideRoutesQuery())));
+app.MapGet("/rides/routes", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetRideRoutesQuery(RiderFor(user, publicLog)))));
 
-app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher) =>
-    await dispatcher.QueryAsync(new GetRideQuery(id)) is { } ride
+app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    await dispatcher.QueryAsync(new GetRideQuery(id, RiderFor(user, publicLog))) is { } ride
         ? Results.Ok(ride)
         : Results.NotFound());
 
-app.MapGet("/dashboard", async (IDispatcher dispatcher) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery())));
+app.MapGet("/dashboard", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery(RiderFor(user, publicLog)))));
 
-app.MapGet("/statistics", async (IDispatcher dispatcher) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetStatisticsQuery())));
+app.MapGet("/statistics", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
+    Results.Ok(await dispatcher.QueryAsync(new GetStatisticsQuery(RiderFor(user, publicLog)))));
 
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {
@@ -122,13 +140,115 @@ app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
         : Results.Ok(new LoginResponse(token.Token, token.ExpiresAt));
 });
 
-// Protected endpoint: proves a JWT authorizes an admin-only route. Write endpoints reuse this policy.
+// Sign-in with a provider. New riders arrive this way and no other: nothing here sends email, so a
+// local password would have neither verification nor reset (docs/adr/0007).
+const string SignInStatePurpose = "ExternalSignIn.State";
+var signInStateLifetime = TimeSpan.FromMinutes(10);
+
+// A redirect rather than the URL as JSON — unlike the Polar link, whoever asks is not signed in yet,
+// so this is a plain link the browser follows.
+app.MapGet("/auth/{provider}/authorize", (
+    string provider, IExternalProviders providers, IDataProtectionProvider protection, TimeProvider clock) =>
+{
+    if (!providers.Knows(provider))
+    {
+        return Results.NotFound();
+    }
+
+    var state = protection.CreateProtector(SignInStatePurpose)
+        .Protect($"{provider}|{clock.GetUtcNow().ToUnixTimeSeconds()}");
+
+    return Results.Redirect(providers.BuildAuthorizeUrl(provider, state));
+});
+
+app.MapGet("/auth/{provider}/callback", async (
+    string provider, string? code, string? state,
+    IExternalProviders providers, IExternalSignIn signIn, ISignInCodes codes,
+    IDataProtectionProvider protection, TimeProvider clock, ILogger<Program> logger) =>
+{
+    // The provider redirected a browser here, so a refusal has to arrive as a page that says so.
+    var frontend = allowedOrigins.FirstOrDefault();
+    IResult BackToSignIn(string query, string whenHeadless) =>
+        frontend is null ? Results.BadRequest(whenHeadless) : Results.Redirect($"{frontend.TrimEnd('/')}/login{query}");
+
+    // State is what ties this callback to a sign-in this app started; without it a crafted link
+    // signs a rider in as whoever the sender's provider account names.
+    if (!IsOurState(state, provider, protection, clock, signInStateLifetime))
+    {
+        logger.LogWarning("A {Provider} sign-in callback carried a state this app did not issue.", provider);
+        return BackToSignIn("?error=state", "Invalid sign-in state.");
+    }
+
+    ExternalIdentity? identity;
+    try
+    {
+        identity = code is null ? null : await providers.IdentityForAsync(provider, code);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "The {Provider} code exchange failed.", provider);
+        return BackToSignIn("?error=provider", "The sign-in provider could not be reached.");
+    }
+
+    var rider = identity is null ? null : await signIn.SignInAsync(identity);
+    if (rider is null)
+    {
+        logger.LogWarning("A {Provider} sign-in was refused.", provider);
+        return BackToSignIn("?error=refused", "Sign-in refused.");
+    }
+
+    return BackToSignIn($"?code={Uri.EscapeDataString(codes.Issue(rider.RiderId))}", "Signed in.");
+});
+
+// The token is handed over here rather than in the callback's URL, where it would outlive the
+// sign-in in browser history — on a shared machine that loses accounts.
+app.MapPost("/auth/exchange", async (ExchangeRequest request, ISignInCodes codes, IAuthService auth) =>
+{
+    var riderId = codes.Redeem(request.Code);
+    if (riderId is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var token = await auth.TokenForAsync(riderId);
+    return token is null
+        ? Results.Unauthorized()
+        : Results.Ok(new LoginResponse(token.Token, token.ExpiresAt));
+});
+
+static bool IsOurState(
+    string? state, string provider, IDataProtectionProvider protection, TimeProvider clock, TimeSpan lifetime)
+{
+    if (string.IsNullOrEmpty(state))
+    {
+        return false;
+    }
+
+    string unprotected;
+    try
+    {
+        unprotected = protection.CreateProtector(SignInStatePurpose).Unprotect(state);
+    }
+    catch (System.Security.Cryptography.CryptographicException)
+    {
+        return false;
+    }
+
+    var parts = unprotected.Split('|');
+    return parts.Length == 2
+        && string.Equals(parts[0], provider, StringComparison.OrdinalIgnoreCase)
+        && long.TryParse(parts[1], out var issuedAt)
+        && clock.GetUtcNow() - DateTimeOffset.FromUnixTimeSeconds(issuedAt) < lifetime;
+}
+
+// Any signed-in rider, not just the admin: this is how the app knows who is signed in, and the roles
+// it answers with are the caller's own — being told you are not an admin is not a privilege.
 app.MapGet("/auth/me", (ClaimsPrincipal user) => Results.Ok(new
     {
         email = user.FindFirstValue("email"),
         roles = user.FindAll(ClaimTypes.Role).Select(c => c.Value),
     }))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 // Admin-only historical GPX/TCX bulk import; returns a per-file result.
 app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, ClaimsPrincipal user) =>
@@ -155,49 +275,63 @@ app.MapPost("/import", async (HttpRequest request, IActivityImporter importer, C
     .RequireAuthorization(AdminSeedOptions.RoleName)
     .DisableAntiforgery();
 
-// Admin settings: the max heart rate that anchors the HR-zone boundaries.
+// A rider's own settings: the max heart rate that anchors their HR-zone boundaries.
 app.MapGet("/settings", async (IUserSettingsService settings, ClaimsPrincipal user) =>
     Results.Ok(await settings.GetAsync(user.FindFirstValue("sub")!)))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 app.MapPut("/settings", async (UserSettingsDto body, IUserSettingsService settings, ClaimsPrincipal user) =>
 {
     await settings.SetMaxHeartRateAsync(user.FindFirstValue("sub")!, body.MaxHeartRate);
     return Results.Ok();
 })
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin maintenance: re-parse every ride's stored raw files to refresh metrics in place. The only
-// way to fix Polar-synced rides, which AccessLink never re-serves.
+// Maintenance needs no role: every operation here filters on the caller's own id, so the most it
+// can reach is the caller's own log. Re-parsing a ride's stored raw files is also the only way to
+// fix a Polar-synced ride, which AccessLink never re-serves — withholding that is hard to justify.
 app.MapPost("/rides/reprocess", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     Results.Ok(await maintenance.ReprocessAsync(user.FindFirstValue("sub")!)))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin re-parses a single ride's stored files; 404 when the user has no such ride.
+// Re-parses a single ride's stored files; 404 when the rider has no such ride.
 app.MapPost("/rides/{id:guid}/reprocess", async (Guid id, IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     await maintenance.ReprocessAsync(user.FindFirstValue("sub")!, id)
         ? Results.Ok()
         : Results.NotFound())
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin danger action: delete every ride (and its raw files) for the user.
+// Danger action, but only ever to the caller's own log: every ride of theirs, and its raw files.
 app.MapDelete("/rides", async (IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     Results.Ok(new { deleted = await maintenance.DeleteAllAsync(user.FindFirstValue("sub")!) }))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin deletes a single ride (and its raw files); 404 when the user has no such ride.
+// Deletes a single ride (and its raw files); 404 when the rider has no such ride.
 app.MapDelete("/rides/{id:guid}", async (Guid id, IRideMaintenanceService maintenance, ClaimsPrincipal user) =>
     await maintenance.DeleteAsync(user.FindFirstValue("sub")!, id)
         ? Results.Ok()
         : Results.NotFound())
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
-// Admin starts the Polar OAuth flow; the initiating user id is carried in a protected state value.
+// Leaving. Distinct from "delete all my rides", which is maintenance and leaves the Polar link
+// delivering — this takes the rides, the link and the login together.
+app.MapDelete("/account", async (IRiderAccounts accounts, ClaimsPrincipal user) =>
+    await accounts.CloseAsync(user.FindFirstValue("sub")!) switch
+    {
+        AccountClosure.Closed => Results.Ok(),
+        AccountClosure.RefusedPublicLog => Results.Conflict(
+            "This account is the public log. Point that setting at another rider first."),
+        _ => Results.NotFound(),
+    })
+    .RequireAuthorization();
+
+// A rider links their own Polar account; the initiating rider id is carried in a protected state
+// value. No role: a rider who cannot link has a log that never fills.
 const string OAuthStatePurpose = "Polar.OAuthState";
 
-app.MapGet("/polar/status", async (IPolarTokenStore tokenStore) =>
-    Results.Ok(await tokenStore.GetStatusAsync()))
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+app.MapGet("/polar/status", async (IPolarTokenStore tokenStore, ClaimsPrincipal user) =>
+    Results.Ok(await tokenStore.GetStatusAsync(user.FindFirstValue("sub")!)))
+    .RequireAuthorization();
 
 // Returns the Polar URL as JSON so the SPA can navigate the browser to it (a bearer-authorized
 // fetch can't be a redirect the browser follows).
@@ -206,7 +340,7 @@ app.MapGet("/polar/authorize", (IPolarOAuth oauth, IDataProtectionProvider prote
     var state = protection.CreateProtector(OAuthStatePurpose).Protect(user.FindFirstValue("sub")!);
     return Results.Ok(new { authorizeUrl = oauth.BuildAuthorizeUrl(state) });
 })
-    .RequireAuthorization(AdminSeedOptions.RoleName);
+    .RequireAuthorization();
 
 app.MapGet("/polar/callback", async (
     string code, string state, IPolarOAuth oauth, IPolarTokenStore tokenStore,
@@ -256,27 +390,43 @@ app.MapPost("/sync", async (
 {
     var secret = polarOptions.Value.SyncSharedSecret;
     var providedSecret = request.Headers["X-Sync-Secret"].ToString();
-    var authorized = user.IsInRole(AdminSeedOptions.RoleName)
+    // Any signed-in rider may sync themselves — it pulls their own link into their own log — or the
+    // cron may sync everyone with the shared secret.
+    var authorized = user.FindFirstValue("sub") is not null
         || (!string.IsNullOrEmpty(secret) && providedSecret == secret);
     if (!authorized)
     {
         return Results.Unauthorized();
     }
 
-    var appUserId = user.FindFirstValue("sub") ?? (await tokenStore.GetConnectionAsync())?.AppUserId;
-    if (appUserId is null)
-    {
-        return Results.BadRequest("No Polar account is linked.");
-    }
-
-    var result = await sync.SyncAsync(appUserId);
-
     // Weather comes after the sync has committed, never inside it: the import transaction commits
     // even when an exercise fails, so a lookup failing in there would cost the ride itself
     // (docs/adr/0005). A bounded batch also backfills the archive a little every day.
-    var weather = await weatherTopUp.TopUpAsync(appUserId, max: WeatherRidesPerSync);
+    var appUserId = user.FindFirstValue("sub");
+    if (appUserId is not null)
+    {
+        var result = await sync.SyncAsync(appUserId);
+        var weather = await weatherTopUp.TopUpAsync(appUserId, max: WeatherRidesPerSync);
+        return Results.Ok(new { sync = result, weather });
+    }
 
-    return Results.Ok(new { sync = result, weather });
+    // The cron speaks for nobody in particular, so it runs for everyone who has linked.
+    var riders = await sync.SyncAllAsync();
+    foreach (var rider in riders)
+    {
+        try
+        {
+            await weatherTopUp.TopUpAsync(rider.RiderId, max: WeatherRidesPerSync);
+        }
+        catch (Exception ex)
+        {
+            // An archive outage on one rider's turn is theirs, exactly as an expired token is: the
+            // rides are already committed, and every rider after this one still has a turn coming.
+            app.Logger.LogError(ex, "The daily weather top-up failed for rider {RiderId}.", rider.RiderId);
+        }
+    }
+
+    return Results.Ok(new { riders });
 });
 
 // Same operation the daily sync runs, for when the owner would rather not wait for tomorrow.
@@ -286,11 +436,12 @@ app.MapPost("/rides/weather", async (IWeatherTopUpService weatherTopUp, ClaimsPr
     return userId is null
         ? Results.Unauthorized()
         : Results.Ok(await weatherTopUp.TopUpAsync(userId, max ?? WeatherRidesPerSync));
-}).RequireAuthorization(AdminSeedOptions.RoleName);
+}).RequireAuthorization();
 
 app.Run();
 
 internal sealed record LoginRequest(string Email, string Password);
+internal sealed record ExchangeRequest(string Code);
 internal sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
 
 // Exposed so WebApplicationFactory<Program> can boot the API in integration tests.

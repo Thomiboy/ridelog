@@ -15,7 +15,18 @@ internal sealed class AuthService(
             return null;
         }
 
+        return await TokenFor(user);
+    }
+
+    public async Task<AccessToken?> TokenForAsync(string riderId, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(riderId);
+        return user is null ? null : await TokenFor(user);
+    }
+
+    private async Task<AccessToken> TokenFor(IdentityUser user)
+    {
         var roles = await userManager.GetRolesAsync(user);
-        return tokenService.CreateToken(user.Id, user.Email ?? email, [.. roles]);
+        return tokenService.CreateToken(user.Id, user.Email ?? string.Empty, [.. roles]);
     }
 }

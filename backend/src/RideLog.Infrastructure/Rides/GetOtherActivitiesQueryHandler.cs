@@ -20,6 +20,7 @@ internal sealed class GetOtherActivitiesQueryHandler(RideLogDbContext context)
         // the raw name and EF has no way to translate it. The read side already materialises here to
         // order and page, so this costs nothing extra.
         var rows = await context.Rides
+            .Where(ride => ride.UserId == query.RiderId)
             .Select(ride => new
             {
                 ride.Id,

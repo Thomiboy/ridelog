@@ -1,10 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { TranslocoDatePipe } from '@jsverse/transloco-locale';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { TranslocoService } from '@jsverse/transloco';
+import { AuthService } from '../../core/auth/auth.service';
 import { AdminService } from '../../core/api/admin.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
@@ -29,6 +30,15 @@ export class Admin {
   private readonly transloco = inject(TranslocoService);
   private readonly mapState = inject(MapState);
 
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  /** Only the bulk import is an admin's to run; everything else here is the rider's own log. */
+  readonly isAdmin = this.auth.isAdmin;
+
+  /** Set when the API refused to close this account because it is the public log. */
+  readonly closeRefused = signal(false);
+
   readonly status = signal<PolarStatus | null>(null);
   readonly selectedFiles = signal<File[]>([]);
   readonly importResult = signal<ImportSummary | null>(null);
@@ -49,7 +59,9 @@ export class Admin {
     this.failed.set(polar === 'error');
 
     this.loadStatus();
-    this.adminService.getSettings().subscribe((settings) => this.maxHeartRate.set(settings.maxHeartRate));
+    this.adminService
+      .getSettings()
+      .subscribe((settings) => this.maxHeartRate.set(settings.maxHeartRate));
   }
 
   onMaxHrInput(event: Event): void {
@@ -160,6 +172,38 @@ export class Admin {
         error: () => this.fail(),
       }),
     );
+  }
+
+  /**
+   * Leaving, which is not the same act as emptying the log — so it asks separately, and twice,
+   * because a closed account cannot be reopened and its rides do not come back from Polar.
+   */
+  closeAccount(): void {
+    if (!confirm(this.transloco.translate('admin.account.closeConfirm1'))) {
+      return;
+    }
+    if (!confirm(this.transloco.translate('admin.account.closeConfirm2'))) {
+      return;
+    }
+
+    this.run(() =>
+      this.adminService.closeAccount().subscribe({
+        next: () => {
+          this.auth.logout();
+          this.busy.set(false);
+          this.router.navigateByUrl('/');
+        },
+        // 409 is the API refusing because this rider is the configured public log — a specific
+        // thing the owner can act on, so it does not deserve the generic failure message.
+        error: (error: { status?: number }) =>
+          error.status === 409 ? this.refusedAsPublicLog() : this.fail(),
+      }),
+    );
+  }
+
+  private refusedAsPublicLog(): void {
+    this.closeRefused.set(true);
+    this.busy.set(false);
   }
 
   /**

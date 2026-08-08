@@ -24,6 +24,17 @@ the rider's own log. What a rider is allowed to do, which is a different questio
 world can see.
 _Avoid_: Owner, superuser
 
+**Closing an account**:
+Leaving: a rider's rides, stored files, Polar link and login go together, so nothing is left to sign
+back into. Distinct from emptying a log, which is maintenance — the link survives that and keeps
+delivering.
+_Avoid_: Deleting a user, deactivating, unsubscribing
+
+**Sign-in provider**:
+Google or Microsoft, who say who a rider is and vouch for their email address. New riders arrive
+only this way; the one seeded admin keeps a password because it predates them.
+_Avoid_: Identity provider, social login, IdP
+
 ### Activities
 
 **Ride**:

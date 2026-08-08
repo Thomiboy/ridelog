@@ -1,6 +1,21 @@
 <section class="login">
   <h1>{{ 'login.title' | transloco }}</h1>
 
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message | transloco }}</p>
+  }
+
+  <!-- Links, not buttons: signing in is a navigation to the API, which holds the client id. -->
+  <nav class="providers">
+    @for (provider of providers; track provider.id) {
+      <a mat-stroked-button [href]="authorizeUrl(provider.id)">
+        {{ 'login.continueWith' | transloco: { provider: provider.name } }}
+      </a>
+    }
+  </nav>
+
+  <p class="or">{{ 'login.orAdmin' | transloco }}</p>
+
   <form [formGroup]="form" (ngSubmit)="submit()">
     <mat-form-field appearance="outline">
       <mat-label>{{ 'login.email' | transloco }}</mat-label>
@@ -11,10 +26,6 @@
       <mat-label>{{ 'login.password' | transloco }}</mat-label>
       <input matInput type="password" formControlName="password" autocomplete="current-password" />
     </mat-form-field>
-
-    @if (failed()) {
-      <p class="error" role="alert">{{ 'login.error' | transloco }}</p>
-    }
 
     <button mat-flat-button type="submit" [disabled]="form.invalid">{{ 'login.submit' | transloco }}</button>
   </form>

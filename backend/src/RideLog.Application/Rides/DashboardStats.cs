@@ -30,4 +30,9 @@ public sealed record DashboardStats(
     SameMonthLastYear SameMonthLastYear,
     IReadOnlyList<MonthlyDistance> MonthlyDistance,
     IReadOnlyList<MonthlySpeed> AverageSpeedTrend,
-    IReadOnlyList<MonthlyAverageTemperature> AverageTemperatureTrend);
+    IReadOnlyList<MonthlyAverageTemperature> AverageTemperatureTrend,
+    /// <summary>
+    /// Whether this rider has ridden at all, ever. Every other figure here covers this year and
+    /// last, so none of them can tell an empty log from one whose rides are simply older.
+    /// </summary>
+    bool HasRides);

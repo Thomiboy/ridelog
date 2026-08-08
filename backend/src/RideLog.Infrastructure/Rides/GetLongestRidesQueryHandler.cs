@@ -15,7 +15,7 @@ internal sealed class GetLongestRidesQueryHandler(RideLogDbContext context)
     {
         var take = Math.Clamp(query.Take <= 0 ? 3 : query.Take, 1, MaxTake);
 
-        var cycling = context.Rides.Where(ride => ride.RoutePolyline != null);
+        var cycling = context.Rides.Where(ride => ride.UserId == query.RiderId && ride.RoutePolyline != null);
         foreach (var keyword in CyclingRides.NonCyclingKeywords)
         {
             // Exclude known non-cycling sports; untagged rides ("Unknown") pass through.

@@ -45,4 +45,9 @@ export interface DashboardStats {
   averageSpeedTrend: MonthlySpeed[];
   // Optional so the dashboard survives an older backend that doesn't send it yet.
   averageTemperatureTrend?: MonthlyAverageTemperature[];
+  /**
+   * Whether this rider has ridden at all, ever. Everything else here covers this year and last, so
+   * none of it can tell an empty log from one whose rides are simply older.
+   */
+  hasRides: boolean;
 }

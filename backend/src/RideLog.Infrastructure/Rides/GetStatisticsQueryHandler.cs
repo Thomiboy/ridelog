@@ -17,7 +17,7 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
 
     public async Task<StatisticsResult> HandleAsync(GetStatisticsQuery query, CancellationToken cancellationToken = default)
     {
-        var cycling = context.Rides.AsQueryable();
+        var cycling = context.Rides.Where(ride => ride.UserId == query.RiderId);
         foreach (var keyword in CyclingRides.NonCyclingKeywords)
         {
             cycling = cycling.Where(ride => !ride.Sport.ToLower().Contains(keyword));
@@ -32,7 +32,10 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
                 ride.AverageTemperatureCelsius, ride.MinTemperatureCelsius, ride.MaxTemperatureCelsius))
             .ToListAsync(cancellationToken);
 
+        // This rider's own setting, not everyone's: the rows are theirs, so nobody else's configured
+        // maximum has any business being read here.
         var maxHeartRateByUser = await context.UserSettings
+            .Where(s => s.UserId == query.RiderId)
             .ToDictionaryAsync(s => s.UserId, s => s.MaxHeartRate, cancellationToken);
 
         var monthlyAggregates = rows

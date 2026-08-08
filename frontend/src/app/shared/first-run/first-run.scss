@@ -1,0 +1,15 @@
+.first-run {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 2rem 0;
+  max-width: 34rem;
+
+  .headline {
+    color: var(--mat-sys-on-surface);
+    font-size: 1.125rem;
+    margin: 0 0 0.5rem;
+  }
+
+  p {
+    margin: 0 0 0.5rem;
+  }
+}

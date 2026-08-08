@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,7 @@ public sealed class PolarSyncServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<RideLogDbContext> _options;
+    private readonly IDataProtectionProvider _protection = new EphemeralDataProtectionProvider();
 
     public PolarSyncServiceTests()
     {
@@ -23,6 +25,10 @@ public sealed class PolarSyncServiceTests : IDisposable
         _options = new DbContextOptionsBuilder<RideLogDbContext>().UseSqlite(_connection).Options;
         using var context = new RideLogDbContext(_options);
         context.Database.EnsureCreated();
+
+        // A sync pulls with the rider's own link, so these tests need admin-1 to have one.
+        new PolarTokenStore(context, _protection)
+            .SaveAsync("admin-1", new PolarToken("access-tok", "pu-1")).GetAwaiter().GetResult();
     }
 
     public void Dispose() => _connection.Dispose();
@@ -85,7 +91,8 @@ public sealed class PolarSyncServiceTests : IDisposable
 
     private PolarSyncService NewService(
         IPolarClient client, RideLogDbContext context, ILogger<PolarSyncService>? logger = null) =>
-        new(client, context, [new GpxActivityParser(), new TcxActivityParser()], logger ?? NullLogger<PolarSyncService>.Instance);
+        new(client, new PolarTokenStore(context, _protection), context,
+            [new GpxActivityParser(), new TcxActivityParser()], logger ?? NullLogger<PolarSyncService>.Instance);
 
     private sealed class CapturingLogger<T> : ILogger<T>
     {
@@ -212,19 +219,6 @@ public sealed class PolarSyncServiceTests : IDisposable
     [Fact]
     public async Task Sync_stamps_the_last_sync_time_on_the_connection()
     {
-        await using (var context = new RideLogDbContext(_options))
-        {
-            context.PolarConnections.Add(new RideLog.Infrastructure.Persistence.PolarConnection
-            {
-                Id = Guid.NewGuid(),
-                UserId = "admin-1",
-                PolarUserId = "pu-1",
-                AccessTokenProtected = "protected",
-                ConnectedAt = DateTimeOffset.UtcNow.AddDays(-3),
-            });
-            await context.SaveChangesAsync();
-        }
-
         var before = DateTimeOffset.UtcNow;
         await using (var context = new RideLogDbContext(_options))
         {
@@ -262,19 +256,6 @@ public sealed class PolarSyncServiceTests : IDisposable
     [Fact]
     public async Task Sync_records_the_last_summary_on_the_connection()
     {
-        await using (var context = new RideLogDbContext(_options))
-        {
-            context.PolarConnections.Add(new RideLog.Infrastructure.Persistence.PolarConnection
-            {
-                Id = Guid.NewGuid(),
-                UserId = "admin-1",
-                PolarUserId = "pu-1",
-                AccessTokenProtected = "protected",
-                ConnectedAt = DateTimeOffset.UtcNow.AddDays(-3),
-            });
-            await context.SaveChangesAsync();
-        }
-
         await using (var context = new RideLogDbContext(_options))
         {
             await NewService(ClientWithOneExercise(), context).SyncAsync("admin-1");

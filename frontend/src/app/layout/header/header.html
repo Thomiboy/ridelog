@@ -8,7 +8,7 @@
     <a routerLink="/rides" routerLinkActive="active">{{ 'nav.rides' | transloco }}</a>
     <a routerLink="/activities" routerLinkActive="active">{{ 'nav.activities' | transloco }}</a>
     <a routerLink="/statistics" routerLinkActive="active">{{ 'nav.statistics' | transloco }}</a>
-    @if (isAdmin()) {
+    @if (isLoggedIn()) {
       <a routerLink="/admin" routerLinkActive="active">{{ 'nav.admin' | transloco }}</a>
     }
   </nav>

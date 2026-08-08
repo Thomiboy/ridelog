@@ -7,5 +7,5 @@ namespace RideLog.Application.Rides;
 /// <see cref="GetRidesQuery"/> rather than a filter over it: nothing is a term for both, and the
 /// rides list is left exactly as it was (docs/adr/0004).
 /// </summary>
-public sealed record GetOtherActivitiesQuery(int Page = 1, int PageSize = 20)
+public sealed record GetOtherActivitiesQuery(string RiderId, int Page = 1, int PageSize = 20)
     : IQuery<PagedResult<RideListItem>>;

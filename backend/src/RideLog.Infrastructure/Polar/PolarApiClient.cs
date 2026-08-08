@@ -15,17 +15,15 @@ namespace RideLog.Infrastructure.Polar;
 /// </summary>
 internal sealed class PolarApiClient(
     HttpClient http,
-    IPolarTokenStore tokenStore,
     IOptions<PolarOptions> options) : IPolarClient
 {
     private readonly string _baseUrl = options.Value.ApiBaseUrl.TrimEnd('/');
 
-    public async Task<PolarTransaction?> StartTransactionAsync(CancellationToken cancellationToken = default)
+    public async Task<PolarTransaction?> StartTransactionAsync(PolarToken link, CancellationToken cancellationToken = default)
     {
-        var (userId, _) = await AuthContextAsync(cancellationToken);
-        var transactionsUrl = $"{_baseUrl}/v3/users/{userId}/exercise-transactions";
+        var transactionsUrl = $"{_baseUrl}/v3/users/{link.PolarUserId}/exercise-transactions";
 
-        using var createRequest = await AuthorizedAsync(HttpMethod.Post, transactionsUrl, cancellationToken);
+        using var createRequest = Authorized(link, HttpMethod.Post, transactionsUrl);
         using var createResponse = await http.SendAsync(createRequest, cancellationToken);
         if (createResponse.StatusCode == HttpStatusCode.NoContent)
         {
@@ -36,7 +34,7 @@ internal sealed class PolarApiClient(
         using var created = await ReadJsonAsync(createResponse, cancellationToken);
         var transactionId = created.RootElement.GetProperty("transaction-id").ToString();
 
-        using var listRequest = await AuthorizedAsync(HttpMethod.Get, $"{transactionsUrl}/{transactionId}", cancellationToken);
+        using var listRequest = Authorized(link, HttpMethod.Get, $"{transactionsUrl}/{transactionId}");
         using var listResponse = await http.SendAsync(listRequest, cancellationToken);
         listResponse.EnsureSuccessStatusCode();
 
@@ -48,9 +46,10 @@ internal sealed class PolarApiClient(
         return new PolarTransaction(transactionId, exercises);
     }
 
-    public async Task<PolarExercise> GetExerciseAsync(string exerciseUrl, CancellationToken cancellationToken = default)
+    public async Task<PolarExercise> GetExerciseAsync(
+        PolarToken link, string exerciseUrl, CancellationToken cancellationToken = default)
     {
-        using var request = await AuthorizedAsync(HttpMethod.Get, exerciseUrl, cancellationToken);
+        using var request = Authorized(link, HttpMethod.Get, exerciseUrl);
         using var response = await http.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
@@ -66,25 +65,28 @@ internal sealed class PolarApiClient(
     }
 
     // The GPX/TCX sub-resources are XML files, not JSON — asking for application/json returns 406.
-    public Task<byte[]?> DownloadGpxAsync(string exerciseUrl, CancellationToken cancellationToken = default) =>
-        DownloadAsync($"{exerciseUrl}/gpx", "application/gpx+xml", cancellationToken);
+    public Task<byte[]?> DownloadGpxAsync(
+        PolarToken link, string exerciseUrl, CancellationToken cancellationToken = default) =>
+        DownloadAsync(link, $"{exerciseUrl}/gpx", "application/gpx+xml", cancellationToken);
 
-    public Task<byte[]?> DownloadTcxAsync(string exerciseUrl, CancellationToken cancellationToken = default) =>
-        DownloadAsync($"{exerciseUrl}/tcx", "application/vnd.garmin.tcx+xml", cancellationToken);
+    public Task<byte[]?> DownloadTcxAsync(
+        PolarToken link, string exerciseUrl, CancellationToken cancellationToken = default) =>
+        DownloadAsync(link, $"{exerciseUrl}/tcx", "application/vnd.garmin.tcx+xml", cancellationToken);
 
-    public async Task CommitTransactionAsync(PolarTransaction transaction, CancellationToken cancellationToken = default)
+    public async Task CommitTransactionAsync(
+        PolarToken link, PolarTransaction transaction, CancellationToken cancellationToken = default)
     {
-        var (userId, _) = await AuthContextAsync(cancellationToken);
-        var url = $"{_baseUrl}/v3/users/{userId}/exercise-transactions/{transaction.Id}";
+        var url = $"{_baseUrl}/v3/users/{link.PolarUserId}/exercise-transactions/{transaction.Id}";
 
-        using var request = await AuthorizedAsync(HttpMethod.Put, url, cancellationToken);
+        using var request = Authorized(link, HttpMethod.Put, url);
         using var response = await http.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<byte[]?> DownloadAsync(string url, string accept, CancellationToken cancellationToken)
+    private async Task<byte[]?> DownloadAsync(
+        PolarToken link, string url, string accept, CancellationToken cancellationToken)
     {
-        using var request = await AuthorizedAsync(HttpMethod.Get, url, cancellationToken, accept);
+        using var request = Authorized(link, HttpMethod.Get, url, accept);
         using var response = await http.SendAsync(request, cancellationToken);
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NoContent)
         {
@@ -94,19 +96,11 @@ internal sealed class PolarApiClient(
         return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
-    private async Task<(string PolarUserId, string AccessToken)> AuthContextAsync(CancellationToken cancellationToken)
+    private static HttpRequestMessage Authorized(
+        PolarToken link, HttpMethod method, string url, string accept = "application/json")
     {
-        var connection = await tokenStore.GetConnectionAsync(cancellationToken)
-            ?? throw new InvalidOperationException("No Polar account is linked.");
-        return (connection.Token.PolarUserId, connection.Token.AccessToken);
-    }
-
-    private async Task<HttpRequestMessage> AuthorizedAsync(
-        HttpMethod method, string url, CancellationToken cancellationToken, string accept = "application/json")
-    {
-        var (_, accessToken) = await AuthContextAsync(cancellationToken);
         var request = new HttpRequestMessage(method, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", link.AccessToken);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(accept));
         return request;
     }

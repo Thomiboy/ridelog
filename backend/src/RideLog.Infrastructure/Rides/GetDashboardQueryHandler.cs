@@ -17,7 +17,7 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
         var now = clock.GetUtcNow();
         var currentYear = now.Year;
 
-        var cycling = context.Rides.AsQueryable();
+        var cycling = context.Rides.Where(ride => ride.UserId == query.RiderId);
         foreach (var keyword in CyclingRides.NonCyclingKeywords)
         {
             cycling = cycling.Where(ride => !ride.Sport.ToLower().Contains(keyword));
@@ -75,8 +75,11 @@ internal sealed class GetDashboardQueryHandler(RideLogDbContext context, TimePro
             temperatureTrend.Add(new MonthlyAverageTemperature(month.Year, month.Month, temps.Count > 0 ? Math.Round(temps.Average(), 1) : null));
         }
 
+        // `rows` is every ride this rider has, unfiltered by year — the one thing on this page that
+        // can tell an empty log from one whose rides are simply older than the charts.
         return new DashboardStats(
-            thisMonth, thisYear, lastYear, sameMonthLastYear, monthlyDistance, speedTrend, temperatureTrend);
+            thisMonth, thisYear, lastYear, sameMonthLastYear, monthlyDistance, speedTrend, temperatureTrend,
+            HasRides: rows.Count > 0);
     }
 
     private static PeriodStats Period(IEnumerable<Row> rides)

@@ -46,23 +46,28 @@ internal sealed class PolarTokenStore : IPolarTokenStore
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<PolarConnectionInfo?> GetConnectionAsync(CancellationToken cancellationToken = default)
+    public async Task<PolarConnectionInfo?> GetConnectionAsync(
+        string riderId, CancellationToken cancellationToken = default)
     {
-        // Single connection in the MVP; the unique UserId index keeps it to one row.
-        var connection = await _context.PolarConnections.FirstOrDefaultAsync(cancellationToken);
+        var connection = await _context.PolarConnections
+            .SingleOrDefaultAsync(c => c.UserId == riderId, cancellationToken);
 
-        if (connection is null)
-        {
-            return null;
-        }
-
-        var accessToken = _protector.Unprotect(connection.AccessTokenProtected);
-        return new PolarConnectionInfo(connection.UserId, new PolarToken(accessToken, connection.PolarUserId));
+        return connection is null
+            ? null
+            : new PolarConnectionInfo(
+                connection.UserId,
+                new PolarToken(_protector.Unprotect(connection.AccessTokenProtected), connection.PolarUserId));
     }
 
-    public async Task<PolarStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<string>> GetLinkedRidersAsync(CancellationToken cancellationToken = default) =>
+        await _context.PolarConnections
+            .Select(connection => connection.UserId)
+            .ToListAsync(cancellationToken);
+
+    public async Task<PolarStatus> GetStatusAsync(string riderId, CancellationToken cancellationToken = default)
     {
-        var connection = await _context.PolarConnections.FirstOrDefaultAsync(cancellationToken);
+        var connection = await _context.PolarConnections
+            .SingleOrDefaultAsync(c => c.UserId == riderId, cancellationToken);
         if (connection is null)
         {
             return new PolarStatus(false, null, null, null);

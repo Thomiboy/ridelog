@@ -176,7 +176,23 @@ describe('Rides', () => {
     const { el } = setup({ items: [], page: 1, pageSize: 20, total: 0 });
 
     expect(el.querySelectorAll('[data-ride]').length).toBe(0);
-    expect(el.querySelector('.empty')?.textContent).toContain('No rides yet');
+    expect(el.querySelector('.first-run')?.textContent).toContain('No rides here yet');
+  });
+
+  /**
+   * The old empty state told whoever read it to sign in as admin and import history — a tool no
+   * rider but the owner will ever have, and advice a visitor cannot act on at all.
+   */
+  it('tells the rider whose log it is how rides will arrive', () => {
+    const { el } = setup({ items: [], page: 1, pageSize: 20, total: 0 }, true);
+
+    expect(el.textContent).toContain('recorded after you link');
+  });
+
+  it('gives a visitor looking at an empty log nothing to do', () => {
+    const { el } = setup({ items: [], page: 1, pageSize: 20, total: 0 }, false);
+
+    expect(el.textContent).not.toContain('recorded after you link');
   });
 
   it('requests a full sheet page size of 18 rides', () => {

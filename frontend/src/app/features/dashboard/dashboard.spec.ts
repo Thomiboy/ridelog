@@ -29,6 +29,7 @@ describe('Dashboard', () => {
     ],
     averageSpeedTrend: [{ year: 2026, month: 7, averageSpeedKmh: 31 }],
     averageTemperatureTrend: [{ year: 2026, month: 7, averageTemperatureCelsius: 22 }],
+    hasRides: true,
   };
 
   function setup(override: Partial<DashboardStats> = {}) {
@@ -44,6 +45,17 @@ describe('Dashboard', () => {
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
   }
+
+  /**
+   * Zeros and blank charts are what a new rider met before, which reads as a broken app rather than
+   * a new one.
+   */
+  it('shows the first-run state instead of zeros when the rider has never ridden', () => {
+    const { el } = setup({ hasRides: false });
+
+    expect(el.querySelector('.first-run')).not.toBeNull();
+    expect(el.querySelectorAll('[data-tile]').length).toBe(0);
+  });
 
   it('renders the stat tiles with the aggregates', () => {
     const { el } = setup();

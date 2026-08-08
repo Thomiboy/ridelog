@@ -50,8 +50,17 @@ describe('Header', () => {
     expect(text()).toContain('Admin');
   });
 
-  it('hides the admin link for non-admins', () => {
+  /**
+   * The page behind this link is a rider's own — their Polar link, their zones, their rides. Only
+   * the bulk import on it crosses riders, and that card is what hides, not the link.
+   */
+  it('shows the link to any signed-in rider', () => {
     const { text } = setup({ loggedIn: true, admin: false });
+    expect(text()).toContain('Admin');
+  });
+
+  it('hides the link from a visitor who is not signed in', () => {
+    const { text } = setup({ loggedIn: false, admin: false });
     expect(text()).not.toContain('Admin');
   });
 

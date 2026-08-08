@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard } from './core/auth/admin.guard';
+import { signedInGuard } from './core/auth/signed-in.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard) },
@@ -10,7 +10,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [signedInGuard],
     loadComponent: () => import('./features/admin/admin').then((m) => m.Admin),
   },
   { path: '**', redirectTo: '' },

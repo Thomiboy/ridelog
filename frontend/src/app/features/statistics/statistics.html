@@ -2,221 +2,382 @@
   <h1>{{ 'statistics.title' | transloco }}</h1>
 
   @if (stats(); as stats) {
-    <!-- Records -->
-    <h2>{{ 'statistics.records.title' | transloco }} <span class="section-note">{{ 'statistics.allTime' | transloco }}</span></h2>
-    <div class="tiles">
-      @if (records()?.longestRide; as longest) {
-        <mat-card appearance="outlined" class="tile" data-record="longest-ride">
-          <span class="label">{{ 'statistics.records.longestRide' | transloco }}</span>
-          <span class="value">{{ longest.distanceKm | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km</span>
-          <a [routerLink]="['/rides', longest.id]">{{ longest.date | translocoDate: { dateStyle: 'medium' } }}</a>
-        </mat-card>
-      }
-      @if (records()?.fastestAverage; as fastest) {
-        <mat-card appearance="outlined" class="tile" data-record="fastest-average">
-          <span class="label">{{ 'statistics.records.fastestAverage' | transloco }}</span>
-          <span class="value">{{ fastest.averageSpeedKmh | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km/h</span>
-          <a [routerLink]="['/rides', fastest.id]">{{ fastest.date | translocoDate: { dateStyle: 'medium' } }}</a>
-        </mat-card>
-      }
-      @if (records()?.maxSpeed; as maxSpeed) {
-        <mat-card appearance="outlined" class="tile" data-record="max-speed">
-          <span class="label">{{ 'statistics.records.maxSpeed' | transloco }}</span>
-          <span class="value">{{ maxSpeed.maxSpeedKmh | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} km/h</span>
-          <a [routerLink]="['/rides', maxSpeed.id]">{{ maxSpeed.date | translocoDate: { dateStyle: 'medium' } }}</a>
-        </mat-card>
-      }
-      @if (records()?.biggestClimb; as biggestClimb) {
-        <mat-card appearance="outlined" class="tile" data-record="biggest-climb">
-          <span class="label">{{ 'statistics.records.biggestClimb' | transloco }}</span>
-          <span class="value">{{ biggestClimb.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 } }} m</span>
-          <a [routerLink]="['/rides', biggestClimb.id]">{{ biggestClimb.date | translocoDate: { dateStyle: 'medium' } }}</a>
-        </mat-card>
-      }
-      @if (records()?.longestStreak; as streak) {
-        <mat-card appearance="outlined" class="tile" data-record="longest-streak">
-          <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>
-          <span class="value">{{ 'statistics.records.days' | transloco: { count: streak.days } }}</span>
-          <span class="range">
-            {{ streak.startDate | translocoDate: { dateStyle: 'medium' } }} – {{ streak.endDate | translocoDate: { dateStyle: 'medium' } }}
-            · {{ streak.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km
-          </span>
-        </mat-card>
-      }
-      @if (records()?.mostCalories; as mostCalories) {
-        <mat-card appearance="outlined" class="tile" data-record="most-calories">
-          <span class="label">{{ 'statistics.records.mostCalories' | transloco }}</span>
-          <span class="value">{{ mostCalories.calories | translocoDecimal: { maximumFractionDigits: 0 } }} kcal</span>
-          <a [routerLink]="['/rides', mostCalories.id]">{{ mostCalories.date | translocoDate: { dateStyle: 'medium' } }}</a>
-        </mat-card>
-      }
-      @if (records()?.bestMonthDistance; as bestMonthDistance) {
-        <mat-card appearance="outlined" class="tile" data-record="best-month-distance">
-          <span class="label">{{ 'statistics.records.bestMonthDistance' | transloco }}</span>
-          <span class="value">{{ bestMonthDistance.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km</span>
-          <span class="range">
-            {{ monthDate(bestMonthDistance.year, bestMonthDistance.month) | translocoDate: { month: 'long', year: 'numeric' } }}
-          </span>
-        </mat-card>
-      }
-      @if (records()?.bestMonthRides; as bestMonthRides) {
-        <mat-card appearance="outlined" class="tile" data-record="best-month-rides">
-          <span class="label">{{ 'statistics.records.bestMonthRides' | transloco }}</span>
-          <span class="value">{{ bestMonthRides.rideCount }}</span>
-          <span class="range">
-            {{ monthDate(bestMonthRides.year, bestMonthRides.month) | translocoDate: { month: 'long', year: 'numeric' } }}
-          </span>
-        </mat-card>
-      }
-      @if (records()?.longestDuration; as longestDuration) {
-        <mat-card appearance="outlined" class="tile" data-record="longest-duration">
-          <span class="label">{{ 'statistics.records.longestDuration' | transloco }}</span>
-          <span class="value">{{ longestDuration.durationMinutes | duration }}</span>
-          <a [routerLink]="['/rides', longestDuration.id]">{{ longestDuration.date | translocoDate: { dateStyle: 'medium' } }}</a>
-        </mat-card>
-      }
-    </div>
-
-    <!-- Trends -->
-    <div class="trends-header">
-      <h2>{{ 'statistics.trends.title' | transloco }}</h2>
-      @if (years().length > 0) {
-        <label class="year-select">
-          <span>{{ 'statistics.trends.year' | transloco }}</span>
-          <select data-testid="year-select" (change)="selectYear($any($event.target).value)">
-            @for (year of years(); track year) {
-              <option [value]="year" [selected]="year === activeYear()">{{ year }}</option>
-            }
-          </select>
-        </label>
-      }
-      <!-- Nothing to compare against until a second year has data. -->
-      @if (years().length > 1) {
-        <label class="year-select">
-          <span>{{ 'statistics.trends.compareYear' | transloco }}</span>
-          <select data-testid="compare-select" (change)="selectCompareYear($any($event.target).value)">
-            <option value="" [selected]="activeCompareYear() === null">{{ 'statistics.trends.compareNone' | transloco }}</option>
-            @for (year of compareYearOptions(); track year) {
-              <option [value]="year" [selected]="year === activeCompareYear()">{{ year }}</option>
-            }
-          </select>
-        </label>
-      }
-    </div>
-
-    <!-- Charts for the year picked above. -->
-    <div class="charts">
-      @if (distanceChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="distance">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.distance' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      <!-- Time sits next to distance: the two "how much did I ride" measures. -->
-      @if (durationChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="duration">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.duration' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      @if (elevationChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="elevation">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.elevation' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      @if (ridesChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="rides">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.rides' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      @if (caloriesChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="calories">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.calories' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      @if (yearTemperatureDistributionChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="temperature-by-year">
-          <mat-card-header>
-            <mat-card-title>{{ 'statistics.trends.temperatureDistribution' | transloco }}</mat-card-title>
-          </mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-    </div>
-
-    <!-- All-years totals, separated from the per-year charts above so it's clear they span every year. -->
-    <h3 class="trends-subhead">{{ 'statistics.trends.byYear' | transloco }}</h3>
-    <div class="charts">
-      @if (yearTotalsChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="year-totals">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.yearTotals' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-      @if (ridesByYearChart(); as chart) {
-        <mat-card appearance="outlined" class="chart-card" data-chart="rides-by-year">
-          <mat-card-header><mat-card-title>{{ 'statistics.trends.ridesByYear' | transloco }}</mat-card-title></mat-card-header>
-          <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-        </mat-card>
-      }
-    </div>
-
-    @if (hrZoneChart(); as chart) {
-      <section data-section="hr-zones">
-        <h2>{{ 'statistics.hrZones.title' | transloco }} <span class="section-note">{{ 'statistics.allTime' | transloco }}</span></h2>
-        <div class="charts">
-          <mat-card appearance="outlined" class="chart-card" data-chart="hr-zones">
-            <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
+    @if (isEmptyLog()) {
+      <app-first-run [ownLog]="isOwnLog()" />
+    } @else {
+      <!-- Records -->
+      <h2>
+        {{ 'statistics.records.title' | transloco }}
+        <span class="section-note">{{ 'statistics.allTime' | transloco }}</span>
+      </h2>
+      <div class="tiles">
+        @if (records()?.longestRide; as longest) {
+          <mat-card appearance="outlined" class="tile" data-record="longest-ride">
+            <span class="label">{{ 'statistics.records.longestRide' | transloco }}</span>
+            <span class="value"
+              >{{
+                longest.distanceKm
+                  | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+              }}
+              km</span
+            >
+            <a [routerLink]="['/rides', longest.id]">{{
+              longest.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
           </mat-card>
-        </div>
-      </section>
-    }
+        }
+        @if (records()?.fastestAverage; as fastest) {
+          <mat-card appearance="outlined" class="tile" data-record="fastest-average">
+            <span class="label">{{ 'statistics.records.fastestAverage' | transloco }}</span>
+            <span class="value"
+              >{{
+                fastest.averageSpeedKmh
+                  | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+              }}
+              km/h</span
+            >
+            <a [routerLink]="['/rides', fastest.id]">{{
+              fastest.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+        @if (records()?.maxSpeed; as maxSpeed) {
+          <mat-card appearance="outlined" class="tile" data-record="max-speed">
+            <span class="label">{{ 'statistics.records.maxSpeed' | transloco }}</span>
+            <span class="value"
+              >{{
+                maxSpeed.maxSpeedKmh
+                  | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+              }}
+              km/h</span
+            >
+            <a [routerLink]="['/rides', maxSpeed.id]">{{
+              maxSpeed.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+        @if (records()?.biggestClimb; as biggestClimb) {
+          <mat-card appearance="outlined" class="tile" data-record="biggest-climb">
+            <span class="label">{{ 'statistics.records.biggestClimb' | transloco }}</span>
+            <span class="value"
+              >{{
+                biggestClimb.elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 }
+              }}
+              m</span
+            >
+            <a [routerLink]="['/rides', biggestClimb.id]">{{
+              biggestClimb.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+        @if (records()?.longestStreak; as streak) {
+          <mat-card appearance="outlined" class="tile" data-record="longest-streak">
+            <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>
+            <span class="value">{{
+              'statistics.records.days' | transloco: { count: streak.days }
+            }}</span>
+            <span class="range">
+              {{ streak.startDate | translocoDate: { dateStyle: 'medium' } }} –
+              {{ streak.endDate | translocoDate: { dateStyle: 'medium' } }} ·
+              {{ streak.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km
+            </span>
+          </mat-card>
+        }
+        @if (records()?.mostCalories; as mostCalories) {
+          <mat-card appearance="outlined" class="tile" data-record="most-calories">
+            <span class="label">{{ 'statistics.records.mostCalories' | transloco }}</span>
+            <span class="value"
+              >{{
+                mostCalories.calories | translocoDecimal: { maximumFractionDigits: 0 }
+              }}
+              kcal</span
+            >
+            <a [routerLink]="['/rides', mostCalories.id]">{{
+              mostCalories.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+        @if (records()?.bestMonthDistance; as bestMonthDistance) {
+          <mat-card appearance="outlined" class="tile" data-record="best-month-distance">
+            <span class="label">{{ 'statistics.records.bestMonthDistance' | transloco }}</span>
+            <span class="value"
+              >{{
+                bestMonthDistance.distanceKm | translocoDecimal: { maximumFractionDigits: 0 }
+              }}
+              km</span
+            >
+            <span class="range">
+              {{
+                monthDate(bestMonthDistance.year, bestMonthDistance.month)
+                  | translocoDate: { month: 'long', year: 'numeric' }
+              }}
+            </span>
+          </mat-card>
+        }
+        @if (records()?.bestMonthRides; as bestMonthRides) {
+          <mat-card appearance="outlined" class="tile" data-record="best-month-rides">
+            <span class="label">{{ 'statistics.records.bestMonthRides' | transloco }}</span>
+            <span class="value">{{ bestMonthRides.rideCount }}</span>
+            <span class="range">
+              {{
+                monthDate(bestMonthRides.year, bestMonthRides.month)
+                  | translocoDate: { month: 'long', year: 'numeric' }
+              }}
+            </span>
+          </mat-card>
+        }
+        @if (records()?.longestDuration; as longestDuration) {
+          <mat-card appearance="outlined" class="tile" data-record="longest-duration">
+            <span class="label">{{ 'statistics.records.longestDuration' | transloco }}</span>
+            <span class="value">{{ longestDuration.durationMinutes | duration }}</span>
+            <a [routerLink]="['/rides', longestDuration.id]">{{
+              longestDuration.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+      </div>
 
-    @if (temperature(); as temp) {
-      <section data-section="temperature">
-        <h2>{{ 'statistics.temperature.title' | transloco }} <span class="section-note">{{ 'statistics.allTime' | transloco }}</span></h2>
-        <div class="tiles">
-          @if (temp.coldest; as cold) {
-            <mat-card appearance="outlined" class="tile" data-record="coldest">
-              <span class="label">{{ 'statistics.temperature.coldest' | transloco }}</span>
-              <span class="value">{{ cold.averageTemperatureCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} °C</span>
-              <a [routerLink]="['/rides', cold.id]">{{ cold.date | translocoDate: { dateStyle: 'medium' } }}</a>
+      <!-- Trends -->
+      <div class="trends-header">
+        <h2>{{ 'statistics.trends.title' | transloco }}</h2>
+        @if (years().length > 0) {
+          <label class="year-select">
+            <span>{{ 'statistics.trends.year' | transloco }}</span>
+            <select data-testid="year-select" (change)="selectYear($any($event.target).value)">
+              @for (year of years(); track year) {
+                <option [value]="year" [selected]="year === activeYear()">{{ year }}</option>
+              }
+            </select>
+          </label>
+        }
+        <!-- Nothing to compare against until a second year has data. -->
+        @if (years().length > 1) {
+          <label class="year-select">
+            <span>{{ 'statistics.trends.compareYear' | transloco }}</span>
+            <select
+              data-testid="compare-select"
+              (change)="selectCompareYear($any($event.target).value)"
+            >
+              <option value="" [selected]="activeCompareYear() === null">
+                {{ 'statistics.trends.compareNone' | transloco }}
+              </option>
+              @for (year of compareYearOptions(); track year) {
+                <option [value]="year" [selected]="year === activeCompareYear()">{{ year }}</option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+
+      <!-- Charts for the year picked above. -->
+      <div class="charts">
+        @if (distanceChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="distance">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.distance' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+        <!-- Time sits next to distance: the two "how much did I ride" measures. -->
+        @if (durationChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="duration">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.duration' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+        @if (elevationChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="elevation">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.elevation' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+        @if (ridesChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="rides">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.rides' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+        @if (caloriesChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="calories">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.calories' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+        @if (yearTemperatureDistributionChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="temperature-by-year">
+            <mat-card-header>
+              <mat-card-title>{{
+                'statistics.trends.temperatureDistribution' | transloco
+              }}</mat-card-title>
+            </mat-card-header>
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+      </div>
+
+      <!-- All-years totals, separated from the per-year charts above so it's clear they span every year. -->
+      <h3 class="trends-subhead">{{ 'statistics.trends.byYear' | transloco }}</h3>
+      <div class="charts">
+        @if (yearTotalsChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="year-totals">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.yearTotals' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+        @if (ridesByYearChart(); as chart) {
+          <mat-card appearance="outlined" class="chart-card" data-chart="rides-by-year">
+            <mat-card-header
+              ><mat-card-title>{{
+                'statistics.trends.ridesByYear' | transloco
+              }}</mat-card-title></mat-card-header
+            >
+            <mat-card-content
+              ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+            ></mat-card-content>
+          </mat-card>
+        }
+      </div>
+
+      @if (hrZoneChart(); as chart) {
+        <section data-section="hr-zones">
+          <h2>
+            {{ 'statistics.hrZones.title' | transloco }}
+            <span class="section-note">{{ 'statistics.allTime' | transloco }}</span>
+          </h2>
+          <div class="charts">
+            <mat-card appearance="outlined" class="chart-card" data-chart="hr-zones">
+              <mat-card-content
+                ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+              ></mat-card-content>
             </mat-card>
-          }
-          @if (temp.warmest; as warm) {
-            <mat-card appearance="outlined" class="tile" data-record="warmest">
-              <span class="label">{{ 'statistics.temperature.warmest' | transloco }}</span>
-              <span class="value">{{ warm.averageTemperatureCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} °C</span>
-              <a [routerLink]="['/rides', warm.id]">{{ warm.date | translocoDate: { dateStyle: 'medium' } }}</a>
-            </mat-card>
-          }
-          @if (temp.seasonMinCelsius != null && temp.seasonMaxCelsius != null) {
-            <mat-card appearance="outlined" class="tile" data-record="season-range">
-              <span class="label">{{ 'statistics.temperature.seasonRange' | transloco }}</span>
-              <span class="value">
-                {{ temp.seasonMinCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} – {{ temp.seasonMaxCelsius | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 } }} °C
-              </span>
-            </mat-card>
-          }
-        </div>
-        <div class="charts">
-          @if (temperatureDistributionChart(); as chart) {
-            <mat-card appearance="outlined" class="chart-card" data-chart="temperature-distribution">
-              <mat-card-header><mat-card-title>{{ 'statistics.temperature.distribution' | transloco }}</mat-card-title></mat-card-header>
-              <mat-card-content><div class="chart-host"><app-chart type="bar" [data]="chart" /></div></mat-card-content>
-            </mat-card>
-          }
-          @if (temperatureTrendChart(); as chart) {
-            <mat-card appearance="outlined" class="chart-card" data-chart="temperature-trend">
-              <mat-card-header><mat-card-title>{{ 'statistics.temperature.trend' | transloco }}</mat-card-title></mat-card-header>
-              <mat-card-content><div class="chart-host"><app-chart type="line" [data]="chart" /></div></mat-card-content>
-            </mat-card>
-          }
-        </div>
-      </section>
+          </div>
+        </section>
+      }
+
+      @if (temperature(); as temp) {
+        <section data-section="temperature">
+          <h2>
+            {{ 'statistics.temperature.title' | transloco }}
+            <span class="section-note">{{ 'statistics.allTime' | transloco }}</span>
+          </h2>
+          <div class="tiles">
+            @if (temp.coldest; as cold) {
+              <mat-card appearance="outlined" class="tile" data-record="coldest">
+                <span class="label">{{ 'statistics.temperature.coldest' | transloco }}</span>
+                <span class="value"
+                  >{{
+                    cold.averageTemperatureCelsius
+                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+                  }}
+                  °C</span
+                >
+                <a [routerLink]="['/rides', cold.id]">{{
+                  cold.date | translocoDate: { dateStyle: 'medium' }
+                }}</a>
+              </mat-card>
+            }
+            @if (temp.warmest; as warm) {
+              <mat-card appearance="outlined" class="tile" data-record="warmest">
+                <span class="label">{{ 'statistics.temperature.warmest' | transloco }}</span>
+                <span class="value"
+                  >{{
+                    warm.averageTemperatureCelsius
+                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+                  }}
+                  °C</span
+                >
+                <a [routerLink]="['/rides', warm.id]">{{
+                  warm.date | translocoDate: { dateStyle: 'medium' }
+                }}</a>
+              </mat-card>
+            }
+            @if (temp.seasonMinCelsius != null && temp.seasonMaxCelsius != null) {
+              <mat-card appearance="outlined" class="tile" data-record="season-range">
+                <span class="label">{{ 'statistics.temperature.seasonRange' | transloco }}</span>
+                <span class="value">
+                  {{
+                    temp.seasonMinCelsius
+                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+                  }}
+                  –
+                  {{
+                    temp.seasonMaxCelsius
+                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+                  }}
+                  °C
+                </span>
+              </mat-card>
+            }
+          </div>
+          <div class="charts">
+            @if (temperatureDistributionChart(); as chart) {
+              <mat-card
+                appearance="outlined"
+                class="chart-card"
+                data-chart="temperature-distribution"
+              >
+                <mat-card-header
+                  ><mat-card-title>{{
+                    'statistics.temperature.distribution' | transloco
+                  }}</mat-card-title></mat-card-header
+                >
+                <mat-card-content
+                  ><div class="chart-host"><app-chart type="bar" [data]="chart" /></div
+                ></mat-card-content>
+              </mat-card>
+            }
+            @if (temperatureTrendChart(); as chart) {
+              <mat-card appearance="outlined" class="chart-card" data-chart="temperature-trend">
+                <mat-card-header
+                  ><mat-card-title>{{
+                    'statistics.temperature.trend' | transloco
+                  }}</mat-card-title></mat-card-header
+                >
+                <mat-card-content
+                  ><div class="chart-host"><app-chart type="line" [data]="chart" /></div
+                ></mat-card-content>
+              </mat-card>
+            }
+          </div>
+        </section>
+      }
     }
   }
 </section>
