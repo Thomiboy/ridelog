@@ -6,6 +6,8 @@ using System.Security.Claims;
 using System.Text;
 using System.Web;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
@@ -180,6 +182,50 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
         var body = (await profile.Content.ReadFromJsonAsync<ProfileDto>())!;
         Assert.Equal("ordinary@example.test", body.Email);
         Assert.Empty(body.Roles);
+    }
+
+    /// <summary>
+    /// The owner's own case: the seeded admin was created with the address they will later sign in
+    /// with. `RequireUniqueEmail` makes a second account impossible, so the provider must attach to
+    /// the account that already holds the address — and it has to stay the *same* account, because
+    /// every ride's UserId and the public-log setting name it by id.
+    /// </summary>
+    [Fact]
+    public async Task Signing_in_as_the_admins_own_address_reaches_the_admin_rather_than_a_new_rider()
+    {
+        using var scope = factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var adminBefore = (await users.FindByEmailAsync(RideLogApiFactory.AdminEmail))!;
+
+        var client = Client();
+        factory.Providers.Identity =
+            new ExternalIdentity("google", "google-admin", RideLogApiFactory.AdminEmail, true);
+        var landing = await SignInThroughAsync(client, "google");
+        var exchanged = await client.PostAsJsonAsync("/auth/exchange", new { code = QueryValue(landing, "code") });
+        var token = (await exchanged.Content.ReadFromJsonAsync<AccessTokenDto>())!;
+
+        // The same rider, by id — so the rides, the Polar link and the public log all still point here.
+        var principal = Validate(token.Token);
+        Assert.Equal(adminBefore.Id, principal.FindFirstValue(JwtRegisteredClaimNames.Sub));
+        // And still an admin: signing in another way does not cost the role.
+        Assert.Contains(principal.Claims, claim => claim.Type == ClaimTypes.Role && claim.Value == "Admin");
+        Assert.Single(await users.Users.Where(user => user.Email == RideLogApiFactory.AdminEmail).ToListAsync());
+    }
+
+    /// <summary>The password is untouched, so the way in that existed before still works.</summary>
+    [Fact]
+    public async Task The_admins_password_still_works_after_a_provider_is_attached()
+    {
+        var client = Client();
+        factory.Providers.Identity =
+            new ExternalIdentity("google", "google-admin", RideLogApiFactory.AdminEmail, true);
+        await SignInThroughAsync(client, "google");
+
+        var login = await client.PostAsJsonAsync(
+            "/auth/login",
+            new { email = RideLogApiFactory.AdminEmail, password = RideLogApiFactory.AdminPassword });
+
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
     }
 
     private sealed record AccessTokenDto(string Token, DateTimeOffset ExpiresAt);
