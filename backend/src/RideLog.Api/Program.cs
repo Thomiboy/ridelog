@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
 using RideLog.Api;
 using RideLog.Application.Auth;
 using RideLog.Application.Import;
@@ -76,6 +77,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<RideLogInitializer>().InitializeAsync();
+
+    // A public log nobody remembered to configure is a blank site, so the setting fills itself in
+    // with the rider whose log has always been the public one. Resolved here, once the admin is
+    // seeded and its id exists, which keeps reading it from an endpoint a plain property access.
+    var publicLog = scope.ServiceProvider.GetRequiredService<IOptions<PublicLogOptions>>().Value;
+    if (string.IsNullOrEmpty(publicLog.RiderId))
+    {
+        var adminEmail = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value.Email;
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        publicLog.RiderId = (await users.FindByEmailAsync(adminEmail))?.Id ?? string.Empty;
+    }
 }
 
 if (app.Environment.IsDevelopment())
