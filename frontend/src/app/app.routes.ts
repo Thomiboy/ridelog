@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './core/auth/admin.guard';
 import { signedInGuard } from './core/auth/signed-in.guard';
 
 export const routes: Routes = [
@@ -8,6 +9,11 @@ export const routes: Routes = [
   { path: 'statistics', loadComponent: () => import('./features/statistics/statistics').then((m) => m.Statistics) },
   { path: 'rides/:id', loadComponent: () => import('./features/ride-detail/ride-detail').then((m) => m.RideDetail) },
   { path: 'login', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
+  {
+    path: 'riders',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/riders/riders').then((m) => m.Riders),
+  },
   {
     path: 'account',
     canActivate: [signedInGuard],

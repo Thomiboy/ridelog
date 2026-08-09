@@ -40,7 +40,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.Configure<AdminSeedOptions>(configuration.GetSection(AdminSeedOptions.SectionName));
         services.Configure<ExternalSignInOptions>(configuration.GetSection(ExternalSignInOptions.SectionName));
 
-        services.AddIdentityCore<IdentityUser>(options =>
+        services.AddIdentityCore<Rider>(options =>
             {
                 options.User.RequireUniqueEmail = true;
             })

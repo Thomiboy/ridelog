@@ -1,0 +1,34 @@
+<section class="page riders">
+  <h1>{{ 'riders.title' | transloco }}</h1>
+
+  @if (refusal(); as reason) {
+    <p class="error" role="alert" data-refusal>{{ reason }}</p>
+  }
+
+  @if (all().length === 0) {
+    <p class="empty">{{ 'riders.empty' | transloco }}</p>
+  } @else {
+    <ul class="rider-list">
+      @for (rider of all(); track rider.id) {
+        <li class="rider" [attr.data-rider]="rider.id">
+          <span class="email">{{ rider.email }}</span>
+          <span class="state" [class]="'state-' + rider.approval.toLowerCase()">
+            {{ 'riders.approval.' + rider.approval | transloco }}
+          </span>
+          <span class="actions">
+            @if (rider.approval !== 'Approved') {
+              <button mat-flat-button data-approve [disabled]="busy()" (click)="set(rider.id, 'Approved')">
+                {{ 'riders.approve' | transloco }}
+              </button>
+            }
+            @if (rider.approval !== 'Rejected') {
+              <button mat-stroked-button color="warn" data-reject [disabled]="busy()" (click)="set(rider.id, 'Rejected')">
+                {{ 'riders.reject' | transloco }}
+              </button>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</section>

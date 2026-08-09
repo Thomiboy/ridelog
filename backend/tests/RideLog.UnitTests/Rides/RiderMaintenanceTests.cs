@@ -24,11 +24,11 @@ public class RiderMaintenanceTests(RideLogApiFactory factory) : IClassFixture<Ri
     private async Task<(HttpClient Client, string RiderId)> RiderClientAsync(string email)
     {
         using var scope = factory.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         var rider = await users.FindByEmailAsync(email);
         if (rider is null)
         {
-            rider = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
+            rider = new Rider { UserName = email, Email = email, EmailConfirmed = true };
             await users.CreateAsync(rider);
         }
 

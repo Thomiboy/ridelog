@@ -4,6 +4,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { PendingRiders } from '../../core/api/pending-riders';
 import { AuthService } from '../../core/auth/auth.service';
 import { LANGUAGES, LanguageService, type Language } from '../../core/i18n/language.service';
 import { THEME_PREFERENCES, ThemeService, type ThemePreference } from '../../core/theme/theme.service';
@@ -21,6 +22,9 @@ export class Header {
 
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly isAdmin = this.auth.isAdmin;
+
+  /** Riders waiting on the owner — the only notification this app can give (nothing sends email). */
+  readonly pendingRiders = inject(PendingRiders).pending;
 
   readonly languages = LANGUAGES;
   readonly activeLanguage = this.language.current;

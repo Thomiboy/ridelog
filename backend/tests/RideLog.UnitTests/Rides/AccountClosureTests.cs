@@ -22,11 +22,11 @@ public class AccountClosureTests(RideLogApiFactory factory) : IClassFixture<Ride
     private async Task<(HttpClient Client, string RiderId)> RiderClientAsync(string email)
     {
         using var scope = factory.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         var rider = await users.FindByEmailAsync(email);
         if (rider is null)
         {
-            rider = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
+            rider = new Rider { UserName = email, Email = email, EmailConfirmed = true };
             await users.CreateAsync(rider);
         }
 
@@ -71,7 +71,7 @@ public class AccountClosureTests(RideLogApiFactory factory) : IClassFixture<Ride
         var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
         Assert.Empty(context.Rides.Where(ride => ride.UserId == riderId));
         Assert.Empty(context.PolarConnections.Where(link => link.UserId == riderId));
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         Assert.Null(await users.FindByIdAsync(riderId));
     }
 
@@ -93,7 +93,7 @@ public class AccountClosureTests(RideLogApiFactory factory) : IClassFixture<Ride
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
             using var scope = factory.Services.CreateScope();
-            var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
             Assert.NotNull(await users.FindByIdAsync(riderId));
         }
         finally

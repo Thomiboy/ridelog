@@ -20,7 +20,8 @@
       "dark": "Sötét"
     },
     "activities": "Egyéb",
-    "account": "Fiók"
+    "account": "Fiók",
+    "riders": "Riderek"
   },
   "dashboard": {
     "title": "Áttekintés",
@@ -135,7 +136,8 @@
     "error": "Sikertelen bejelentkezés. Ellenőrizd az adataidat.",
     "continueWith": "Belépés {{provider}}-fiókkal",
     "orAdmin": "vagy jelszóval",
-    "externalError": "Sikertelen bejelentkezés. A szolgáltató nem erősítette meg a fiókodat."
+    "externalError": "Sikertelen bejelentkezés. A szolgáltató nem erősítette meg a fiókodat.",
+    "waiting": "Köszönjük — a fiókod jóváhagyásra vár. A tulajdonosnak kell beengednie, mielőtt a naplód megnyílik; próbálj később újra belépni."
   },
   "statistics": {
     "title": "Statisztika",
@@ -241,6 +243,17 @@
       "confirm1": "Lezárod a fiókod? A túráid, fájljaid, a Polar-kapcsolatod és a belépésed is megszűnik.",
       "confirm2": "Ez nem vonható vissza, és a Polar nem szolgálja ki újra a szinkronizált túráidat. Biztosan folytatod?",
       "refusedPublicLog": "Ez a fiók a nyilvános napló, a lezárása kiürítené a nyilvános oldalt. Előbb állítsd át a beállítást egy másik riderre."
+    }
+  },
+  "riders": {
+    "title": "Riderek",
+    "empty": "Még senki nem lépett be.",
+    "approve": "Beengedés",
+    "reject": "Kizárás",
+    "approval": {
+      "Pending": "Várakozik",
+      "Approved": "Bent",
+      "Rejected": "Kizárva"
     }
   }
 }

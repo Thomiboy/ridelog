@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using RideLog.Application.Auth;
 using RideLog.Application.Polar;
 using RideLog.Application.Weather;
 using RideLog.Infrastructure.Persistence;
@@ -89,7 +91,7 @@ public class PolarSyncEndpointTests(PolarApiFactory factory) : IClassFixture<Pol
     private async Task<string> AdminRiderIdAsync()
     {
         using var scope = factory.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         return (await users.FindByEmailAsync(RideLogApiFactory.AdminEmail))!.Id;
     }
 
@@ -110,6 +112,21 @@ public class PolarSyncEndpointTests(PolarApiFactory factory) : IClassFixture<Pol
         var store = scope.ServiceProvider.GetRequiredService<IPolarTokenStore>();
         foreach (var (rider, polarUser) in links)
         {
+            // The daily run is for approved riders, so the link needs one to belong to. These used
+            // to be links to ids no account ever had — a row production cannot produce.
+            if (!await context.Users.AnyAsync(user => user.Id == rider))
+            {
+                context.Users.Add(new Rider
+                {
+                    Id = rider,
+                    UserName = $"{rider}@example.test",
+                    Email = $"{rider}@example.test",
+                    NormalizedEmail = $"{rider}@EXAMPLE.TEST",
+                    Approval = Approval.Approved,
+                });
+                await context.SaveChangesAsync();
+            }
+
             await store.SaveAsync(rider, new PolarToken($"tok-{polarUser}", polarUser));
         }
     }

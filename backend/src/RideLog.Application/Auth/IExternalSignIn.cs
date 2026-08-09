@@ -6,8 +6,11 @@ namespace RideLog.Application.Auth;
 /// </summary>
 public sealed record ExternalIdentity(string Provider, string Subject, string Email, bool EmailVerified);
 
-/// <summary>The rider a provider's identity resolved to.</summary>
-public sealed record ExternalSignInResult(string RiderId);
+/// <summary>
+/// The rider a provider's identity resolved to, and where they stand. Arriving is not the same as
+/// being let in: registration is open, so the caller has to know which happened.
+/// </summary>
+public sealed record ExternalSignInResult(string RiderId, Approval Approval);
 
 /// <summary>
 /// Turns an identity a provider vouched for into a rider. New riders arrive this way and no other:

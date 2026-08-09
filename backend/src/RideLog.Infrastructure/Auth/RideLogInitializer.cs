@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using RideLog.Application.Auth;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Auth;
@@ -8,7 +9,7 @@ namespace RideLog.Infrastructure.Auth;
 /// <summary>Prepares the database schema and seeds the admin role and user on startup.</summary>
 public sealed class RideLogInitializer(
     RideLogDbContext context,
-    UserManager<IdentityUser> userManager,
+    UserManager<Rider> userManager,
     RoleManager<IdentityRole> roleManager,
     IOptions<AdminSeedOptions> adminOptions)
 {
@@ -44,11 +45,12 @@ public sealed class RideLogInitializer(
         var admin = await userManager.FindByEmailAsync(_admin.Email);
         if (admin is null)
         {
-            admin = new IdentityUser
+            admin = new Rider
             {
                 UserName = _admin.Email,
                 Email = _admin.Email,
                 EmailConfirmed = true,
+                Approval = Approval.Approved,
             };
             var result = await userManager.CreateAsync(admin, _admin.Password);
             if (!result.Succeeded)
@@ -61,6 +63,15 @@ public sealed class RideLogInitializer(
         if (!await userManager.IsInRoleAsync(admin, AdminSeedOptions.RoleName))
         {
             await userManager.AddToRoleAsync(admin, AdminSeedOptions.RoleName);
+        }
+
+        // Every account that existed before approval did lands pending, which is the point — the
+        // owner does not know who is in there. The one exception is the owner: approving them here
+        // is what stops the rollout from locking the only person who can approve anybody out.
+        if (admin.Approval != Approval.Approved)
+        {
+            admin.Approval = Approval.Approved;
+            await userManager.UpdateAsync(admin);
         }
     }
 }

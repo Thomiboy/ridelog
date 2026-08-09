@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using RideLog.Application.Auth;
 using RideLog.Application.Polar;
 using RideLog.Infrastructure.Persistence;
 
@@ -60,8 +61,14 @@ internal sealed class PolarTokenStore : IPolarTokenStore
     }
 
     public async Task<IReadOnlyList<string>> GetLinkedRidersAsync(CancellationToken cancellationToken = default) =>
+        // Linked *and* approved. A link alone is not enough: rejecting a rider has to stop the
+        // delivery too, or it only shuts a door the daily run walks around every morning.
         await _context.PolarConnections
-            .Select(connection => connection.UserId)
+            .Join(
+                _context.Users.Where(rider => rider.Approval == Approval.Approved),
+                connection => connection.UserId,
+                rider => rider.Id,
+                (connection, _) => connection.UserId)
             .ToListAsync(cancellationToken);
 
     public async Task<PolarStatus> GetStatusAsync(string riderId, CancellationToken cancellationToken = default)

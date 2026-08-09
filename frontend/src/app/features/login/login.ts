@@ -22,6 +22,9 @@ export class Login {
   /** Which message to show, if any — the two ways in fail for different reasons. */
   readonly error = signal<'login.error' | 'login.externalError' | null>(null);
 
+  /** Set when the provider knew who the rider is but the owner has not let them in yet. */
+  readonly waiting = signal(false);
+
   /**
    * New riders arrive through a provider; the password form is the seeded admin's way in. The names
    * are not translated — they are the providers' own.
@@ -41,6 +44,9 @@ export class Login {
         next: () => this.router.navigateByUrl('/'),
         error: () => this.error.set('login.externalError'),
       });
+    } else if (query.get('status') === 'pending') {
+      // The provider knew them; the owner has not decided. Not a failure, and not a way in either.
+      this.waiting.set(true);
     } else if (query.get('error')) {
       this.error.set('login.externalError');
     }

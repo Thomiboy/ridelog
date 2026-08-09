@@ -81,6 +81,17 @@ describe('Login', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Login failed');
   });
 
+  /**
+   * Registration is open, so signing in and being let in are different things. A rider who has only
+   * knocked comes back here with no code — landing on a blank login form would read as a failure.
+   */
+  it('says the owner has to let you in when the callback comes back pending', () => {
+    const { fixture, auth } = setup(of({ email: '', roles: [] }), { status: 'pending' });
+
+    expect(auth.completeExternalSignIn).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('waiting for approval');
+  });
+
   it('does not call the API when the form is empty', () => {
     const { component, auth } = setup(of({ email: '', roles: [] }));
 

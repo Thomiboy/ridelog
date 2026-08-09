@@ -74,6 +74,15 @@ describe('app routing', () => {
     expect(await navigate('/account', false, true)).toContain('Polar');
   });
 
+  /** The one page that reaches across riders, so the one page the admin role still guards. */
+  it('serves the riders page to an admin', async () => {
+    expect(await navigate('/riders', true)).toContain('Riders');
+  });
+
+  it('turns an ordinary signed-in rider away from the riders page', async () => {
+    expect(await navigate('/riders', false, true)).toContain('Log in');
+  });
+
   it('sends a visitor who is not signed in to the login page', async () => {
     expect(await navigate('/account', false, false)).toContain('Log in');
   });

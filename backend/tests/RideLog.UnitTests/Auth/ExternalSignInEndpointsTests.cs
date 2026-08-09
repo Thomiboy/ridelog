@@ -1,3 +1,4 @@
+using RideLog.Infrastructure.Persistence;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -73,6 +74,26 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
             ClockSkew = TimeSpan.Zero,
         }, out _);
 
+    /// <summary>
+    /// Lets a rider in, as the owner would from the riders page. The round-trip tests are about the
+    /// code and the token, which only an approved rider ever reaches.
+    /// </summary>
+    private async Task ApproveAsync(string email)
+    {
+        using var scope = factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
+        var rider = await users.FindByEmailAsync(email);
+        rider!.Approval = Approval.Approved;
+        await users.UpdateAsync(rider);
+    }
+
+    /// <summary>Signs a rider in once so the account exists, then lets them in.</summary>
+    private async Task ArriveAndApproveAsync(HttpClient client, string provider, string email)
+    {
+        await SignInThroughAsync(client, provider);
+        await ApproveAsync(email);
+    }
+
     /// <summary>Walks the round trip and returns where the callback sent the browser.</summary>
     private async Task<Uri> SignInThroughAsync(HttpClient client, string provider)
     {
@@ -90,6 +111,7 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
     {
         var client = Client();
         factory.Providers.Identity = new ExternalIdentity("google", "google-1", "new-rider@example.test", true);
+        await ArriveAndApproveAsync(client, "google", "new-rider@example.test");
 
         var landing = await SignInThroughAsync(client, "google");
         var exchanged = await client.PostAsJsonAsync("/auth/exchange", new { code = QueryValue(landing, "code") });
@@ -103,6 +125,23 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
     }
 
     /// <summary>
+    /// A rider who has only knocked gets no code and no token — there is nothing for them to be
+    /// signed in *to* yet. The callback says so in the URL it lands on, which is all the frontend
+    /// needs to show a waiting screen.
+    /// </summary>
+    [Fact]
+    public async Task A_pending_rider_comes_back_waiting_rather_than_signed_in()
+    {
+        var client = Client();
+        factory.Providers.Identity = new ExternalIdentity("google", "google-5", "waits@example.test", true);
+
+        var landing = await SignInThroughAsync(client, "google");
+
+        Assert.Equal("pending", QueryValue(landing, "status"));
+        Assert.Equal(string.Empty, QueryValue(landing, "code"));
+    }
+
+    /// <summary>
     /// The token never reaches a URL, so the code must be worth nothing twice — otherwise a shared
     /// machine's history hands the next person a sign-in.
     /// </summary>
@@ -111,6 +150,7 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
     {
         var client = Client();
         factory.Providers.Identity = new ExternalIdentity("google", "google-2", "spends-once@example.test", true);
+        await ArriveAndApproveAsync(client, "google", "spends-once@example.test");
 
         var landing = await SignInThroughAsync(client, "google");
         var code = QueryValue(landing, "code");
@@ -169,6 +209,7 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
     {
         var client = Client();
         factory.Providers.Identity = new ExternalIdentity("google", "google-4", "ordinary@example.test", true);
+        await ArriveAndApproveAsync(client, "google", "ordinary@example.test");
 
         var landing = await SignInThroughAsync(client, "google");
         var exchanged = await client.PostAsJsonAsync("/auth/exchange", new { code = QueryValue(landing, "code") });
@@ -194,7 +235,7 @@ public class ExternalSignInEndpointsTests(ExternalSignInEndpointsTests.Factory f
     public async Task Signing_in_as_the_admins_own_address_reaches_the_admin_rather_than_a_new_rider()
     {
         using var scope = factory.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         var adminBefore = (await users.FindByEmailAsync(RideLogApiFactory.AdminEmail))!;
 
         var client = Client();

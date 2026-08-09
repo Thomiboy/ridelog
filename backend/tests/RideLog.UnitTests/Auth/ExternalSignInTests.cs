@@ -19,6 +19,20 @@ public class ExternalSignInTests(RideLogApiFactory factory) : IClassFixture<Ride
     private IExternalSignIn SignIn(IServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<IExternalSignIn>();
 
+    /// <summary>
+    /// Registration is open — anyone with a Google account can arrive. A new rider is therefore
+    /// somebody who has knocked, not somebody who is in: they wait until the owner decides.
+    /// </summary>
+    [Fact]
+    public async Task A_rider_who_has_never_been_here_before_arrives_pending()
+    {
+        using var scope = factory.Services.CreateScope();
+
+        var arrived = await SignIn(scope).SignInAsync(Google("knocks@example.test"));
+
+        Assert.Equal(Approval.Pending, arrived!.Approval);
+    }
+
     [Fact]
     public async Task A_first_sign_in_makes_a_rider_and_a_second_finds_the_same_one()
     {
