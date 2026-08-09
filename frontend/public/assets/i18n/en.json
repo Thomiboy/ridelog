@@ -20,7 +20,8 @@
       "dark": "Dark"
     },
     "activities": "Other activity",
-    "account": "Account"
+    "account": "Account",
+    "riders": "Riders"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -135,7 +136,8 @@
     "error": "Login failed. Check your credentials.",
     "continueWith": "Continue with {{provider}}",
     "orAdmin": "or sign in with a password",
-    "externalError": "Login failed. The provider did not confirm your account."
+    "externalError": "Login failed. The provider did not confirm your account.",
+    "waiting": "Thanks — your account is waiting for approval. The owner has to let you in before your log opens; try signing in again later."
   },
   "statistics": {
     "title": "Statistics",
@@ -241,6 +243,17 @@
       "confirm1": "Close your account? Your rides, files, Polar link and login are all removed.",
       "confirm2": "This cannot be undone and Polar cannot re-serve your synced rides. Are you absolutely sure?",
       "refusedPublicLog": "This account is the public log, so closing it would blank the public site. Point that setting at another rider first."
+    }
+  },
+  "riders": {
+    "title": "Riders",
+    "empty": "Nobody has signed in yet.",
+    "approve": "Let in",
+    "reject": "Shut out",
+    "approval": {
+      "Pending": "Waiting",
+      "Approved": "In",
+      "Rejected": "Shut out"
     }
   }
 }

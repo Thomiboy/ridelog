@@ -8,6 +8,14 @@
     <a routerLink="/rides" routerLinkActive="active">{{ 'nav.rides' | transloco }}</a>
     <a routerLink="/activities" routerLinkActive="active">{{ 'nav.activities' | transloco }}</a>
     <a routerLink="/statistics" routerLinkActive="active">{{ 'nav.statistics' | transloco }}</a>
+    @if (isAdmin()) {
+      <a routerLink="/riders" routerLinkActive="active">
+        {{ 'nav.riders' | transloco }}
+        @if (pendingRiders() > 0) {
+          <span class="badge" data-pending-riders>{{ pendingRiders() }}</span>
+        }
+      </a>
+    }
     @if (isLoggedIn()) {
       <a routerLink="/account" routerLinkActive="active">{{ 'nav.account' | transloco }}</a>
     }

@@ -5,15 +5,20 @@ import { vi } from 'vitest';
 import { Header } from './header';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import { PendingRiders } from '../../core/api/pending-riders';
 import { ThemeService } from '../../core/theme/theme.service';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Header', () => {
-  function setup(state: { loggedIn: boolean; admin: boolean }) {
+  function setup(state: { loggedIn: boolean; admin: boolean; pendingRiders?: number }) {
     const auth = {
       isLoggedIn: signal(state.loggedIn),
       isAdmin: signal(state.admin),
       logout: vi.fn(),
+    };
+    const riders = {
+      pending: signal(state.pendingRiders ?? 0),
+      refreshPending: vi.fn(),
     };
     const language = { current: signal('en'), use: vi.fn() };
     const theme = { preference: signal('system'), use: vi.fn() };
@@ -24,6 +29,7 @@ describe('Header', () => {
         { provide: AuthService, useValue: auth },
         { provide: LanguageService, useValue: language },
         { provide: ThemeService, useValue: theme },
+        { provide: PendingRiders, useValue: riders },
       ],
     });
     const fixture = TestBed.createComponent(Header);
@@ -54,6 +60,22 @@ describe('Header', () => {
    * The page behind this link is a rider's own — their Polar link, their zones, their rides. Only
    * the bulk import on it crosses riders, and that card is what hides, not the link.
    */
+  /**
+   * The only notification this app can honestly give: nothing here sends email, so without a marker
+   * the approval queue is a box nobody opens and the gate degrades into "nobody ever gets in".
+   */
+  it('counts the riders waiting, for an admin', () => {
+    const { fixture } = setup({ loggedIn: true, admin: true, pendingRiders: 2 });
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-pending-riders]')?.textContent).toContain('2');
+  });
+
+  it('shows no count when nobody is waiting', () => {
+    const { fixture } = setup({ loggedIn: true, admin: true, pendingRiders: 0 });
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-pending-riders]')).toBeNull();
+  });
+
   it('shows the link to any signed-in rider', () => {
     const { text } = setup({ loggedIn: true, admin: false });
     expect(text()).toContain('Account');

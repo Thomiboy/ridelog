@@ -11,6 +11,7 @@ const en = {
     activities: 'Other activity',
     statistics: 'Statistics',
     account: 'Account',
+    riders: 'Riders',
     login: 'Log in',
     logout: 'Log out',
     language: 'Language',
@@ -191,6 +192,13 @@ const en = {
       deleteResult: 'Deleted {{deleted}} rides.',
     },
   },
+  riders: {
+    title: 'Riders',
+    empty: 'Nobody has signed in yet.',
+    approve: 'Let in',
+    reject: 'Shut out',
+    approval: { Pending: 'Waiting', Approved: 'In', Rejected: 'Shut out' },
+  },
   firstRun: {
     title: 'No rides here yet.',
     horizon:
@@ -205,6 +213,8 @@ const en = {
     continueWith: 'Continue with {{provider}}',
     orAdmin: 'or sign in with a password',
     externalError: 'Login failed. The provider did not confirm your account.',
+    waiting:
+      'Thanks — your account is waiting for approval. The owner has to let you in before your log opens; try signing in again later.',
   },
 };
 

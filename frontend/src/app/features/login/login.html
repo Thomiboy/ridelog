@@ -1,6 +1,10 @@
 <section class="login">
   <h1>{{ 'login.title' | transloco }}</h1>
 
+  @if (waiting()) {
+    <p class="waiting" role="status" data-waiting>{{ 'login.waiting' | transloco }}</p>
+  }
+
   @if (error(); as message) {
     <p class="error" role="alert">{{ message | transloco }}</p>
   }
