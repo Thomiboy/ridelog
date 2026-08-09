@@ -254,6 +254,10 @@
       "Pending": "Waiting",
       "Approved": "In",
       "Rejected": "Shut out"
-    }
+    },
+    "publicLog": "public log",
+    "makePublic": "Make public log",
+    "rides": "{{count}} rides",
+    "polarLinked": "Polar"
   }
 }

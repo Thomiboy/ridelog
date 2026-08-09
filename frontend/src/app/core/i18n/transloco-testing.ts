@@ -198,6 +198,10 @@ const en = {
     approve: 'Let in',
     reject: 'Shut out',
     approval: { Pending: 'Waiting', Approved: 'In', Rejected: 'Shut out' },
+    publicLog: 'public log',
+    makePublic: 'Make public log',
+    rides: '{{count}} rides',
+    polarLinked: 'Polar',
   },
   firstRun: {
     title: 'No rides here yet.',

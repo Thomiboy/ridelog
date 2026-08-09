@@ -16,8 +16,19 @@ public enum AccountClosure
     UnknownRider,
 }
 
-/// <summary>One rider as the owner sees them on the riders page.</summary>
-public sealed record RiderSummary(string Id, string Email, Approval Approval);
+/// <summary>
+/// One rider as the owner sees them. The figures are what makes the page answer its question:
+/// raw files share one 32 GB database, so where the space went is a per-rider fact or it is nothing.
+/// </summary>
+public sealed record RiderSummary(
+    string Id,
+    string Email,
+    Approval Approval,
+    int RideCount,
+    long StorageBytes,
+    bool PolarLinked,
+    DateTimeOffset? LastSyncAt,
+    bool IsPublicLog);
 
 /// <summary>Why a change of approval was refused, or that it went through.</summary>
 public enum ApprovalChange
@@ -57,4 +68,11 @@ public interface IRiderAccounts
     /// </summary>
     Task<ApprovalChange> SetApprovalAsync(
         string actingRiderId, string riderId, Approval approval, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Points the public log at a rider. Whose rides a signed-out visitor is served is a setting
+    /// rather than a role (docs/adr/0006), and this is where it moves — #159's refusal to close that
+    /// rider's account asks for it by name.
+    /// </summary>
+    Task<bool> SetPublicLogAsync(string riderId, CancellationToken cancellationToken = default);
 }

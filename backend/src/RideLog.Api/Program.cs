@@ -326,6 +326,14 @@ app.MapDelete("/rides/{id:guid}", async (Guid id, IRideMaintenanceService mainte
 app.MapGet("/riders", async (IRiderAccounts accounts) => Results.Ok(await accounts.ListAsync()))
     .RequireAuthorization(AdminSeedOptions.RoleName);
 
+// Whose rides a signed-out visitor is served. A setting rather than a role, so it lives beside the
+// riders rather than following the admin flag (docs/adr/0006).
+app.MapPut("/riders/public-log", async (PublicLogRequest body, IRiderAccounts accounts) =>
+    await accounts.SetPublicLogAsync(body.RiderId)
+        ? Results.Ok()
+        : Results.Conflict("The public log has to be a rider who is approved."))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
 app.MapPut("/riders/{id}/approval", async (
     string id, ApprovalRequest body, IRiderAccounts accounts, ClaimsPrincipal user) =>
     await accounts.SetApprovalAsync(user.FindFirstValue("sub")!, id, body.Approval) switch
@@ -469,6 +477,7 @@ app.Run();
 internal sealed record LoginRequest(string Email, string Password);
 internal sealed record ExchangeRequest(string Code);
 internal sealed record ApprovalRequest(Approval Approval);
+internal sealed record PublicLogRequest(string RiderId);
 internal sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
 
 // Exposed so WebApplicationFactory<Program> can boot the API in integration tests.

@@ -254,6 +254,10 @@
       "Pending": "Várakozik",
       "Approved": "Bent",
       "Rejected": "Kizárva"
-    }
+    },
+    "publicLog": "nyilvános napló",
+    "makePublic": "Legyen a nyilvános",
+    "rides": "{{count}} túra",
+    "polarLinked": "Polar"
   }
 }
