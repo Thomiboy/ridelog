@@ -10,6 +10,13 @@ export interface RiderSummary {
   id: string;
   email: string;
   approval: Approval;
+  /** What this rider is using of the shared database — the figure the page exists to show. */
+  rideCount: number;
+  storageBytes: number;
+  polarLinked: boolean;
+  lastSyncAt: string | null;
+  /** Whose rides a signed-out visitor is served. Exactly one rider carries this. */
+  isPublicLog: boolean;
 }
 
 /**
@@ -23,6 +30,11 @@ export class RidersService {
 
   list(): Observable<RiderSummary[]> {
     return this.http.get<RiderSummary[]>(`${this.baseUrl}/riders`);
+  }
+
+  /** Points the public log at a rider; refused (409) unless they are approved. */
+  setPublicLog(riderId: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/riders/public-log`, { riderId });
   }
 
   /** Letting a rider in, or shutting them out — rejecting an approved rider is what a ban is. */

@@ -11,18 +11,51 @@
     <ul class="rider-list">
       @for (rider of all(); track rider.id) {
         <li class="rider" [attr.data-rider]="rider.id">
-          <span class="email">{{ rider.email }}</span>
+          <span class="email">
+            {{ rider.email }}
+            @if (rider.isPublicLog) {
+              <span class="public-log" data-public-log>{{ 'riders.publicLog' | transloco }}</span>
+            }
+          </span>
+          <span class="usage">
+            <span class="rides">{{ 'riders.rides' | transloco: { count: rider.rideCount } }}</span>
+            <span class="storage">{{ size(rider.storageBytes) }}</span>
+            @if (rider.polarLinked) {
+              <span class="polar">{{ 'riders.polarLinked' | transloco }}</span>
+            }
+          </span>
           <span class="state" [class]="'state-' + rider.approval.toLowerCase()">
             {{ 'riders.approval.' + rider.approval | transloco }}
           </span>
           <span class="actions">
             @if (rider.approval !== 'Approved') {
-              <button mat-flat-button data-approve [disabled]="busy()" (click)="set(rider.id, 'Approved')">
+              <button
+                mat-flat-button
+                data-approve
+                [disabled]="busy()"
+                (click)="set(rider.id, 'Approved')"
+              >
                 {{ 'riders.approve' | transloco }}
               </button>
             }
+            @if (rider.approval === 'Approved' && !rider.isPublicLog) {
+              <button
+                mat-stroked-button
+                data-make-public
+                [disabled]="busy()"
+                (click)="makePublic(rider.id)"
+              >
+                {{ 'riders.makePublic' | transloco }}
+              </button>
+            }
             @if (rider.approval !== 'Rejected') {
-              <button mat-stroked-button color="warn" data-reject [disabled]="busy()" (click)="set(rider.id, 'Rejected')">
+              <button
+                mat-stroked-button
+                color="warn"
+                data-reject
+                [disabled]="busy()"
+                (click)="set(rider.id, 'Rejected')"
+              >
                 {{ 'riders.reject' | transloco }}
               </button>
             }

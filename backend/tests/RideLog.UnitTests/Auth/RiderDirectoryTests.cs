@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RideLog.Application.Auth;
 using RideLog.Application.Rides;
+using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.UnitTests.Auth;
@@ -18,7 +19,9 @@ public class RiderDirectoryTests(RideLogApiFactory factory) : IClassFixture<Ride
 {
     private sealed record LoginRequest(string Email, string Password);
     private sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
-    private sealed record RiderDto(string Id, string Email, string Approval);
+    private sealed record RiderDto(
+        string Id, string Email, string Approval, int RideCount, long StorageBytes, bool PolarLinked,
+        bool IsPublicLog);
 
     private async Task<HttpClient> AdminClientAsync()
     {
@@ -167,6 +170,147 @@ public class RiderDirectoryTests(RideLogApiFactory factory) : IClassFixture<Ride
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(Approval.Approved, await ApprovalOfAsync(riderId));
+        }
+        finally
+        {
+            publicLog.RiderId = wasPublic;
+        }
+    }
+
+    private int _rideNumber;
+
+    private async Task GivenRideWithFileAsync(string riderId, int fileBytes)
+    {
+        using var scope = factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
+        // One ride per rider per start time — the schema says so, and two rides for one rider is
+        // exactly what this test needs.
+        var start = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero).AddDays(_rideNumber++);
+        var ride = new Ride
+        {
+            Id = Guid.NewGuid(),
+            UserId = riderId,
+            StartTime = start,
+            EndTime = start.AddHours(1),
+            Duration = TimeSpan.FromHours(1),
+            DistanceMeters = 25_000,
+            Sport = "ROAD_CYCLING",
+            Source = RideSource.Polar,
+        };
+        ride.RawFiles.Add(new RawFile
+        {
+            Id = Guid.NewGuid(),
+            UserId = riderId,
+            Format = RawFileFormat.Tcx,
+            FileName = "ride.tcx",
+            Content = new byte[fileBytes],
+            UploadedAt = DateTimeOffset.UtcNow,
+        });
+        context.Rides.Add(ride);
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The column the page exists for. Raw files share one 32 GB database, and without a per-rider
+    /// figure the list is a list of names that cannot answer where the space went.
+    /// </summary>
+    [Fact]
+    public async Task The_list_says_what_each_rider_is_using_and_not_what_everybody_is()
+    {
+        var heavy = await GivenRiderAsync("heavy@example.test", Approval.Approved);
+        var light = await GivenRiderAsync("light@example.test", Approval.Approved);
+        await GivenRideWithFileAsync(heavy, 5_000);
+        await GivenRideWithFileAsync(heavy, 3_000);
+        await GivenRideWithFileAsync(light, 1_000);
+        var admin = await AdminClientAsync();
+
+        var riders = await admin.GetFromJsonAsync<IReadOnlyList<RiderDto>>("/riders");
+
+        var heavyRow = riders!.Single(rider => rider.Id == heavy);
+        var lightRow = riders!.Single(rider => rider.Id == light);
+        Assert.Equal(2, heavyRow.RideCount);
+        Assert.Equal(8_000, heavyRow.StorageBytes);
+        // The sharp half: a query that forgot to group would report 9,000 to everybody.
+        Assert.Equal(1, lightRow.RideCount);
+        Assert.Equal(1_000, lightRow.StorageBytes);
+    }
+
+    /// <summary>A rider with no rides reports nothing, rather than being missing from the list.</summary>
+    [Fact]
+    public async Task A_rider_who_has_never_ridden_still_appears_with_nothing()
+    {
+        var riderId = await GivenRiderAsync("no-rides@example.test", Approval.Approved);
+        var admin = await AdminClientAsync();
+
+        var riders = await admin.GetFromJsonAsync<IReadOnlyList<RiderDto>>("/riders");
+
+        var row = riders!.Single(rider => rider.Id == riderId);
+        Assert.Equal(0, row.RideCount);
+        Assert.Equal(0, row.StorageBytes);
+        Assert.False(row.PolarLinked);
+    }
+
+    /// <summary>
+    /// #159 refuses to close the public-log rider's account with "point that setting at another
+    /// rider first" — and until now there was no endpoint that wrote it, so the message prescribed
+    /// an App Service edit and a restart. Moving it has to change what a visitor is actually served.
+    /// </summary>
+    [Fact]
+    public async Task Moving_the_public_log_changes_whose_rides_a_visitor_sees()
+    {
+        var newcomer = await GivenRiderAsync("becomes-public@example.test", Approval.Approved);
+        await GivenRideWithFileAsync(newcomer, 500);
+        var publicLog = factory.Services.GetRequiredService<IOptions<PublicLogOptions>>().Value;
+        var wasPublic = publicLog.RiderId;
+        var admin = await AdminClientAsync();
+
+        try
+        {
+            var moved = await admin.PutAsJsonAsync("/riders/public-log", new { riderId = newcomer });
+
+            Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
+            // Read as a visitor: no token at all, so the answer comes from the setting alone.
+            var seen = await factory.CreateClient().GetFromJsonAsync<PagedDto>("/rides");
+            Assert.Equal(1, seen!.Total);
+        }
+        finally
+        {
+            publicLog.RiderId = wasPublic;
+        }
+    }
+
+    /// <summary>A rider who is not in cannot be the face of the site.</summary>
+    [Fact]
+    public async Task The_public_log_cannot_be_pointed_at_a_rider_who_is_not_approved()
+    {
+        var waiting = await GivenRiderAsync("still-waiting@example.test");
+        var admin = await AdminClientAsync();
+
+        var response = await admin.PutAsJsonAsync("/riders/public-log", new { riderId = waiting });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    private sealed record PagedDto(int Total);
+
+    /// <summary>
+    /// The list has to say which rider is the public one, or the two refusals that protect them
+    /// arrive as a surprise — and moving the setting means picking blindly.
+    /// </summary>
+    [Fact]
+    public async Task The_list_marks_which_rider_is_the_public_log()
+    {
+        var riderId = await GivenRiderAsync("marked-public@example.test", Approval.Approved);
+        var publicLog = factory.Services.GetRequiredService<IOptions<PublicLogOptions>>().Value;
+        var wasPublic = publicLog.RiderId;
+        publicLog.RiderId = riderId;
+
+        try
+        {
+            var riders = await (await AdminClientAsync()).GetFromJsonAsync<IReadOnlyList<RiderDto>>("/riders");
+
+            Assert.True(riders!.Single(rider => rider.Id == riderId).IsPublicLog);
+            Assert.All(riders.Where(rider => rider.Id != riderId), rider => Assert.False(rider.IsPublicLog));
         }
         finally
         {

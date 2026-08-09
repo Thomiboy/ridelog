@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using RideLog.Application.Auth;
 using RideLog.Application.Rides;
+using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Auth;
@@ -13,11 +14,33 @@ internal sealed class RiderAccounts(
     IRideMaintenanceService maintenance,
     IOptions<PublicLogOptions> publicLog) : IRiderAccounts
 {
-    public async Task<IReadOnlyList<RiderSummary>> ListAsync(CancellationToken cancellationToken = default) =>
+    public async Task<IReadOnlyList<RiderSummary>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var publicRider = publicLog.Value.RiderId;
+
+        return
+        // Both figures are grouped in the database — the byte sum becomes SUM(DATALENGTH(...)), which
+        // matters: pulling raw files into memory to measure them is how a 512 MB instance dies.
         await users.Users
             .OrderBy(rider => rider.Email)
-            .Select(rider => new RiderSummary(rider.Id, rider.Email ?? string.Empty, rider.Approval))
+            .Select(rider => new RiderSummary(
+                rider.Id,
+                rider.Email ?? string.Empty,
+                rider.Approval,
+                context.Rides.Count(ride => ride.UserId == rider.Id),
+                context.Set<RawFile>()
+                    .Where(file => file.UserId == rider.Id)
+                    .Sum(file => (long)file.Content.Length),
+                context.PolarConnections.Any(link => link.UserId == rider.Id),
+                // A rider has at most one link (the unique index says so), so this is that one's
+                // reading rather than an aggregate — which SQLite cannot do over DateTimeOffset.
+                context.PolarConnections
+                    .Where(link => link.UserId == rider.Id)
+                    .Select(link => link.LastSyncAt)
+                    .FirstOrDefault(),
+                rider.Id == publicRider))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<ApprovalChange> SetApprovalAsync(
         string actingRiderId, string riderId, Approval approval, CancellationToken cancellationToken = default)
@@ -47,6 +70,20 @@ internal sealed class RiderAccounts(
         await users.UpdateAsync(rider);
 
         return ApprovalChange.Changed;
+    }
+
+    public async Task<bool> SetPublicLogAsync(string riderId, CancellationToken cancellationToken = default)
+    {
+        // A rider who is not in cannot be the face of the site: their sync is stopped and they
+        // cannot sign in to tend the log a visitor would be looking at.
+        var rider = await users.FindByIdAsync(riderId);
+        if (rider is null || rider.Approval != Approval.Approved)
+        {
+            return false;
+        }
+
+        publicLog.Value.RiderId = riderId;
+        return true;
     }
 
     public async Task<AccountClosure> CloseAsync(string riderId, CancellationToken cancellationToken = default)
