@@ -29,7 +29,7 @@ public class RideMaintenanceEndpointTests(RideLogApiFactory factory) : IClassFix
     private async Task<Guid> SeedRideAsync()
     {
         using var scope = factory.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         var adminId = (await users.FindByEmailAsync(RideLogApiFactory.AdminEmail))!.Id;
 
         var ride = new Ride

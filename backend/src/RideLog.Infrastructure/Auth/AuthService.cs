@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using RideLog.Application.Auth;
+using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Auth;
 
 internal sealed class AuthService(
-    UserManager<IdentityUser> userManager,
+    UserManager<Rider> userManager,
     IJwtTokenService tokenService) : IAuthService
 {
     public async Task<AccessToken?> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -24,7 +25,7 @@ internal sealed class AuthService(
         return user is null ? null : await TokenFor(user);
     }
 
-    private async Task<AccessToken> TokenFor(IdentityUser user)
+    private async Task<AccessToken> TokenFor(Rider user)
     {
         var roles = await userManager.GetRolesAsync(user);
         return tokenService.CreateToken(user.Id, user.Email ?? string.Empty, [.. roles]);

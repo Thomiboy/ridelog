@@ -32,7 +32,7 @@ public sealed class PublicLogDefaultTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         using var scope = _factory.Services.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         var admin = await users.FindByEmailAsync(RideLogApiFactory.AdminEmail);
 
         var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();

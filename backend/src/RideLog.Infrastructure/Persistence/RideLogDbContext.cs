@@ -7,7 +7,7 @@ using RideLog.Domain.Users;
 namespace RideLog.Infrastructure.Persistence;
 
 public class RideLogDbContext(DbContextOptions<RideLogDbContext> options)
-    : IdentityDbContext<IdentityUser>(options)
+    : IdentityDbContext<Rider>(options)
 {
     public DbSet<Ride> Rides => Set<Ride>();
     public DbSet<RawFile> RawFiles => Set<RawFile>();

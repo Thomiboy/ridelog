@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using RideLog.Application.Auth;
 using RideLog.Application.Polar;
 using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
@@ -57,9 +58,20 @@ public sealed class PolarSyncPerRiderTests : IDisposable
         return client;
     }
 
-    private async Task GivenLinkAsync(string rider, string accessToken, string polarUserId)
+    private async Task GivenLinkAsync(
+        string rider, string accessToken, string polarUserId, Approval approval = Approval.Approved)
     {
         await using var context = new RideLogDbContext(_options);
+        // A link belongs to a rider; the daily run is for riders, so one has to exist.
+        context.Users.Add(new Rider
+        {
+            Id = rider,
+            UserName = $"{rider}@example.test",
+            Email = $"{rider}@example.test",
+            NormalizedEmail = $"{rider}@EXAMPLE.TEST",
+            Approval = approval,
+        });
+        await context.SaveChangesAsync();
         await new PolarTokenStore(context, _protection)
             .SaveAsync(rider, new PolarToken(accessToken, polarUserId));
     }
@@ -133,6 +145,26 @@ public sealed class PolarSyncPerRiderTests : IDisposable
 
         Assert.Equal(["rider-1", "rider-2"], results.Select(result => result.RiderId).Order());
         Assert.All(results, result => Assert.Equal(1, result.Summary.Imported));
+    }
+
+    /// <summary>
+    /// Rejecting a rider has to reach the sync, or it stops nothing that matters: the daily run
+    /// goes by link, so a rider shut out of the app would keep filling the shared database every
+    /// morning — no token, no sign-in, indefinitely.
+    /// </summary>
+    [Fact]
+    public async Task The_daily_run_passes_over_a_rider_who_is_not_approved()
+    {
+        await GivenLinkAsync("rider-1", "token-for-one", "polar-1");
+        await GivenLinkAsync("rider-2", "token-for-two", "polar-2", Approval.Rejected);
+
+        var results = await SyncAllAsync(ClientPerRider());
+
+        Assert.Equal(["rider-1"], results.Select(result => result.RiderId));
+
+        // Their rides are still theirs — rejection stops the delivery, it does not delete a log.
+        await using var verify = new RideLogDbContext(_options);
+        Assert.Empty(verify.Rides.Where(ride => ride.UserId == "rider-2"));
     }
 
     /// <summary>

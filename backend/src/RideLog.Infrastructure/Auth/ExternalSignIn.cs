@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using RideLog.Application.Auth;
+using RideLog.Infrastructure.Persistence;
 
 namespace RideLog.Infrastructure.Auth;
 
-internal sealed class ExternalSignIn(UserManager<IdentityUser> users) : IExternalSignIn
+internal sealed class ExternalSignIn(UserManager<Rider> users) : IExternalSignIn
 {
     public async Task<ExternalSignInResult?> SignInAsync(
         ExternalIdentity identity,
@@ -19,7 +20,7 @@ internal sealed class ExternalSignIn(UserManager<IdentityUser> users) : IExterna
         var known = await users.FindByLoginAsync(identity.Provider, identity.Subject);
         if (known is not null)
         {
-            return new ExternalSignInResult(known.Id);
+            return new ExternalSignInResult(known.Id, known.Approval);
         }
 
         // A rider who used one provider today and another in six months presents the same address,
@@ -30,7 +31,7 @@ internal sealed class ExternalSignIn(UserManager<IdentityUser> users) : IExterna
         {
             // Confirmed because a refusal above is the only way to get here: the provider vouched
             // for the address, and it is the only verification this app will ever have.
-            rider = new IdentityUser { UserName = identity.Email, Email = identity.Email, EmailConfirmed = true };
+            rider = new Rider { UserName = identity.Email, Email = identity.Email, EmailConfirmed = true };
             var created = await users.CreateAsync(rider);
             if (!created.Succeeded)
             {
@@ -42,6 +43,6 @@ internal sealed class ExternalSignIn(UserManager<IdentityUser> users) : IExterna
 
         await users.AddLoginAsync(rider, new UserLoginInfo(identity.Provider, identity.Subject, identity.Provider));
 
-        return new ExternalSignInResult(rider.Id);
+        return new ExternalSignInResult(rider.Id, rider.Approval);
     }
 }

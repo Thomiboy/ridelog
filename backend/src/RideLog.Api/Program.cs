@@ -84,7 +84,7 @@ using (var scope = app.Services.CreateScope())
     if (string.IsNullOrEmpty(publicLog.RiderId))
     {
         var adminEmail = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value.Email;
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();
         publicLog.RiderId = (await users.FindByEmailAsync(adminEmail))?.Id ?? string.Empty;
     }
 }
@@ -195,6 +195,14 @@ app.MapGet("/auth/{provider}/callback", async (
     {
         logger.LogWarning("A {Provider} sign-in was refused.", provider);
         return BackToSignIn("?error=refused", "Sign-in refused.");
+    }
+
+    // Arriving is not being let in. A rider the owner has not approved gets no code, so there is
+    // nothing to exchange and no token anywhere — the gate is here, where the code is issued.
+    // Rejected riders are told the same thing as pending ones: it is not their business which.
+    if (rider.Approval != Approval.Approved)
+    {
+        return BackToSignIn("?status=pending", "Waiting for approval.");
     }
 
     return BackToSignIn($"?code={Uri.EscapeDataString(codes.Issue(rider.RiderId))}", "Signed in.");
@@ -312,6 +320,24 @@ app.MapDelete("/rides/{id:guid}", async (Guid id, IRideMaintenanceService mainte
         ? Results.Ok()
         : Results.NotFound())
     .RequireAuthorization();
+
+// The owner's side of the door: who has knocked, and who is let in. The one surface in this app
+// that reaches across riders, which is what the admin role is for (docs/adr/0006).
+app.MapGet("/riders", async (IRiderAccounts accounts) => Results.Ok(await accounts.ListAsync()))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
+app.MapPut("/riders/{id}/approval", async (
+    string id, ApprovalRequest body, IRiderAccounts accounts, ClaimsPrincipal user) =>
+    await accounts.SetApprovalAsync(user.FindFirstValue("sub")!, id, body.Approval) switch
+    {
+        ApprovalChange.Changed => Results.Ok(),
+        ApprovalChange.RefusedSelf => Results.Conflict(
+            "You cannot shut yourself out — there would be nobody left to let you back in."),
+        ApprovalChange.RefusedPublicLog => Results.Conflict(
+            "This rider is the public log. Point that setting at somebody else first."),
+        _ => Results.NotFound(),
+    })
+    .RequireAuthorization(AdminSeedOptions.RoleName);
 
 // Leaving. Distinct from "delete all my rides", which is maintenance and leaves the Polar link
 // delivering — this takes the rides, the link and the login together.
@@ -442,6 +468,7 @@ app.Run();
 
 internal sealed record LoginRequest(string Email, string Password);
 internal sealed record ExchangeRequest(string Code);
+internal sealed record ApprovalRequest(Approval Approval);
 internal sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
 
 // Exposed so WebApplicationFactory<Program> can boot the API in integration tests.

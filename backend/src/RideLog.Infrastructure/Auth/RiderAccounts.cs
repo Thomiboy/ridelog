@@ -9,10 +9,46 @@ namespace RideLog.Infrastructure.Auth;
 
 internal sealed class RiderAccounts(
     RideLogDbContext context,
-    UserManager<IdentityUser> users,
+    UserManager<Rider> users,
     IRideMaintenanceService maintenance,
     IOptions<PublicLogOptions> publicLog) : IRiderAccounts
 {
+    public async Task<IReadOnlyList<RiderSummary>> ListAsync(CancellationToken cancellationToken = default) =>
+        await users.Users
+            .OrderBy(rider => rider.Email)
+            .Select(rider => new RiderSummary(rider.Id, rider.Email ?? string.Empty, rider.Approval))
+            .ToListAsync(cancellationToken);
+
+    public async Task<ApprovalChange> SetApprovalAsync(
+        string actingRiderId, string riderId, Approval approval, CancellationToken cancellationToken = default)
+    {
+        // Both refusals are checked before anything changes, so a refusal leaves the rider exactly
+        // as they were. Letting somebody in is always safe; only shutting them out can strand you.
+        if (approval != Approval.Approved)
+        {
+            if (riderId == actingRiderId)
+            {
+                return ApprovalChange.RefusedSelf;
+            }
+
+            if (riderId == publicLog.Value.RiderId)
+            {
+                return ApprovalChange.RefusedPublicLog;
+            }
+        }
+
+        var rider = await users.FindByIdAsync(riderId);
+        if (rider is null)
+        {
+            return ApprovalChange.UnknownRider;
+        }
+
+        rider.Approval = approval;
+        await users.UpdateAsync(rider);
+
+        return ApprovalChange.Changed;
+    }
+
     public async Task<AccountClosure> CloseAsync(string riderId, CancellationToken cancellationToken = default)
     {
         // Checked before anything is removed: a refusal has to leave the rider exactly as they were.
