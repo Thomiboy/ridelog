@@ -236,6 +236,43 @@ describe('Statistics', () => {
     expect(climb.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-hill');
   });
 
+  it('sums the whole log into its own Totals section, apart from the Records', () => {
+    const { el } = setup();
+
+    const totals = el.querySelector('[data-section="totals"]')!;
+    expect(totals).not.toBeNull();
+
+    const text = (metric: string) => totals.querySelector(`[data-total="${metric}"]`)!.textContent!;
+    // 80 + 100 + 100 km across 2025 and 2026, and so on for the rest.
+    expect(text('distance')).toContain('280');
+    expect(text('elevation')).toContain('1,400');
+    expect(text('rides')).toContain('4');
+    expect(text('calories')).toContain('3,800');
+    // 360 minutes ridden altogether, shown as hours.
+    expect(text('duration')).toContain('6');
+
+    // A total is a sum, not a record: nothing in here navigates to a ride.
+    expect(totals.querySelectorAll('a').length).toBe(0);
+  });
+
+  /**
+   * The Trends charts filter the same monthly aggregates to the selected year. A total that picked
+   * that filter up would look right and be wrong — 2026 alone is 200 km, not 280.
+   */
+  it('keeps the totals all-time when the year selector moves', () => {
+    const { fixture, el } = setup();
+
+    const distance = () => el.querySelector('[data-total="distance"]')!.textContent!;
+    expect(distance()).toContain('280');
+
+    const select = el.querySelector('[data-testid="year-select"]') as HTMLSelectElement;
+    select.value = '2025';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(distance()).toContain('280');
+  });
+
   it('defaults the year selector to the latest year with data', () => {
     const { el } = setup();
 

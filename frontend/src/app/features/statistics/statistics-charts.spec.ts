@@ -1,4 +1,5 @@
 import {
+  allTimeTotals,
   bandLabel,
   buildMonthlyMetricChart,
   buildRidesByYearChart,
@@ -24,6 +25,36 @@ const aggregate = (year: number, month: number, distanceKm: number): MonthlyAggr
   rideCount: 1,
   calories: distanceKm * 5,
   durationMinutes: 120,
+});
+
+describe('allTimeTotals', () => {
+  // Two years on purpose: a sum that quietly followed the year selector would answer 200, not 280.
+  const monthly: MonthlyAggregate[] = [
+    { year: 2025, month: 7, distanceKm: 80, elevationGainMeters: 300, rideCount: 1, calories: 1000, durationMinutes: 120 },
+    { year: 2026, month: 3, distanceKm: 100, elevationGainMeters: 500, rideCount: 1, calories: 1500, durationMinutes: 120 },
+    { year: 2026, month: 7, distanceKm: 100, elevationGainMeters: 600, rideCount: 2, calories: 1300, durationMinutes: 120 },
+  ];
+
+  it('sums every month the log has, across all years', () => {
+    expect(allTimeTotals(monthly)).toEqual({
+      distanceKm: 280,
+      elevationGainMeters: 1400,
+      rideCount: 4,
+      calories: 3800,
+      durationMinutes: 360,
+    });
+  });
+
+  /** A log with nothing in it is answered with nothing, not with NaN from an empty reduce. */
+  it('answers zeros for a log with no months', () => {
+    expect(allTimeTotals([])).toEqual({
+      distanceKm: 0,
+      elevationGainMeters: 0,
+      rideCount: 0,
+      calories: 0,
+      durationMinutes: 0,
+    });
+  });
 });
 
 describe('statistics chart builders', () => {

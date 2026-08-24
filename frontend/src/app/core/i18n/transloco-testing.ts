@@ -22,6 +22,14 @@ const en = {
   activities: { title: 'Other activity', empty: 'Nothing but rides so far.' },
   statistics: {
     title: 'Statistics',
+    totals: {
+      title: 'Totals',
+      distance: 'Distance ridden',
+      duration: 'Time ridden',
+      elevation: 'Climbed',
+      rides: 'Rides',
+      calories: 'Calories burned',
+    },
     records: {
       title: 'Records',
       longestRide: 'Longest ride',

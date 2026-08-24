@@ -143,6 +143,14 @@
   },
   "statistics": {
     "title": "Statisztika",
+    "totals": {
+      "title": "Összesen",
+      "distance": "Megtett táv",
+      "duration": "Nyeregben töltött idő",
+      "elevation": "Mászott szint",
+      "rides": "Túrák",
+      "calories": "Elégetett kalória"
+    },
     "records": {
       "title": "Rekordok",
       "longestRide": "Leghosszabb túra",

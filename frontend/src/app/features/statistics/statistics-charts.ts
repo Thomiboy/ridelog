@@ -18,6 +18,34 @@ export type MonthlyMetric = 'distanceKm' | 'elevationGainMeters' | 'rideCount' |
 const PLOT_SCALE: Partial<Record<MonthlyMetric, number>> = { durationMinutes: 1 / 60 };
 
 /** The distinct years that have cycling data, ascending — drives the year selector. */
+/** What the log has accumulated altogether. No date and no ride to point at — it is a sum, not a record. */
+export interface AllTimeTotals {
+  distanceKm: number;
+  elevationGainMeters: number;
+  rideCount: number;
+  calories: number;
+  /** Moving time ridden altogether, in minutes; the card renders it as hours. */
+  durationMinutes: number;
+}
+
+/**
+ * Sums every month the log holds. Deliberately takes the whole set rather than a year: the Trends
+ * charts filter the same aggregates to the selected year, and a total that picked that filter up
+ * would look right and be wrong.
+ */
+export function allTimeTotals(monthly: MonthlyAggregate[]): AllTimeTotals {
+  return monthly.reduce<AllTimeTotals>(
+    (total, month) => ({
+      distanceKm: total.distanceKm + month.distanceKm,
+      elevationGainMeters: total.elevationGainMeters + month.elevationGainMeters,
+      rideCount: total.rideCount + month.rideCount,
+      calories: total.calories + month.calories,
+      durationMinutes: total.durationMinutes + month.durationMinutes,
+    }),
+    { distanceKm: 0, elevationGainMeters: 0, rideCount: 0, calories: 0, durationMinutes: 0 },
+  );
+}
+
 export function statisticsYears(monthly: MonthlyAggregate[]): number[] {
   return [...new Set(monthly.map((m) => m.year))].sort((a, b) => a - b);
 }
