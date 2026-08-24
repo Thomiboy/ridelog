@@ -21,7 +21,9 @@
     },
     "activities": "Egyéb",
     "account": "Fiók",
-    "riders": "Riderek"
+    "riders": "Riderek",
+    "contact": "Kapcsolat",
+    "messages": "Üzenetek"
   },
   "dashboard": {
     "title": "Áttekintés",
@@ -259,5 +261,22 @@
     "makePublic": "Legyen a nyilvános",
     "rides": "{{count}} túra",
     "polarLinked": "Polar"
+  },
+  "contact": {
+    "title": "Írj nekem",
+    "intro": "Kérdésed van a naplóról, az útvonalakról vagy a kódról? Küldj egy üzenetet.",
+    "name": "Neved",
+    "email": "E-mail-címed",
+    "message": "Üzenet",
+    "submit": "Küldés",
+    "sent": "Köszönöm — az üzeneted úton van.",
+    "error": "Valami hiba történt a küldéskor. Kérlek, próbáld újra.",
+    "unavailable": "A kapcsolatfelvételi űrlap átmenetileg nem érhető el. Írhatsz közvetlenül is:"
+  },
+  "messages": {
+    "title": "Üzenetek",
+    "accepting": "Új üzenetek fogadása",
+    "empty": "Még nincs üzenet.",
+    "delete": "Üzenet törlése"
   }
 }

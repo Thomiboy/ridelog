@@ -1,0 +1,29 @@
+<section class="messages">
+  <h1>{{ 'messages.title' | transloco }}</h1>
+
+  <label class="switch">
+    <input type="checkbox" [checked]="accepting()" (change)="toggle($event)" data-switch />
+    <span>{{ 'messages.accepting' | transloco }}</span>
+  </label>
+
+  @if (messages().length === 0) {
+    <p class="empty" data-empty>{{ 'messages.empty' | transloco }}</p>
+  } @else {
+    <ul class="list">
+      @for (message of messages(); track message.id) {
+        <li class="item" data-message>
+          <div class="meta">
+            <span class="sender">{{ message.senderName }}</span>
+            <a class="email" [href]="'mailto:' + message.senderEmail">{{ message.senderEmail }}</a>
+            <time class="when">{{ message.submittedAt | translocoDate: { dateStyle: 'medium', timeStyle: 'short' } }}</time>
+          </div>
+          <p class="body">{{ message.message }}</p>
+          <button mat-icon-button type="button" (click)="delete(message.id)" data-delete
+            [attr.aria-label]="'messages.delete' | transloco">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>

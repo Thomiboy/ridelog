@@ -1,0 +1,31 @@
+.contact {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  // Hidden from people but present in the DOM for bots to fill.
+  .honeypot {
+    position: absolute;
+    left: -5000px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .owner-email {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-weight: 600;
+  }
+
+  .error {
+    color: var(--mat-sys-error, #b3261e);
+  }
+}

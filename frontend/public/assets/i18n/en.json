@@ -21,7 +21,9 @@
     },
     "activities": "Other activity",
     "account": "Account",
-    "riders": "Riders"
+    "riders": "Riders",
+    "contact": "Contact",
+    "messages": "Messages"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -259,5 +261,22 @@
     "makePublic": "Make public log",
     "rides": "{{count}} rides",
     "polarLinked": "Polar"
+  },
+  "contact": {
+    "title": "Get in touch",
+    "intro": "Questions about the log, the routes, or the code? Send a note.",
+    "name": "Your name",
+    "email": "Your email",
+    "message": "Message",
+    "submit": "Send",
+    "sent": "Thanks — your message is on its way.",
+    "error": "Something went wrong sending that. Please try again.",
+    "unavailable": "The contact form is temporarily unavailable. You can email directly instead:"
+  },
+  "messages": {
+    "title": "Messages",
+    "accepting": "Accept new messages",
+    "empty": "No messages yet.",
+    "delete": "Delete message"
   }
 }
