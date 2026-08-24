@@ -1,10 +1,16 @@
 .tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 
   .tile {
+    // Grow into whatever the row has left. A grid gives every row the same column count, so the
+    // remainder — 11 records, 5 totals, neither of which divides evenly — is left as a hole at the
+    // end of the last row. Growing means every row ends flush at any width.
+    flex: 1 1 11rem;
+    // The basis has to mean the visible width, and these carry a rem of padding either side.
+    box-sizing: border-box;
     padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
@@ -26,6 +32,12 @@
       font-size: 0.8rem;
       color: var(--mat-sys-on-surface-variant);
     }
+  }
+
+  // Two full dates and a distance on one line — the one card whose content genuinely wants more
+  // than a standard slot, so it starts wider and grows from there.
+  .tile[data-record='longest-streak'] {
+    flex-basis: 19rem;
   }
 }
 
