@@ -102,19 +102,6 @@
             }}</a>
           </mat-card>
         }
-        @if (records()?.longestStreak; as streak) {
-          <mat-card appearance="outlined" class="tile" data-record="longest-streak">
-            <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>
-            <span class="value">{{
-              'statistics.records.days' | transloco: { count: streak.days }
-            }}</span>
-            <span class="range">
-              {{ streak.startDate | translocoDate: { dateStyle: 'medium' } }} –
-              {{ streak.endDate | translocoDate: { dateStyle: 'medium' } }} ·
-              {{ streak.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km
-            </span>
-          </mat-card>
-        }
         @if (records()?.mostCalories; as mostCalories) {
           <mat-card appearance="outlined" class="tile" data-record="most-calories">
             <span class="label">{{ 'statistics.records.mostCalories' | transloco }}</span>
@@ -165,6 +152,19 @@
             <a [routerLink]="['/rides', longestDuration.id]">{{
               longestDuration.date | translocoDate: { dateStyle: 'medium' }
             }}</a>
+          </mat-card>
+        }
+        @if (records()?.longestStreak; as streak) {
+          <mat-card appearance="outlined" class="tile" data-record="longest-streak">
+            <span class="label">{{ 'statistics.records.longestStreak' | transloco }}</span>
+            <span class="value">{{
+              'statistics.records.days' | transloco: { count: streak.days }
+            }}</span>
+            <span class="range">
+              {{ streak.startDate | translocoDate: { dateStyle: 'medium' } }} –
+              {{ streak.endDate | translocoDate: { dateStyle: 'medium' } }} ·
+              {{ streak.distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km
+            </span>
           </mat-card>
         }
         @if (records()?.coldest; as cold) {
