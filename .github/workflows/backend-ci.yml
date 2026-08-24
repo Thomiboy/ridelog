@@ -2,7 +2,9 @@ name: Backend CI
 
 on:
   push:
-    branches: [main]
+    # develop too: work lands there directly, so this is where a break is caught early.
+    # Only main deploys — the deploy job is gated on the ref below.
+    branches: [main, develop]
     paths: ["backend/**", ".github/workflows/backend-ci.yml"]
   pull_request:
     paths: ["backend/**", ".github/workflows/backend-ci.yml"]
