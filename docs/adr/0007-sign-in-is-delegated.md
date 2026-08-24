@@ -6,7 +6,9 @@ their provider vouches for.
 
 ## Why no passwords
 
-**There is no email pipeline anywhere in this codebase** — no sender, no service, nothing. Passwords
+**There is no email pipeline anywhere in this codebase** — no sender, no service, nothing.
+(Amended by #168, below: there is now a sender, but it reaches the owner only and still cannot mail a
+rider — so this reasoning stands.) Passwords
 without one means no address verification and, worse, no password reset: an account whose password is
 forgotten is an account that is gone, along with every ride in it. Building that pipeline is its own
 project, and it means finding another service to keep inside the zero-cost hosting rule.
@@ -52,3 +54,22 @@ is an email pipeline nobody has.
 **Adding local passwords later is not a small change.** It needs the pipeline, and it needs a story
 for accounts that already exist without one. That is the reversal cost, and it is why this is written
 down rather than assumed.
+
+## Amendment (2026-08, #168): there is now a sender, to the owner only
+
+The app can send mail — a contact form lets a visitor reach the owner. The load-bearing sentence above
+is therefore no longer literally true, and this records what replaced it so the next reader is not left
+to guess.
+
+What ruled out local passwords was **mailing riders**: address verification and password reset both
+send mail to a rider, at a cold address, from a brand-new sender on `azurewebsites.net` — a domain
+nobody here owns, so no SPF or DKIM can be published and the mail lands in spam. A verification or
+reset that *sometimes* arrives is worse than none. None of that changed.
+
+So the sender is shaped to keep it true where it matters: `IOwnerMailSender.NotifyOwnerAsync` **takes no
+recipient**. The owner's address comes from configuration, so "nothing here can mail a rider" is a fact
+the signature keeps rather than a rule someone remembers. The owner is one recipient, at an address they
+watch, who can whitelist a sender once — nothing like mailing a rider. Mailing anyone else is a new
+method and a new decision, not a `to` argument passed on a Tuesday, and **that** change is the one that
+would genuinely reopen this ADR. Until a domain is bought and its deliverability done, riders are still
+reached only through the app.

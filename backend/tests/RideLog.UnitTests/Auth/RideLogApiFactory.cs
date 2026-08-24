@@ -19,6 +19,7 @@ public class RideLogApiFactory : WebApplicationFactory<Program>
     public const string AdminEmail = "admin@ridelog.test";
     public const string AdminPassword = "Str0ng!Passw0rd";
     public const string SyncSharedSecret = "cron-shared-secret";
+    public const string OwnerEmail = "owner@ridelog.test";
 
     private readonly SqliteConnection _connection;
     private readonly bool _ownsConnection;
@@ -62,6 +63,12 @@ public class RideLogApiFactory : WebApplicationFactory<Program>
             ["Polar:SyncSharedSecret"] = SyncSharedSecret,
             ["Polar:ClientId"] = "test-client",
             ["Polar:RedirectUri"] = "https://localhost:7016/polar/callback",
+            // The owner's mailbox — where contact mail lands, and the address the contact page shows
+            // when the form is switched off. The real sender is faked in the contact tests.
+            ["Mail:OwnerAddress"] = OwnerEmail,
+            ["Mail:ApiKey"] = "test-mail-key",
+            // A whole suite posts to /contact in one run; keep the frequency guard from tripping tests.
+            ["Contact:RateLimitPerWindow"] = "1000",
         };
         foreach (var (key, value) in settings)
         {

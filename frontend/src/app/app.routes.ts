@@ -9,10 +9,16 @@ export const routes: Routes = [
   { path: 'statistics', loadComponent: () => import('./features/statistics/statistics').then((m) => m.Statistics) },
   { path: 'rides/:id', loadComponent: () => import('./features/ride-detail/ride-detail').then((m) => m.RideDetail) },
   { path: 'login', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
+  { path: 'contact', loadComponent: () => import('./features/contact/contact').then((m) => m.Contact) },
   {
     path: 'riders',
     canActivate: [adminGuard],
     loadComponent: () => import('./features/riders/riders').then((m) => m.Riders),
+  },
+  {
+    path: 'messages',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/messages/messages').then((m) => m.Messages),
   },
   {
     path: 'account',
