@@ -1,0 +1,54 @@
+<section class="contact">
+  <h1>{{ 'contact.title' | transloco }}</h1>
+
+  @if (config(); as config) {
+    @if (config.enabled) {
+      @if (sent()) {
+        <p class="sent" role="status" data-sent>{{ 'contact.sent' | transloco }}</p>
+      } @else {
+        <p class="intro">{{ 'contact.intro' | transloco }}</p>
+
+        @if (failed()) {
+          <p class="error" role="alert" data-error>{{ 'contact.error' | transloco }}</p>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'contact.name' | transloco }}</mat-label>
+            <input matInput formControlName="name" [maxlength]="limits.nameMax" autocomplete="name" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'contact.email' | transloco }}</mat-label>
+            <input matInput type="email" formControlName="email" [maxlength]="limits.emailMax" autocomplete="email" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'contact.message' | transloco }}</mat-label>
+            <textarea matInput formControlName="message" rows="6" [maxlength]="limits.messageMax"></textarea>
+          </mat-form-field>
+
+          <!-- Honeypot: off-screen and out of the tab order, so only a form-filling bot touches it. -->
+          <input
+            class="honeypot"
+            type="text"
+            formControlName="website"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+            data-honeypot
+          />
+
+          <button mat-flat-button type="submit" [disabled]="form.invalid" data-submit>
+            {{ 'contact.submit' | transloco }}
+          </button>
+        </form>
+      }
+    } @else {
+      <p class="unavailable" data-unavailable>{{ 'contact.unavailable' | transloco }}</p>
+      @if (config.ownerEmail; as email) {
+        <a class="owner-email" [href]="'mailto:' + email" data-owner-email>{{ email }}</a>
+      }
+    }
+  }
+</section>

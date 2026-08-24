@@ -71,11 +71,23 @@ dotnet user-secrets set "ExternalSignIn:Providers:google:ClientId" "<google clie
 dotnet user-secrets set "ExternalSignIn:Providers:google:ClientSecret" "<google client secret>"
 dotnet user-secrets set "ExternalSignIn:Providers:microsoft:ClientId" "<microsoft application id>"
 dotnet user-secrets set "ExternalSignIn:Providers:microsoft:ClientSecret" "<microsoft client secret>"
+
+# Contact-form mail (Resend — https://resend.com; the free tier sends without a verified domain)
+dotnet user-secrets set "Mail:ApiKey" "<resend api key>"
+dotnet user-secrets set "Mail:OwnerAddress" "<where contact messages are delivered>"
 ```
 
 Only the credentials are configured: each provider's authorize and token endpoints ship as
 defaults in code, and `ExternalSignIn:RedirectUriTemplate` is already set for local development
 in `appsettings.Development.json`.
+
+The contact form mails the owner through Resend's HTTP API. `Mail:FromAddress` defaults to Resend's
+onboarding sender (`onboarding@resend.dev`), which sends without a verified domain — enough while the
+recipient is the owner. When a domain is bought, verify it with Resend and change `Mail:FromAddress`
+to an address on it; nothing else changes. The sender reaches **only** the owner (`Mail:OwnerAddress`)
+by design — see docs/adr/0007. The owner can turn submissions off from the account page without a
+restart (the switch is stored, like the public-log picker); `Contact:RateLimitPerWindow` (default 5
+per 10 minutes per IP) caps how often the endpoint can be posted to.
 
 Apply the schema with `dotnet ef database update --project ../RideLog.Infrastructure`.
 The admin user (`AdminUser:Email`) is seeded on first run. Link Polar by signing in
@@ -113,6 +125,10 @@ ExternalSignIn__Providers__google__ClientId     = <google client id>
 ExternalSignIn__Providers__google__ClientSecret = <google client secret>
 ExternalSignIn__Providers__microsoft__ClientId     = <microsoft application id>
 ExternalSignIn__Providers__microsoft__ClientSecret = <microsoft client secret>
+
+Mail__ApiKey                   = <resend api key>
+Mail__OwnerAddress             = <where contact messages are delivered>
+Mail__FromAddress              = onboarding@resend.dev  (change to a verified-domain address once one exists)
 ```
 
 `{provider}` is a literal placeholder, not something to substitute — the app fills it in per

@@ -23,7 +23,7 @@ export class Header {
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly isAdmin = this.auth.isAdmin;
 
-  /** Riders waiting on the owner — the only notification this app can give (nothing sends email). */
+  /** Riders waiting on the owner — the badge is the notification, since the app cannot email a rider. */
   readonly pendingRiders = inject(PendingRiders).pending;
 
   readonly languages = LANGUAGES;

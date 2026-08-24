@@ -12,6 +12,8 @@ const en = {
     statistics: 'Statistics',
     account: 'Account',
     riders: 'Riders',
+    contact: 'Contact',
+    messages: 'Messages',
     login: 'Log in',
     logout: 'Log out',
     language: 'Language',
@@ -207,6 +209,23 @@ const en = {
     title: 'No rides here yet.',
     horizon:
       'Rides arrive on their own once you link Polar — but only ones recorded after you link. Anything from before that has to be imported from a file.',
+  },
+  contact: {
+    title: 'Get in touch',
+    intro: 'Questions about the log, the routes, or the code? Send a note.',
+    name: 'Your name',
+    email: 'Your email',
+    message: 'Message',
+    submit: 'Send',
+    sent: 'Thanks — your message is on its way.',
+    error: 'Something went wrong sending that. Please try again.',
+    unavailable: 'The contact form is temporarily unavailable. You can email directly instead:',
+  },
+  messages: {
+    title: 'Messages',
+    accepting: 'Accept new messages',
+    empty: 'No messages yet.',
+    delete: 'Delete message',
   },
   login: {
     title: 'Log in',
