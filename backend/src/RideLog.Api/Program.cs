@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
+using System.Threading.RateLimiting;
 using RideLog.Application.Auth;
+using RideLog.Application.Contact;
 using RideLog.Application.Import;
 using RideLog.Application.Messaging;
 using RideLog.Application.Polar;
@@ -36,6 +38,7 @@ builder.Services.AddRideLogAuth(builder.Configuration);
 builder.Services.AddRideLogImport();
 builder.Services.AddRideLogPolar(builder.Configuration);
 builder.Services.AddRideLogWeather();
+builder.Services.AddRideLogContact(builder.Configuration);
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("JWT configuration ('Jwt') is missing.");
@@ -72,6 +75,25 @@ const int WeatherRidesPerSync = 25;
 
 builder.Services.Configure<PublicLogOptions>(builder.Configuration.GetSection(PublicLogOptions.SectionName));
 
+// Rate limiting for the one endpoint an anonymous stranger can write to (#168). There is no rate
+// limiting anywhere else today; the caps and honeypot guard content, this guards frequency. The
+// limit is configurable so a bulk of tests posting in one run does not trip it.
+const string ContactRateLimitPolicy = "contact";
+var contactPermitLimit = builder.Configuration.GetValue<int?>("Contact:RateLimitPerWindow") ?? 5;
+var contactWindowMinutes = builder.Configuration.GetValue<int?>("Contact:RateLimitWindowMinutes") ?? 10;
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(ContactRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = contactPermitLimit,
+                Window = TimeSpan.FromMinutes(contactWindowMinutes),
+            }));
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -107,6 +129,7 @@ app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 // Public read endpoints.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
@@ -472,6 +495,56 @@ app.MapPost("/sync", async (
     return Results.Ok(new { riders });
 });
 
+// What the public contact page renders from: the switch, and the owner's address when the form is off.
+app.MapGet("/contact", async (IContactService contact) => Results.Ok(await contact.GetConfigAsync()));
+
+// The contact form: the one endpoint where an anonymous stranger writes a row. Public, no sign-in.
+app.MapPost("/contact", async (ContactRequest body, IContactService contact) =>
+{
+    // A real visitor never fills the hidden honeypot field: a filled one is a bot, so drop it —
+    // silently, returning success, so the bot is not told which field gave it away.
+    if (!string.IsNullOrEmpty(body.Website))
+    {
+        return Results.Ok();
+    }
+
+    // Hard length caps, enforced here rather than left to the column: this is the one endpoint where
+    // an anonymous stranger writes a row, and there is no other guard in front of it.
+    if (body.Name.Length > ContactLimits.NameMax
+        || body.Email.Length > ContactLimits.EmailMax
+        || body.Message.Length > ContactLimits.MessageMax)
+    {
+        return Results.BadRequest("Name, email or message is too long.");
+    }
+
+    // The kill switch is enforced here, not by hiding the form — a bot posts straight to the endpoint.
+    if (!await contact.IsAcceptingAsync())
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    await contact.SubmitAsync(new ContactSubmission(body.Name, body.Email, body.Message));
+    return Results.Ok();
+})
+    .RequireRateLimiting(ContactRateLimitPolicy);
+
+// The owner's kill switch. Admin-only, and stored, so flipping it takes effect without a restart.
+app.MapPut("/contact/switch", async (ContactSwitchRequest body, IContactService contact) =>
+{
+    await contact.SetAcceptingAsync(body.Enabled);
+    return Results.Ok();
+})
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
+// The owner's small list of what has come in. Admin-only, like the rest of the cross-rider surface.
+app.MapGet("/messages", async (IContactService contact) => Results.Ok(await contact.ListAsync()))
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
+// Clears one stored message once the owner has read it in the mail; 404 when there is no such message.
+app.MapDelete("/messages/{id:guid}", async (Guid id, IContactService contact) =>
+    await contact.DeleteAsync(id) ? Results.Ok() : Results.NotFound())
+    .RequireAuthorization(AdminSeedOptions.RoleName);
+
 // Same operation the daily sync runs, for when the owner would rather not wait for tomorrow.
 app.MapPost("/rides/weather", async (IWeatherTopUpService weatherTopUp, ClaimsPrincipal user, int? max) =>
 {
@@ -487,6 +560,9 @@ internal sealed record LoginRequest(string Email, string Password);
 internal sealed record ExchangeRequest(string Code);
 internal sealed record ApprovalRequest(Approval Approval);
 internal sealed record PublicLogRequest(string RiderId);
+// Website is the honeypot: a real visitor never fills it, so a filled one is a bot and the submission is dropped.
+internal sealed record ContactRequest(string Name, string Email, string Message, string? Website);
+internal sealed record ContactSwitchRequest(bool Enabled);
 internal sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
 
 // Exposed so WebApplicationFactory<Program> can boot the API in integration tests.

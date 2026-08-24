@@ -3,14 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using RideLog.Application.Auth;
+using RideLog.Application.Contact;
 using RideLog.Application.Import;
+using RideLog.Application.Mail;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
 using RideLog.Application.Settings;
 using RideLog.Application.Users;
 using RideLog.Application.Weather;
 using RideLog.Infrastructure.Auth;
+using RideLog.Infrastructure.Contact;
 using RideLog.Infrastructure.Import;
+using RideLog.Infrastructure.Mail;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
 using RideLog.Infrastructure.Rides;
@@ -97,6 +101,20 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IPolarSyncService, PolarSyncService>();
         services.AddHttpClient<IPolarClient, PolarApiClient>();
         services.AddHttpClient<IPolarOAuth, PolarOAuthClient>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the contact form's back end: the message store/list service and the owner-mail
+    /// sender (Resend's HTTP API). The sender takes no recipient — the owner's address is configured,
+    /// so nothing here can mail a rider (#168, docs/adr/0007).
+    /// </summary>
+    public static IServiceCollection AddRideLogContact(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<MailOptions>(configuration.GetSection(MailOptions.SectionName));
+        services.AddScoped<IContactService, ContactService>();
+        services.AddHttpClient<IOwnerMailSender, ResendOwnerMailSender>();
 
         return services;
     }
