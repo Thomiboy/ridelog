@@ -20,11 +20,30 @@ public class RideLogApiFactory : WebApplicationFactory<Program>
     public const string AdminPassword = "Str0ng!Passw0rd";
     public const string SyncSharedSecret = "cron-shared-secret";
 
-    private readonly SqliteConnection _connection = new("DataSource=:memory:");
+    private readonly SqliteConnection _connection;
+    private readonly bool _ownsConnection;
+
+    public RideLogApiFactory()
+        : this(new SqliteConnection("DataSource=:memory:"), ownsConnection: true)
+    {
+    }
+
+    /// <summary>
+    /// Shares one open database across hosts, so a second host is the next process rather than a new
+    /// database: it reads what the first one stored. The caller owns the connection and its lifetime.
+    /// </summary>
+    protected RideLogApiFactory(SqliteConnection connection, bool ownsConnection)
+    {
+        _connection = connection;
+        _ownsConnection = ownsConnection;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        _connection.Open();
+        if (_connection.State != System.Data.ConnectionState.Open)
+        {
+            _connection.Open();
+        }
 
         builder.UseEnvironment("Testing");
 
@@ -76,7 +95,7 @@ public class RideLogApiFactory : WebApplicationFactory<Program>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (disposing)
+        if (disposing && _ownsConnection)
         {
             _connection.Dispose();
         }

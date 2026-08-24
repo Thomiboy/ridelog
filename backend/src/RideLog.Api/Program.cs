@@ -11,6 +11,7 @@ using RideLog.Application.Import;
 using RideLog.Application.Messaging;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
+using RideLog.Application.Settings;
 using RideLog.Application.Weather;
 using RideLog.Application.Users;
 using RideLog.Infrastructure.Auth;
@@ -77,11 +78,19 @@ using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<RideLogInitializer>().InitializeAsync();
 
-    // A public log nobody remembered to configure is a blank site, so the setting fills itself in
-    // with the rider whose log has always been the public one. Resolved here, once the admin is
-    // seeded and its id exists, which keeps reading it from an endpoint a plain property access.
+    // Resolve whose log is public into the singleton the hot endpoints read, once, at boot. The
+    // stored setting wins first: it is what the owner last moved it to (#172), and reading it from
+    // configuration alone silently returned the log to the admin on every restart. Configuration is
+    // the seeding fallback, and an unset one falls back to the seeded admin — a public log nobody
+    // remembered to configure is a blank site (#156), and that must not happen when nothing is stored.
     var publicLog = scope.ServiceProvider.GetRequiredService<IOptions<PublicLogOptions>>().Value;
-    if (string.IsNullOrEmpty(publicLog.RiderId))
+    var stored = await scope.ServiceProvider.GetRequiredService<ISettingsStore>()
+        .GetAsync(SettingsKeys.PublicLogRiderId);
+    if (!string.IsNullOrEmpty(stored))
+    {
+        publicLog.RiderId = stored;
+    }
+    else if (string.IsNullOrEmpty(publicLog.RiderId))
     {
         var adminEmail = scope.ServiceProvider.GetRequiredService<IOptions<AdminSeedOptions>>().Value.Email;
         var users = scope.ServiceProvider.GetRequiredService<UserManager<Rider>>();

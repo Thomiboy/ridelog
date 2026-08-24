@@ -6,6 +6,7 @@ using RideLog.Application.Auth;
 using RideLog.Application.Import;
 using RideLog.Application.Polar;
 using RideLog.Application.Rides;
+using RideLog.Application.Settings;
 using RideLog.Application.Users;
 using RideLog.Application.Weather;
 using RideLog.Infrastructure.Auth;
@@ -13,6 +14,7 @@ using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Persistence;
 using RideLog.Infrastructure.Polar;
 using RideLog.Infrastructure.Rides;
+using RideLog.Infrastructure.Settings;
 using RideLog.Infrastructure.Users;
 using RideLog.Infrastructure.Weather;
 
@@ -22,12 +24,19 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddRideLogPersistence(this IServiceCollection services, string connectionString)
-        => services.AddDbContext<RideLogDbContext>(options =>
+    {
+        services.AddDbContext<RideLogDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
                 // Azure SQL free offer auto-pauses; the first connection after a cold start returns
                 // "database not currently available" (40613) while it resumes. Retry transient
                 // failures so startup migration and seeding wait it out instead of crashing.
                 sql.EnableRetryOnFailure(maxRetryCount: 10, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null)));
+
+        // The durable settings the owner changes at runtime (the public log; #168's kill switch next).
+        services.AddScoped<ISettingsStore, SettingsStore>();
+
+        return services;
+    }
 
     /// <summary>
     /// Registers ASP.NET Core Identity (stored in RideLogDbContext), JWT token issuing, the login
