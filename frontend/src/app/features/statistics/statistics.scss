@@ -8,7 +8,11 @@
     // Grow into whatever the row has left. A grid gives every row the same column count, so the
     // remainder — 11 records, 5 totals, neither of which divides evenly — is left as a hole at the
     // end of the last row. Growing means every row ends flush at any width.
-    flex: 1 1 11rem;
+    //
+    // 12rem, not 11: the longest labels ("Legnagyobb szintemelkedés", "Leggyorsabb átlag (≥ 30 km)")
+    // wrapped at 11rem, and Hungarian runs longer than English so it showed there first. Measured on
+    // the real page — 12rem clears them and still fits six across.
+    flex: 1 1 12rem;
     // The basis has to mean the visible width, and these carry a rem of padding either side.
     box-sizing: border-box;
     padding: 0.75rem 1rem;
