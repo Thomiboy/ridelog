@@ -49,7 +49,9 @@ public sealed record StatisticsRecords(
     BestMonthDistanceRecord? BestMonthDistance,
     BestMonthRidesRecord? BestMonthRides,
     MaxSpeedRecord? MaxSpeed,
-    BiggestClimbRecord? BiggestClimb)
+    BiggestClimbRecord? BiggestClimb,
+    TemperatureExtreme? Coldest,
+    TemperatureExtreme? Warmest)
 {
     /// <summary>Minimum distance a ride must cover to qualify for the fastest-average record.</summary>
     public const double FastestAverageMinimumKm = 30.0;

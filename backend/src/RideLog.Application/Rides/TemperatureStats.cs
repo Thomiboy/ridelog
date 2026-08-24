@@ -6,7 +6,11 @@ namespace RideLog.Application.Rides;
 /// </summary>
 public sealed record TemperatureBandSlice(int? FromCelsius, int? ToCelsius, double Km);
 
-/// <summary>The coldest or warmest ride, by its average temperature; links back to that ride.</summary>
+/// <summary>
+/// The coldest or warmest ride, by its average temperature; links back to that ride. It lives among
+/// the records rather than in <see cref="TemperatureStats"/>: it names one ride, which is what a
+/// record is, whereas that section's other figures are distributions over the whole log.
+/// </summary>
 public sealed record TemperatureExtreme(Guid Id, DateTimeOffset Date, double AverageTemperatureCelsius);
 
 /// <summary>Average ridden temperature in one calendar month.</summary>
@@ -18,9 +22,5 @@ public sealed record YearlyTemperatureBand(int Year, int? FromCelsius, int? ToCe
 /// <summary>The Statistics page's Temperature section; null when no ride carries temperature.</summary>
 public sealed record TemperatureStats(
     IReadOnlyList<TemperatureBandSlice> Distribution,
-    TemperatureExtreme? Coldest,
-    TemperatureExtreme? Warmest,
-    double? SeasonMinCelsius,
-    double? SeasonMaxCelsius,
     IReadOnlyList<MonthlyTemperature> MonthlyAverage,
     IReadOnlyList<YearlyTemperatureBand> YearlyDistribution);

@@ -41,6 +41,8 @@ const en = {
       bestMonthRides: 'Most rides in a month',
       maxSpeed: 'Top speed',
       biggestClimb: 'Biggest climb',
+      coldest: 'Coldest ride',
+      warmest: 'Warmest ride',
       days: '{{count}} days',
     },
     trends: {
@@ -62,9 +64,6 @@ const en = {
     hrZones: { title: 'HR zones' },
     temperature: {
       title: 'Temperature',
-      coldest: 'Coldest ride',
-      warmest: 'Warmest ride',
-      seasonRange: 'Season range',
       distribution: 'Distance by temperature',
       trend: 'Monthly average',
     },

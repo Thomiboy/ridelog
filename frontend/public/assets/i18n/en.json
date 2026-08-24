@@ -162,7 +162,9 @@
       "bestMonthDistance": "Best month",
       "bestMonthRides": "Most rides in a month",
       "maxSpeed": "Top speed",
-      "biggestClimb": "Biggest climb"
+      "biggestClimb": "Biggest climb",
+      "coldest": "Coldest ride",
+      "warmest": "Warmest ride"
     },
     "trends": {
       "title": "Trends",
@@ -184,9 +186,6 @@
     },
     "temperature": {
       "title": "Temperature",
-      "coldest": "Coldest ride",
-      "warmest": "Warmest ride",
-      "seasonRange": "Season range",
       "distribution": "Distance by temperature",
       "trend": "Monthly average"
     },
