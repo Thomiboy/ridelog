@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RideLog.Application.Auth;
 using RideLog.Application.Rides;
+using RideLog.Application.Settings;
 using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Persistence;
 
@@ -272,6 +273,37 @@ public class RiderDirectoryTests(RideLogApiFactory factory) : IClassFixture<Ride
             // Read as a visitor: no token at all, so the answer comes from the setting alone.
             var seen = await factory.CreateClient().GetFromJsonAsync<PagedDto>("/rides");
             Assert.Equal(1, seen!.Total);
+        }
+        finally
+        {
+            publicLog.RiderId = wasPublic;
+        }
+    }
+
+    /// <summary>
+    /// The defect in #172: moving the public log only mutated the in-memory options singleton, so
+    /// the next process — which reads configuration, not memory — silently returned the log to the
+    /// admin. Moving it has to write the store, where a separate reader (the next boot) finds it.
+    /// </summary>
+    [Fact]
+    public async Task Moving_the_public_log_is_written_to_the_store()
+    {
+        var newcomer = await GivenRiderAsync("stored-public@example.test", Approval.Approved);
+        var publicLog = factory.Services.GetRequiredService<IOptions<PublicLogOptions>>().Value;
+        var wasPublic = publicLog.RiderId;
+        var admin = await AdminClientAsync();
+
+        try
+        {
+            var moved = await admin.PutAsJsonAsync("/riders/public-log", new { riderId = newcomer });
+            Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
+
+            // Read the store in a fresh scope, not the singleton the endpoint also updated: this is
+            // what the next boot does, and the value has to be there rather than only in memory.
+            using var scope = factory.Services.CreateScope();
+            var stored = await scope.ServiceProvider.GetRequiredService<ISettingsStore>()
+                .GetAsync(SettingsKeys.PublicLogRiderId);
+            Assert.Equal(newcomer, stored);
         }
         finally
         {

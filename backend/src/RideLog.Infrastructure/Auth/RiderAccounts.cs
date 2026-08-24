@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using RideLog.Application.Auth;
 using RideLog.Application.Rides;
+using RideLog.Application.Settings;
 using RideLog.Domain.Rides;
 using RideLog.Infrastructure.Persistence;
 
@@ -12,6 +13,7 @@ internal sealed class RiderAccounts(
     RideLogDbContext context,
     UserManager<Rider> users,
     IRideMaintenanceService maintenance,
+    ISettingsStore settings,
     IOptions<PublicLogOptions> publicLog) : IRiderAccounts
 {
     public async Task<IReadOnlyList<RiderSummary>> ListAsync(CancellationToken cancellationToken = default)
@@ -82,6 +84,9 @@ internal sealed class RiderAccounts(
             return false;
         }
 
+        // Store first so the change outlives this process (#172), then update the in-memory cache the
+        // hot public endpoints read — a value only ever written to the singleton was lost on restart.
+        await settings.SetAsync(SettingsKeys.PublicLogRiderId, riderId, cancellationToken);
         publicLog.Value.RiderId = riderId;
         return true;
     }
