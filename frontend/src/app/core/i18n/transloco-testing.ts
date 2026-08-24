@@ -22,6 +22,14 @@ const en = {
   activities: { title: 'Other activity', empty: 'Nothing but rides so far.' },
   statistics: {
     title: 'Statistics',
+    totals: {
+      title: 'Totals',
+      distance: 'Distance ridden',
+      duration: 'Time ridden',
+      elevation: 'Climbed',
+      rides: 'Rides',
+      calories: 'Calories burned',
+    },
     records: {
       title: 'Records',
       longestRide: 'Longest ride',
@@ -33,6 +41,8 @@ const en = {
       bestMonthRides: 'Most rides in a month',
       maxSpeed: 'Top speed',
       biggestClimb: 'Biggest climb',
+      coldest: 'Coldest ride',
+      warmest: 'Warmest ride',
       days: '{{count}} days',
     },
     trends: {
@@ -54,9 +64,6 @@ const en = {
     hrZones: { title: 'HR zones' },
     temperature: {
       title: 'Temperature',
-      coldest: 'Coldest ride',
-      warmest: 'Warmest ride',
-      seasonRange: 'Season range',
       distribution: 'Distance by temperature',
       trend: 'Monthly average',
     },

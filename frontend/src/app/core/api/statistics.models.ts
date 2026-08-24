@@ -93,6 +93,10 @@ export interface StatisticsRecords {
   bestMonthRides?: BestMonthRidesRecord | null;
   maxSpeed?: MaxSpeedRecord | null;
   biggestClimb?: BiggestClimbRecord | null;
+  /** The coldest ride by average temperature — a record like the rest, so it lives here. */
+  coldest?: TemperatureExtreme | null;
+  /** The warmest ride by average temperature. */
+  warmest?: TemperatureExtreme | null;
 }
 
 /** Distance ridden in one 5°C temperature band; open-ended bounds are null. */
@@ -127,10 +131,6 @@ export interface YearlyTemperatureBand {
 /** The Statistics page's Temperature section. */
 export interface TemperatureStats {
   distribution: TemperatureBandSlice[];
-  coldest: TemperatureExtreme | null;
-  warmest: TemperatureExtreme | null;
-  seasonMinCelsius: number | null;
-  seasonMaxCelsius: number | null;
   monthlyAverage: MonthlyTemperature[];
   yearlyDistribution: YearlyTemperatureBand[];
 }

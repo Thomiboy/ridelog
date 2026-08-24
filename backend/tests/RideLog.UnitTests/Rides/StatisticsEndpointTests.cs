@@ -491,12 +491,21 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
     private sealed record ExtremeDto(Guid Id, DateTimeOffset Date, double AverageTemperatureCelsius);
     private sealed record MonthlyTempDto(int Year, int Month, double AverageTemperatureCelsius);
     private sealed record TempStatsDto(
-        IReadOnlyList<BandDto> Distribution, ExtremeDto? Coldest, ExtremeDto? Warmest,
-        double? SeasonMinCelsius, double? SeasonMaxCelsius, IReadOnlyList<MonthlyTempDto> MonthlyAverage);
-    private sealed record TempResultDto(TempStatsDto? Temperature);
+        IReadOnlyList<BandDto> Distribution, IReadOnlyList<MonthlyTempDto> MonthlyAverage);
+    private sealed record TempRecordsDto(ExtremeDto? Coldest, ExtremeDto? Warmest);
+    private sealed record TempResultDto(TempStatsDto? Temperature, TempRecordsDto Records);
 
+    /// <summary>Probes the temperature payload for fields that should no longer be on the wire.</summary>
+    private sealed record RetiredTempFieldsDto(
+        double? SeasonMinCelsius, double? SeasonMaxCelsius, ExtremeDto? Coldest, ExtremeDto? Warmest);
+    private sealed record RetiredTempResultDto(RetiredTempFieldsDto? Temperature);
+
+    /// <summary>
+    /// The coldest and warmest ride each name one ride and link to it — that is what a record is, so
+    /// they belong with the records rather than inside the Temperature section's own payload.
+    /// </summary>
     [Fact]
-    public async Task Reports_temperature_extremes_season_range_and_monthly_average()
+    public async Task Reports_temperature_extremes_among_the_records()
     {
         Guid coldId, warmId;
         using (var scope = factory.Services.CreateScope())
@@ -515,19 +524,23 @@ public class StatisticsEndpointTests(FixedClockApiFactory factory) : IClassFixtu
         }
 
         var stats = await factory.CreateClient().GetFromJsonAsync<TempResultDto>("/statistics");
-        var temp = stats!.Temperature!;
 
-        Assert.Equal(coldId, temp.Coldest!.Id);
-        Assert.Equal(5, temp.Coldest.AverageTemperatureCelsius, 0.01);
-        Assert.Equal(warmId, temp.Warmest!.Id);
-        Assert.Equal(20, temp.Warmest.AverageTemperatureCelsius, 0.01);
+        Assert.Equal(coldId, stats!.Records.Coldest!.Id);
+        Assert.Equal(5, stats.Records.Coldest.AverageTemperatureCelsius, 0.01);
+        Assert.Equal(warmId, stats.Records.Warmest!.Id);
+        Assert.Equal(20, stats.Records.Warmest.AverageTemperatureCelsius, 0.01);
 
-        Assert.Equal(2, temp.SeasonMinCelsius!.Value, 0.01);  // lowest min
-        Assert.Equal(25, temp.SeasonMaxCelsius!.Value, 0.01); // highest max
-
-        // July average = (5 + 18) / 2 = 11.5; August = 20.
+        // The monthly trend stays with the section it draws: July = (5 + 18) / 2 = 11.5, August = 20.
+        var temp = stats.Temperature!;
         Assert.Equal(11.5, temp.MonthlyAverage.Single(m => m.Year == 2026 && m.Month == 7).AverageTemperatureCelsius, 0.01);
         Assert.Equal(20, temp.MonthlyAverage.Single(m => m.Year == 2026 && m.Month == 8).AverageTemperatureCelsius, 0.01);
+
+        // The season range is retired, and the extremes no longer travel twice.
+        var retired = await factory.CreateClient().GetFromJsonAsync<RetiredTempResultDto>("/statistics");
+        Assert.Null(retired!.Temperature!.SeasonMinCelsius);
+        Assert.Null(retired.Temperature.SeasonMaxCelsius);
+        Assert.Null(retired.Temperature.Coldest);
+        Assert.Null(retired.Temperature.Warmest);
     }
 
     [Fact]

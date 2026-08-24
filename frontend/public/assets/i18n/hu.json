@@ -143,6 +143,14 @@
   },
   "statistics": {
     "title": "Statisztika",
+    "totals": {
+      "title": "Összesen",
+      "distance": "Megtett táv",
+      "duration": "Nyeregben töltött idő",
+      "elevation": "Mászott szint",
+      "rides": "Túrák",
+      "calories": "Elégetett kalória"
+    },
     "records": {
       "title": "Rekordok",
       "longestRide": "Leghosszabb túra",
@@ -154,7 +162,9 @@
       "bestMonthDistance": "Legjobb hónap",
       "bestMonthRides": "Legtöbb túra egy hónapban",
       "maxSpeed": "Csúcssebesség",
-      "biggestClimb": "Legnagyobb szintemelkedés"
+      "biggestClimb": "Legnagyobb szintemelkedés",
+      "coldest": "Leghidegebb túra",
+      "warmest": "Legmelegebb túra"
     },
     "trends": {
       "title": "Trendek",
@@ -176,9 +186,6 @@
     },
     "temperature": {
       "title": "Hőmérséklet",
-      "coldest": "Leghidegebb túra",
-      "warmest": "Legmelegebb túra",
-      "seasonRange": "Szezon tartomány",
       "distribution": "Táv hőmérséklet szerint",
       "trend": "Havi átlag"
     },

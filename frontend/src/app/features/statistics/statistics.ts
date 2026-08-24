@@ -14,6 +14,7 @@ import { Chart } from '../../shared/chart/chart';
 import { FirstRun } from '../../shared/first-run/first-run';
 import { AuthService } from '../../core/auth/auth.service';
 import {
+  allTimeTotals,
   buildMonthlyMetricChart,
   buildRidesByYearChart,
   buildTemperatureDistributionChart,
@@ -128,6 +129,13 @@ export class Statistics implements OnDestroy {
         )
       : null;
   });
+
+  /**
+   * What the log has accumulated altogether. Deliberately summed from every aggregate rather than
+   * the selected year's — the Trends charts filter the same data, and following that filter here
+   * would look right and be wrong.
+   */
+  readonly totals = computed(() => allTimeTotals(this.stats()?.monthlyAggregates ?? []));
 
   readonly records = computed(() => this.stats()?.records ?? null);
 

@@ -97,26 +97,13 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
                 .Select((band, i) => new YearlyTemperatureBand(entry.Key, band.From, band.To, Math.Round(entry.Value[i], 1))))
             .ToList();
 
-        var coldest = withAverage
-            .OrderBy(r => r.AverageTemperatureCelsius).ThenBy(r => r.StartTime)
-            .Select(r => new TemperatureExtreme(r.Id, r.StartTime, r.AverageTemperatureCelsius!.Value))
-            .FirstOrDefault();
-        var warmest = withAverage
-            .OrderByDescending(r => r.AverageTemperatureCelsius).ThenBy(r => r.StartTime)
-            .Select(r => new TemperatureExtreme(r.Id, r.StartTime, r.AverageTemperatureCelsius!.Value))
-            .FirstOrDefault();
-
-        // Nullable Min/Max return null for an empty sequence, so absent readings give a null range.
-        var seasonMin = rows.Select(r => r.MinTemperatureCelsius).Where(t => t is not null).Min();
-        var seasonMax = rows.Select(r => r.MaxTemperatureCelsius).Where(t => t is not null).Max();
-
         var monthlyAverage = withAverage
             .GroupBy(r => (r.StartTime.Year, r.StartTime.Month))
             .Select(g => new MonthlyTemperature(g.Key.Year, g.Key.Month, Math.Round(g.Average(r => r.AverageTemperatureCelsius!.Value), 1)))
             .OrderBy(m => m.Year).ThenBy(m => m.Month)
             .ToList();
 
-        return new TemperatureStats(distribution, coldest, warmest, seasonMin, seasonMax, monthlyAverage, yearlyDistribution);
+        return new TemperatureStats(distribution, monthlyAverage, yearlyDistribution);
     }
 
     private static IReadOnlyList<HrZoneSlice>? AggregateHrZones(
@@ -209,9 +196,20 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Select(m => new BestMonthRidesRecord(m.Year, m.Month, m.RideCount))
             .FirstOrDefault();
 
+        // Each names one ride, so they are records; the Temperature section keeps only its distributions.
+        var withAverage = rows.Where(r => r.AverageTemperatureCelsius is not null).ToList();
+        var coldest = withAverage
+            .OrderBy(r => r.AverageTemperatureCelsius).ThenBy(r => r.StartTime)
+            .Select(r => new TemperatureExtreme(r.Id, r.StartTime, r.AverageTemperatureCelsius!.Value))
+            .FirstOrDefault();
+        var warmest = withAverage
+            .OrderByDescending(r => r.AverageTemperatureCelsius).ThenBy(r => r.StartTime)
+            .Select(r => new TemperatureExtreme(r.Id, r.StartTime, r.AverageTemperatureCelsius!.Value))
+            .FirstOrDefault();
+
         return new StatisticsRecords(
             longest, fastest, LongestStreak(rows), mostCalories, longestDuration, bestMonthDistance, bestMonthRides,
-            maxSpeed, biggestClimb);
+            maxSpeed, biggestClimb, coldest, warmest);
     }
 
     private static StreakRecord? LongestStreak(IReadOnlyList<Row> rows)

@@ -106,10 +106,6 @@ describe('Statistics', () => {
           { fromCelsius: null, toCelsius: 0, km: 3 },
           { fromCelsius: 0, toCelsius: 5, km: 12 },
         ],
-        coldest: { id: 'ride-cold', date: '2026-01-05T08:00:00+00:00', averageTemperatureCelsius: 2 },
-        warmest: { id: 'ride-warm', date: '2026-07-05T08:00:00+00:00', averageTemperatureCelsius: 24 },
-        seasonMinCelsius: -1,
-        seasonMaxCelsius: 30,
         monthlyAverage: [
           { year: 2026, month: 1, averageTemperatureCelsius: 2 },
           { year: 2026, month: 7, averageTemperatureCelsius: 24 },
@@ -125,9 +121,33 @@ describe('Statistics', () => {
     expect(section).not.toBeNull();
     expect(chartData(fixture, 'temperature-distribution').datasets[0].data).toEqual([3, 12]);
     expect(chartData(fixture, 'temperature-trend').datasets[0].data).toEqual([2, 24]);
-    // Warmest ride average is shown, linked to the ride.
-    expect(section.textContent).toContain('24');
-    expect(section.querySelector('a[href="/rides/ride-warm"]')).not.toBeNull();
+    // The section draws distributions now; the two extremes are records and live with the records.
+    expect(section.querySelectorAll('a').length).toBe(0);
+  });
+
+  /**
+   * The coldest and warmest ride each name one ride and link to it, which is what every other record
+   * does — so they are rendered with them rather than inside the Temperature section.
+   */
+  it('renders the coldest and warmest ride among the records, linking their rides', () => {
+    const { el } = setup({
+      records: {
+        ...stats.records,
+        coldest: { id: 'ride-cold', date: '2026-01-05T08:00:00+00:00', averageTemperatureCelsius: 2 },
+        warmest: { id: 'ride-warm', date: '2026-07-05T08:00:00+00:00', averageTemperatureCelsius: 24 },
+      },
+    });
+
+    const cold = el.querySelector('[data-record="coldest"]')!;
+    expect(cold.textContent).toContain('2');
+    expect(cold.querySelector('a[href="/rides/ride-cold"]')).not.toBeNull();
+
+    const warm = el.querySelector('[data-record="warmest"]')!;
+    expect(warm.textContent).toContain('24');
+    expect(warm.querySelector('a[href="/rides/ride-warm"]')).not.toBeNull();
+
+    // And they are not left behind in the Temperature section.
+    expect(el.querySelector('[data-section="temperature"] [data-record="coldest"]')).toBeNull();
   });
 
   it('hides the Temperature section without temperature data', () => {
@@ -139,10 +159,6 @@ describe('Statistics', () => {
     const { fixture } = setup({
       temperature: {
         distribution: [],
-        coldest: null,
-        warmest: null,
-        seasonMinCelsius: null,
-        seasonMaxCelsius: null,
         monthlyAverage: [],
         yearlyDistribution: [
           { year: 2025, fromCelsius: 0, toCelsius: 5, km: 99 },
@@ -236,6 +252,43 @@ describe('Statistics', () => {
     expect(climb.querySelector('a')?.getAttribute('href')).toContain('/rides/ride-hill');
   });
 
+  it('sums the whole log into its own Totals section, apart from the Records', () => {
+    const { el } = setup();
+
+    const totals = el.querySelector('[data-section="totals"]')!;
+    expect(totals).not.toBeNull();
+
+    const text = (metric: string) => totals.querySelector(`[data-total="${metric}"]`)!.textContent!;
+    // 80 + 100 + 100 km across 2025 and 2026, and so on for the rest.
+    expect(text('distance')).toContain('280');
+    expect(text('elevation')).toContain('1,400');
+    expect(text('rides')).toContain('4');
+    expect(text('calories')).toContain('3,800');
+    // 360 minutes ridden altogether, shown as hours.
+    expect(text('duration')).toContain('6');
+
+    // A total is a sum, not a record: nothing in here navigates to a ride.
+    expect(totals.querySelectorAll('a').length).toBe(0);
+  });
+
+  /**
+   * The Trends charts filter the same monthly aggregates to the selected year. A total that picked
+   * that filter up would look right and be wrong — 2026 alone is 200 km, not 280.
+   */
+  it('keeps the totals all-time when the year selector moves', () => {
+    const { fixture, el } = setup();
+
+    const distance = () => el.querySelector('[data-total="distance"]')!.textContent!;
+    expect(distance()).toContain('280');
+
+    const select = el.querySelector('[data-testid="year-select"]') as HTMLSelectElement;
+    select.value = '2025';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(distance()).toContain('280');
+  });
+
   it('defaults the year selector to the latest year with data', () => {
     const { el } = setup();
 
@@ -324,10 +377,6 @@ describe('Statistics', () => {
     const { fixture, el } = setup({
       temperature: {
         distribution: [],
-        coldest: null,
-        warmest: null,
-        seasonMinCelsius: null,
-        seasonMaxCelsius: null,
         monthlyAverage: [],
         yearlyDistribution: [
           { year: 2025, fromCelsius: 0, toCelsius: 5, km: 99 },

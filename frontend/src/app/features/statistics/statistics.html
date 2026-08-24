@@ -5,6 +5,38 @@
     @if (isEmptyLog()) {
       <app-first-run [ownLog]="isOwnLog()" />
     } @else {
+      <!-- Totals: sums, not records — nothing here points at a ride. -->
+      <h2>
+        {{ 'statistics.totals.title' | transloco }}
+        <span class="section-note">{{ 'statistics.allTime' | transloco }}</span>
+      </h2>
+      <div class="tiles" data-section="totals">
+        <mat-card appearance="outlined" class="tile" data-total="distance">
+          <span class="label">{{ 'statistics.totals.distance' | transloco }}</span>
+          <span class="value"
+            >{{ totals().distanceKm | translocoDecimal: { maximumFractionDigits: 0 } }} km</span
+          >
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-total="duration">
+          <span class="label">{{ 'statistics.totals.duration' | transloco }}</span>
+          <span class="value">{{ totals().durationMinutes | duration }}</span>
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-total="elevation">
+          <span class="label">{{ 'statistics.totals.elevation' | transloco }}</span>
+          <span class="value"
+            >{{ totals().elevationGainMeters | translocoDecimal: { maximumFractionDigits: 0 } }} m</span
+          >
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-total="rides">
+          <span class="label">{{ 'statistics.totals.rides' | transloco }}</span>
+          <span class="value">{{ totals().rideCount | translocoDecimal }}</span>
+        </mat-card>
+        <mat-card appearance="outlined" class="tile" data-total="calories">
+          <span class="label">{{ 'statistics.totals.calories' | transloco }}</span>
+          <span class="value">{{ totals().calories | translocoDecimal: { maximumFractionDigits: 0 } }}</span>
+        </mat-card>
+      </div>
+
       <!-- Records -->
       <h2>
         {{ 'statistics.records.title' | transloco }}
@@ -132,6 +164,36 @@
             <span class="value">{{ longestDuration.durationMinutes | duration }}</span>
             <a [routerLink]="['/rides', longestDuration.id]">{{
               longestDuration.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+        @if (records()?.coldest; as cold) {
+          <mat-card appearance="outlined" class="tile" data-record="coldest">
+            <span class="label">{{ 'statistics.records.coldest' | transloco }}</span>
+            <span class="value"
+              >{{
+                cold.averageTemperatureCelsius
+                  | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+              }}
+              °C</span
+            >
+            <a [routerLink]="['/rides', cold.id]">{{
+              cold.date | translocoDate: { dateStyle: 'medium' }
+            }}</a>
+          </mat-card>
+        }
+        @if (records()?.warmest; as warm) {
+          <mat-card appearance="outlined" class="tile" data-record="warmest">
+            <span class="label">{{ 'statistics.records.warmest' | transloco }}</span>
+            <span class="value"
+              >{{
+                warm.averageTemperatureCelsius
+                  | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
+              }}
+              °C</span
+            >
+            <a [routerLink]="['/rides', warm.id]">{{
+              warm.date | translocoDate: { dateStyle: 'medium' }
             }}</a>
           </mat-card>
         }
@@ -297,55 +359,6 @@
             {{ 'statistics.temperature.title' | transloco }}
             <span class="section-note">{{ 'statistics.allTime' | transloco }}</span>
           </h2>
-          <div class="tiles">
-            @if (temp.coldest; as cold) {
-              <mat-card appearance="outlined" class="tile" data-record="coldest">
-                <span class="label">{{ 'statistics.temperature.coldest' | transloco }}</span>
-                <span class="value"
-                  >{{
-                    cold.averageTemperatureCelsius
-                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
-                  }}
-                  °C</span
-                >
-                <a [routerLink]="['/rides', cold.id]">{{
-                  cold.date | translocoDate: { dateStyle: 'medium' }
-                }}</a>
-              </mat-card>
-            }
-            @if (temp.warmest; as warm) {
-              <mat-card appearance="outlined" class="tile" data-record="warmest">
-                <span class="label">{{ 'statistics.temperature.warmest' | transloco }}</span>
-                <span class="value"
-                  >{{
-                    warm.averageTemperatureCelsius
-                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
-                  }}
-                  °C</span
-                >
-                <a [routerLink]="['/rides', warm.id]">{{
-                  warm.date | translocoDate: { dateStyle: 'medium' }
-                }}</a>
-              </mat-card>
-            }
-            @if (temp.seasonMinCelsius != null && temp.seasonMaxCelsius != null) {
-              <mat-card appearance="outlined" class="tile" data-record="season-range">
-                <span class="label">{{ 'statistics.temperature.seasonRange' | transloco }}</span>
-                <span class="value">
-                  {{
-                    temp.seasonMinCelsius
-                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
-                  }}
-                  –
-                  {{
-                    temp.seasonMaxCelsius
-                      | translocoDecimal: { minimumFractionDigits: 0, maximumFractionDigits: 1 }
-                  }}
-                  °C
-                </span>
-              </mat-card>
-            }
-          </div>
           <div class="charts">
             @if (temperatureDistributionChart(); as chart) {
               <mat-card
