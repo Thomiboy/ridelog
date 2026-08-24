@@ -42,6 +42,39 @@ public class ResendOwnerMailSenderTests
         Assert.Equal("visitor@example.test", root.GetProperty("reply_to").GetString());
     }
 
+    /// <summary>
+    /// A refused send is logged and swallowed (the stored copy is the net), so the log line is the
+    /// only place the reason can appear. <c>EnsureSuccessStatusCode</c> carries the status but throws
+    /// the body away — and the body is where Resend says *why*, e.g. that an unverified sender may
+    /// only mail the account's own address. Without it the log says "it failed" and nothing more.
+    /// </summary>
+    [Fact]
+    public async Task A_refused_send_carries_the_provider_reason_not_just_the_status()
+    {
+        // Resend's actual 403 body when the onboarding sender is used with a different recipient.
+        const string reason =
+            "You can only send testing emails to your own email address (owner@ridelog.test). " +
+            "To send emails to other recipients, please verify a domain at resend.com/domains.";
+        var handler = new MockHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden)
+        {
+            Content = new StringContent(
+                $"{{\"statusCode\":403,\"message\":\"{reason}\",\"name\":\"validation_error\"}}",
+                System.Text.Encoding.UTF8,
+                "application/json"),
+        });
+        var sender = new ResendOwnerMailSender(new HttpClient(handler), Options.Create(new MailOptions
+        {
+            ApiKey = "re_test_key",
+            OwnerAddress = "someone-else@ridelog.test",
+        }));
+
+        var thrown = await Assert.ThrowsAsync<HttpRequestException>(
+            () => sender.NotifyOwnerAsync("Subject", "Body", "visitor@example.test"));
+
+        Assert.Contains("403", thrown.Message);
+        Assert.Contains("your own email address", thrown.Message);
+    }
+
     [Fact]
     public async Task With_no_reply_to_the_field_is_omitted_rather_than_sent_null()
     {
