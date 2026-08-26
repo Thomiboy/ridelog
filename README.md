@@ -179,6 +179,15 @@ A rider who signs in with both providers using the same verified address reaches
 Identity is configured with `RequireUniqueEmail`, so the second provider attaches to the rider who
 already holds that address.
 
+**The break-glass way in is `/login/password`.** The seeded admin keeps a password because it
+predates delegated sign-in, and it is the only way back into that account when a provider is
+unreachable or the linked Google account is lost — there is no reset behind it, since nothing here
+can mail a rider. Nothing links to that route: `/login` offers only the providers, because a rider
+who arrived through one has no password to type. `/auth/login` is rate limited (10 attempts per 15
+minutes per address, `Auth:LoginRateLimitPerWindow` / `Auth:LoginRateLimitWindowMinutes`) and
+deliberately has **no account lockout** — locking the last key would let anyone who knows the
+address keep the owner out of their own emergency exit.
+
 ## Roadmap
 
 - **Phase 1 (MVP) ✅:** Polar sync, historical import, ride list + detail with map, basic dashboard, public read-only + admin login, CI/CD

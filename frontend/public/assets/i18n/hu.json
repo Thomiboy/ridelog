@@ -137,7 +137,6 @@
     "submit": "Bejelentkezés",
     "error": "Sikertelen bejelentkezés. Ellenőrizd az adataidat.",
     "continueWith": "Belépés {{provider}}-fiókkal",
-    "orAdmin": "vagy jelszóval",
     "externalError": "Sikertelen bejelentkezés. A szolgáltató nem erősítette meg a fiókodat.",
     "waiting": "Köszönjük — a fiókod jóváhagyásra vár. A tulajdonosnak kell beengednie, mielőtt a naplód megnyílik; próbálj később újra belépni."
   },

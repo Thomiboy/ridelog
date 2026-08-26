@@ -9,6 +9,13 @@ export const routes: Routes = [
   { path: 'statistics', loadComponent: () => import('./features/statistics/statistics').then((m) => m.Statistics) },
   { path: 'rides/:id', loadComponent: () => import('./features/ride-detail/ride-detail').then((m) => m.RideDetail) },
   { path: 'login', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
+  // The seeded admin's break-glass way in (#186). Nothing links here, and nothing should: a rider
+  // who arrived through a provider has no password. Unadvertised, not protected — the guard is the
+  // rate limit on /auth/login, and the README says where this door is.
+  {
+    path: 'login/password',
+    loadComponent: () => import('./features/login/password-login').then((m) => m.PasswordLogin),
+  },
   { path: 'contact', loadComponent: () => import('./features/contact/contact').then((m) => m.Contact) },
   {
     path: 'riders',

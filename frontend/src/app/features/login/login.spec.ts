@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { Login } from './login';
 import { AuthService } from '../../core/auth/auth.service';
@@ -9,7 +9,6 @@ import { translocoTesting } from '../../core/i18n/transloco-testing';
 describe('Login', () => {
   function setup(loginResult: ReturnType<AuthService['login']>, query: Record<string, string> = {}) {
     const auth = {
-      login: vi.fn().mockReturnValue(loginResult),
       authorizeUrl: vi.fn((provider: string) => `https://api.test/auth/${provider}/authorize`),
       completeExternalSignIn: vi.fn().mockReturnValue(loginResult),
     };
@@ -27,26 +26,6 @@ describe('Login', () => {
     fixture.detectChanges();
     return { fixture, component: fixture.componentInstance, auth, router };
   }
-
-  it('logs in and navigates home on success', () => {
-    const { component, auth, router } = setup(of({ email: 'admin@ridelog.test', roles: ['Admin'] }));
-
-    component.form.setValue({ email: 'admin@ridelog.test', password: 'pw' });
-    component.submit();
-
-    expect(auth.login).toHaveBeenCalledWith('admin@ridelog.test', 'pw');
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
-  });
-
-  it('shows an error message when login fails', () => {
-    const { fixture, component } = setup(throwError(() => new Error('unauthorized')));
-
-    component.form.setValue({ email: 'admin@ridelog.test', password: 'wrong' });
-    component.submit();
-    fixture.detectChanges();
-
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Login failed');
-  });
 
   /**
    * A plain link, not a click handler: the sign-in round trip is a browser navigation to the API,
@@ -92,11 +71,16 @@ describe('Login', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('waiting for approval');
   });
 
-  it('does not call the API when the form is empty', () => {
-    const { component, auth } = setup(of({ email: '', roles: [] }));
+  /**
+   * The password is the seeded admin's break-glass key and nobody else's — a new rider has none and
+   * never will (docs/adr/0007). Offering everyone a field they can never fill is noise, so the form
+   * lives at `/login/password` (#186). It is moved, not hidden: the guard is on the endpoint.
+   */
+  it('does not offer a password form', () => {
+    const { fixture } = setup(of({ email: '', roles: [] }));
+    const page = fixture.nativeElement as HTMLElement;
 
-    component.submit();
-
-    expect(auth.login).not.toHaveBeenCalled();
+    expect(page.querySelector('input[type="password"]')).toBeNull();
+    expect(page.querySelector('form')).toBeNull();
   });
 });
