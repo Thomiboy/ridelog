@@ -81,6 +81,16 @@ builder.Services.Configure<PublicLogOptions>(builder.Configuration.GetSection(Pu
 const string ContactRateLimitPolicy = "contact";
 var contactPermitLimit = builder.Configuration.GetValue<int?>("Contact:RateLimitPerWindow") ?? 5;
 var contactWindowMinutes = builder.Configuration.GetValue<int?>("Contact:RateLimitWindowMinutes") ?? 10;
+
+// The other frequency guard (#186): the password endpoint is where a password can be guessed, and
+// it had none. Deliberately no account lockout to go with it — this account is the break-glass key
+// (docs/adr/0007), and locking it would let anyone who knows the address keep the owner out of their
+// own emergency exit. The numbers are sized for the owner, not the attacker: ~960 attempts a day
+// from one address is hopeless against any real password, while leaving room to mistype one.
+const string LoginRateLimitPolicy = "login";
+var loginPermitLimit = builder.Configuration.GetValue<int?>("Auth:LoginRateLimitPerWindow") ?? 10;
+var loginWindowMinutes = builder.Configuration.GetValue<int?>("Auth:LoginRateLimitWindowMinutes") ?? 15;
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -91,6 +101,14 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = contactPermitLimit,
                 Window = TimeSpan.FromMinutes(contactWindowMinutes),
+            }));
+    options.AddPolicy(LoginRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = loginPermitLimit,
+                Window = TimeSpan.FromMinutes(loginWindowMinutes),
             }));
 });
 
@@ -170,7 +188,8 @@ app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
     return token is null
         ? Results.Unauthorized()
         : Results.Ok(new LoginResponse(token.Token, token.ExpiresAt));
-});
+})
+    .RequireRateLimiting(LoginRateLimitPolicy);
 
 // Sign-in with a provider. New riders arrive this way and no other: nothing here sends email, so a
 // local password would have neither verification nor reset (docs/adr/0007).

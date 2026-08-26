@@ -69,6 +69,9 @@ public class RideLogApiFactory : WebApplicationFactory<Program>
             ["Mail:ApiKey"] = "test-mail-key",
             // A whole suite posts to /contact in one run; keep the frequency guard from tripping tests.
             ["Contact:RateLimitPerWindow"] = "1000",
+            // Same for the login guard (#186): most suites sign the admin in for every case they run.
+            // The test that watches the guard bite turns it back down for its own host.
+            ["Auth:LoginRateLimitPerWindow"] = "1000",
         };
         foreach (var (key, value) in settings)
         {
