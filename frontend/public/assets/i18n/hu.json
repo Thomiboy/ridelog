@@ -188,7 +188,23 @@
       "distribution": "Táv hőmérséklet szerint",
       "trend": "Havi átlag"
     },
-    "allTime": "· minden idők"
+    "allTime": "· minden idők",
+    "analysis": {
+      "title": "Havi elemzés",
+      "month": "Hónap",
+      "generate": "Elemezd ezt a hónapot",
+      "generateThisLanguage": "Írd meg magyarul",
+      "writing": "Írás…",
+      "delete": "Törlés",
+      "note": "Nyelvi modell írta az oldalon látható számokból. A saját adataid olvasata, nem edzői tanács — és ami a pulzuszónákról szól, az az általad megadott maximumon áll.",
+      "otherLanguage": "Ez az elemzés a másik nyelven készült.",
+      "error": "Valami hiba történt az írás közben. Kérlek, próbáld újra.",
+      "refusal": {
+        "AlreadyWritten": "Ehhez a hónaphoz már van elemzés. Töröld, ha újat szeretnél.",
+        "Unchanged": "Ebben a hónapban semmi nem változott az elemzés óta. Tekerj, és kérdezz újra.",
+        "Unavailable": "A havi elemzés ki van kapcsolva."
+      }
+    }
   },
   "activities": {
     "title": "Egyéb tevékenység",
@@ -251,6 +267,11 @@
       "confirm1": "Lezárod a fiókod? A túráid, fájljaid, a Polar-kapcsolatod és a belépésed is megszűnik.",
       "confirm2": "Ez nem vonható vissza, és a Polar nem szolgálja ki újra a szinkronizált túráidat. Biztosan folytatod?",
       "refusedPublicLog": "Ez a fiók a nyilvános napló, a lezárása kiürítené a nyilvános oldalt. Előbb állítsd át a beállítást egy másik riderre."
+    },
+    "analysis": {
+      "title": "Havi elemzés",
+      "hint": "A riderek kérhetnek írásos elemzést egy hónapnyi tekerésükről. Ez a RideLog egyetlen olyan része, ami használatonként pénzbe kerül, ezért alapból ki van kapcsolva — és kikapcsolva marad, ha nincs beállítva Anthropic API-kulcs.",
+      "enabled": "Havi elemzés felajánlása"
     }
   },
   "riders": {

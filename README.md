@@ -75,6 +75,9 @@ dotnet user-secrets set "ExternalSignIn:Providers:microsoft:ClientSecret" "<micr
 # Contact-form mail (Resend — https://resend.com; the free tier sends without a verified domain)
 dotnet user-secrets set "Mail:ApiKey" "<resend api key>"
 dotnet user-secrets set "Mail:OwnerAddress" "<where contact messages are delivered>"
+
+# Monthly analysis (https://console.anthropic.com). Optional: with no key the section is simply absent.
+dotnet user-secrets set "Ai:ApiKey" "<anthropic api key>"
 ```
 
 Only the credentials are configured: each provider's authorize and token endpoints ship as
@@ -88,6 +91,18 @@ to an address on it; nothing else changes. The sender reaches **only** the owner
 by design — see docs/adr/0007. The owner can turn submissions off from the account page without a
 restart (the switch is stored, like the public-log picker); `Contact:RateLimitPerWindow` (default 5
 per 10 minutes per IP) caps how often the endpoint can be posted to.
+
+The **monthly analysis** (docs/adr/0008) lets a signed-in rider ask for a written reading of one
+calendar month of their riding. It is the only part of RideLog that costs money per use, so it is
+off unless two things are true: `Ai:ApiKey` is configured *and* the owner has switched it on from
+the account page. Either missing and the section does not render at all — the page asks the API
+rather than guessing. `Ai:Model` picks the model (default `claude-opus-5`; across a whole log the
+difference against a cheaper tier is a couple of dollars once, so this was never a cost decision),
+and `Ai:TimeoutSeconds` (default 60) bounds one request.
+
+There is no usage counter, because there is no need for one: rider, month and language identify a
+reading, and a closed month never changes, so each is written once and read free from then on. The
+running month may be written again only once a ride has been added to it.
 
 Apply the schema with `dotnet ef database update --project ../RideLog.Infrastructure`.
 The admin user (`AdminUser:Email`) is seeded on first run. Link Polar by signing in
@@ -129,6 +144,8 @@ ExternalSignIn__Providers__microsoft__ClientSecret = <microsoft client secret>
 Mail__ApiKey                   = <resend api key>
 Mail__OwnerAddress             = <where contact messages are delivered>
 Mail__FromAddress              = onboarding@resend.dev  (change to a verified-domain address once one exists)
+
+Ai__ApiKey                     = <anthropic api key; omit to leave the monthly analysis absent>
 ```
 
 `{provider}` is a literal placeholder, not something to substitute — the app fills it in per

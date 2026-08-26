@@ -141,4 +141,10 @@ export interface StatisticsResult {
   records: StatisticsRecords;
   hrZones?: HrZoneSlice[] | null;
   temperature?: TemperatureStats | null;
+  /**
+   * Whether the Monthly analysis section exists at all — the owner's switch is on and a key is
+   * configured (#187). The page asks rather than guessing, which is the wart the login page still
+   * carries with its live-looking dead provider links.
+   */
+  analysisAvailable?: boolean;
 }

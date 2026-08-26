@@ -1,0 +1,54 @@
+<mat-card class="analysis">
+  <h2>{{ 'statistics.analysis.title' | transloco }}</h2>
+
+  <div class="controls">
+    <label>
+      <span class="visually-hidden">{{ 'statistics.analysis.month' | transloco }}</span>
+      <select [value]="selected() ? selected()!.year + '-' + selected()!.month : ''"
+              (change)="select($any($event.target).value)">
+        @for (month of selectable(); track month.year + '-' + month.month) {
+          <option [value]="month.year + '-' + month.month">{{ month.year }}-{{ month.month }}</option>
+        }
+      </select>
+    </label>
+
+    @if (stored(); as analysis) {
+      <button mat-stroked-button type="button" data-delete (click)="remove()">
+        {{ 'statistics.analysis.delete' | transloco }}
+      </button>
+    } @else {
+      <button mat-flat-button type="button" data-generate [disabled]="busy()" (click)="generate()">
+        {{ (busy() ? 'statistics.analysis.writing' : 'statistics.analysis.generate') | transloco }}
+      </button>
+    }
+  </div>
+
+  @if (refusal(); as reason) {
+    <p class="refusal" role="status">{{ 'statistics.analysis.refusal.' + reason | transloco }}</p>
+  }
+
+  @if (failed()) {
+    <p class="refusal" role="alert">{{ 'statistics.analysis.error' | transloco }}</p>
+  }
+
+  @if (stored(); as analysis) {
+    <!-- Generated prose cannot be translated, only written again — so a reading in the other
+         language is shown as it stands, with an offer, never a silent second generation. -->
+    @if (inOtherLanguage()) {
+      <p class="other-language">
+        {{ 'statistics.analysis.otherLanguage' | transloco }}
+        <button mat-stroked-button type="button" data-generate [disabled]="busy()" (click)="generate()">
+          {{ 'statistics.analysis.generateThisLanguage' | transloco }}
+        </button>
+      </p>
+    }
+
+    <div class="text">
+      @for (paragraph of analysis.text.split('\n\n'); track $index) {
+        <p>{{ paragraph }}</p>
+      }
+    </div>
+
+    <p class="note" data-note>{{ 'statistics.analysis.note' | transloco }}</p>
+  }
+</mat-card>

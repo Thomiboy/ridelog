@@ -8,6 +8,8 @@ import { AccountService } from '../../core/api/account.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
 import { AuthService } from '../../core/auth/auth.service';
+import { AnalysisService } from '../../core/api/analysis.service';
+import { StatisticsService } from '../../core/api/statistics.service';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
 
 describe('Account', () => {
@@ -30,6 +32,8 @@ describe('Account', () => {
       updateSettings: vi.fn().mockReturnValue(of(void 0)),
       ...overrides,
     };
+    const analysisService = { setEnabled: vi.fn().mockReturnValue(of(void 0)) };
+    const statisticsService = { getStatistics: vi.fn().mockReturnValue(of({ monthlyAggregates: [], records: {}, analysisAvailable: false })) };
     const navigator = { navigate: vi.fn() };
     const auth = { isAdmin: signal(isAdmin), isLoggedIn: signal(true), logout: vi.fn() };
     const router = { navigateByUrl: vi.fn() };
@@ -37,6 +41,8 @@ describe('Account', () => {
     TestBed.configureTestingModule({
       imports: [Account, translocoTesting()],
       providers: [
+        { provide: AnalysisService, useValue: analysisService },
+        { provide: StatisticsService, useValue: statisticsService },
         { provide: AccountService, useValue: accountService },
         { provide: MapState, useValue: mapState },
         { provide: ExternalNavigator, useValue: navigator },
@@ -52,7 +58,7 @@ describe('Account', () => {
     });
     const fixture = TestBed.createComponent(Account);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, accountService, navigator, mapState, auth, router };
+    return { fixture, el: fixture.nativeElement as HTMLElement, accountService, navigator, mapState, auth, router , analysisService };
   }
 
   /**
@@ -297,5 +303,28 @@ describe('Account', () => {
 
     expect(accountService.deleteAllRides).not.toHaveBeenCalled();
     confirm.mockRestore();
+  });
+
+  /**
+   * The owner decides whether the monthly analysis exists for anyone. It is the one feature that
+   * spends money per use, so the switch is theirs and it starts off (#187).
+   */
+  it('lets the owner offer the monthly analysis', () => {
+    const { el, analysisService } = setup();
+    const toggle = el.querySelector<HTMLInputElement>('[data-analysis-switch]');
+
+    expect(toggle).not.toBeNull();
+    expect(toggle!.checked).toBe(false);
+
+    toggle!.checked = true;
+    toggle!.dispatchEvent(new Event('change'));
+
+    expect(analysisService.setEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it('does not offer the switch to an ordinary rider', () => {
+    const { el } = setup({}, undefined, false);
+
+    expect(el.querySelector('[data-analysis-switch]')).toBeNull();
   });
 });

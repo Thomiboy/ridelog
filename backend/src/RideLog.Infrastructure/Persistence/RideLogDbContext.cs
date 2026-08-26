@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using RideLog.Domain.Analysis;
 using RideLog.Domain.Contact;
 using RideLog.Domain.Rides;
 using RideLog.Domain.Users;
@@ -15,6 +16,7 @@ public class RideLogDbContext(DbContextOptions<RideLogDbContext> options)
     public DbSet<PolarConnection> PolarConnections => Set<PolarConnection>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
+    public DbSet<MonthlyAnalysis> MonthlyAnalyses => Set<MonthlyAnalysis>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
@@ -13,6 +13,8 @@ import type { StatisticsResult } from '../../core/api/statistics.models';
 import type { LongestRideRoute } from '../../core/api/ride.models';
 import { Chart } from '../../shared/chart/chart';
 import { translocoTesting } from '../../core/i18n/transloco-testing';
+import { AuthService } from '../../core/auth/auth.service';
+import { AnalysisService } from '../../core/api/analysis.service';
 
 // Chart.js needs a real canvas; stub the chart so the page renders in jsdom.
 @Component({ selector: 'app-chart', template: '' })
@@ -53,10 +55,19 @@ describe('Statistics', () => {
     expect(el.querySelectorAll('app-chart').length).toBe(0);
   });
 
-  function setup(override: Partial<StatisticsResult> = {}, routes: LongestRideRoute[] = longestRoutes) {
+  function setup(
+    override: Partial<StatisticsResult> = {},
+    routes: LongestRideRoute[] = longestRoutes,
+    signedIn = false,
+  ) {
     const statisticsService = { getStatistics: vi.fn().mockReturnValue(of({ ...stats, ...override })) };
     const ridesService = { getLongestRides: vi.fn().mockReturnValue(of(routes)) };
     const mapState = { showRoutes: vi.fn(), reset: vi.fn() };
+    const analysisService = {
+      read: vi.fn().mockReturnValue(of({ id: 'a-1', year: 2026, month: 7, language: 'English', text: 'A reading.', model: 'm', rideCount: 2, writtenAt: '2026-08-01T00:00:00Z' })),
+      write: vi.fn(),
+      remove: vi.fn(),
+    };
     TestBed.configureTestingModule({
       imports: [Statistics, translocoTesting()],
       providers: [
@@ -64,6 +75,8 @@ describe('Statistics', () => {
         { provide: StatisticsService, useValue: statisticsService },
         { provide: RidesService, useValue: ridesService },
         { provide: MapState, useValue: mapState },
+        { provide: AnalysisService, useValue: analysisService },
+        { provide: AuthService, useValue: { isLoggedIn: signal(signedIn) } },
       ],
     }).overrideComponent(Statistics, {
       remove: { imports: [Chart] },
@@ -71,13 +84,36 @@ describe('Statistics', () => {
     });
     const fixture = TestBed.createComponent(Statistics);
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState };
+    return { fixture, el: fixture.nativeElement as HTMLElement, ridesService, mapState, analysisService };
   }
 
   function chartData(fixture: ReturnType<typeof setup>['fixture'], name: string): ChartData {
     const node = fixture.debugElement.query(By.css(`[data-chart="${name}"] app-chart`));
     return (node.componentInstance as ChartStub).data();
   }
+
+  /**
+   * The section belongs to a rider reading their own log, and only exists when the owner has
+   * switched the feature on and configured a key. A visitor on the public log never sees it — the
+   * analysis is about somebody's training, not about the site.
+   */
+  it('shows the monthly analysis to a signed-in rider when the API says it is there', () => {
+    const { el } = setup({ analysisAvailable: true }, longestRoutes, true);
+
+    expect(el.querySelector('app-monthly-analysis')).not.toBeNull();
+  });
+
+  it('hides the monthly analysis when the API says the section is not there', () => {
+    const { el } = setup({ analysisAvailable: false }, longestRoutes, true);
+
+    expect(el.querySelector('app-monthly-analysis')).toBeNull();
+  });
+
+  it('hides the monthly analysis from a visitor reading the public log', () => {
+    const { el } = setup({ analysisAvailable: true }, longestRoutes, false);
+
+    expect(el.querySelector('app-monthly-analysis')).toBeNull();
+  });
 
   it('shows the HR-zones section when zone data is present', () => {
     const { fixture, el } = setup({

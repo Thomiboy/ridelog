@@ -12,6 +12,7 @@ import { DurationPipe } from '../../core/format/duration.pipe';
 import type { StatisticsResult } from '../../core/api/statistics.models';
 import { Chart } from '../../shared/chart/chart';
 import { FirstRun } from '../../shared/first-run/first-run';
+import { MonthlyAnalysis } from './monthly-analysis';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   allTimeTotals,
@@ -30,6 +31,7 @@ import { buildHrZoneChart } from '../ride-detail/hr-zone-chart';
   imports: [
     Chart,
     FirstRun,
+    MonthlyAnalysis,
     RouterLink,
     TranslocoPipe,
     TranslocoDecimalPipe,

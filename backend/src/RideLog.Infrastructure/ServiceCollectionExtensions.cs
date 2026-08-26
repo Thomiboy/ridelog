@@ -12,6 +12,8 @@ using RideLog.Application.Settings;
 using RideLog.Application.Users;
 using RideLog.Application.Weather;
 using RideLog.Infrastructure.Auth;
+using RideLog.Application.Analysis;
+using RideLog.Infrastructure.Analysis;
 using RideLog.Infrastructure.Contact;
 using RideLog.Infrastructure.Import;
 using RideLog.Infrastructure.Mail;
@@ -115,6 +117,20 @@ public static class InfrastructureServiceCollectionExtensions
         services.Configure<MailOptions>(configuration.GetSection(MailOptions.SectionName));
         services.AddScoped<IContactService, ContactService>();
         services.AddHttpClient<IOwnerMailSender, ResendOwnerMailSender>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the monthly analysis (#187, docs/adr/0008). The analyst itself is added separately,
+    /// so the one thing that talks to a paid third party is a registration somebody had to write.
+    /// </summary>
+    public static IServiceCollection AddRideLogAnalysis(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<AiOptions>(configuration.GetSection(AiOptions.SectionName));
+        services.AddScoped<IMonthlyAnalysisService, MonthlyAnalysisService>();
+        services.AddScoped<ITrainingAnalyst, AnthropicTrainingAnalyst>();
 
         return services;
     }

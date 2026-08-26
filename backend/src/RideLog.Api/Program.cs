@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
 using System.Threading.RateLimiting;
+using RideLog.Application.Analysis;
 using RideLog.Application.Auth;
 using RideLog.Application.Contact;
 using RideLog.Application.Import;
@@ -39,6 +40,7 @@ builder.Services.AddRideLogImport();
 builder.Services.AddRideLogPolar(builder.Configuration);
 builder.Services.AddRideLogWeather();
 builder.Services.AddRideLogContact(builder.Configuration);
+builder.Services.AddRideLogAnalysis(builder.Configuration);
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("JWT configuration ('Jwt') is missing.");
@@ -179,8 +181,59 @@ app.MapGet("/rides/{id:guid}", async (Guid id, IDispatcher dispatcher, ClaimsPri
 app.MapGet("/dashboard", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
     Results.Ok(await dispatcher.QueryAsync(new GetDashboardQuery(RiderFor(user, publicLog)))));
 
-app.MapGet("/statistics", async (IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog) =>
-    Results.Ok(await dispatcher.QueryAsync(new GetStatisticsQuery(RiderFor(user, publicLog)))));
+app.MapGet("/statistics", async (
+    IDispatcher dispatcher, ClaimsPrincipal user, IOptions<PublicLogOptions> publicLog,
+    IMonthlyAnalysisService analyses) =>
+{
+    var statistics = await dispatcher.QueryAsync(new GetStatisticsQuery(RiderFor(user, publicLog)));
+
+    // The page is told whether the analysis section exists rather than left to guess — the wart the
+    // login page still carries, where an unconfigured provider leaves a live-looking dead link (#186).
+    // Composed here rather than inside the query: whether the app can afford to write one is a fact
+    // about the app, not about this rider's month.
+    return Results.Ok(statistics with { AnalysisAvailable = await analyses.IsAvailableAsync() });
+});
+
+// The monthly analysis (#187, docs/adr/0008). A rider's own month, so every route names the signed-in
+// rider and there is nothing here for a visitor: unlike the rest of /statistics, this is not public.
+app.MapPost("/statistics/analysis", async (
+    AnalysisRequest body, ClaimsPrincipal user, IMonthlyAnalysisService analyses) =>
+{
+    var outcome = await analyses.WriteAsync(
+        user.FindFirstValue("sub")!, body.Year, body.Month, body.Language);
+
+    return outcome.Refusal switch
+    {
+        AnalysisRefusal.None => Results.Ok(outcome.Analysis),
+        // The switch is enforced here, not by hiding the section (#168): a request that skips the
+        // page still has to meet it.
+        AnalysisRefusal.Unavailable => Results.StatusCode(StatusCodes.Status403Forbidden),
+        // Named, because the page has different things to say: one asks the rider to delete first,
+        // the other tells them to go and ride.
+        _ => Results.Conflict(new { Refusal = outcome.Refusal.ToString() }),
+    };
+}).RequireAuthorization();
+
+app.MapGet("/statistics/analysis", async (
+    int year, int month, AnalysisLanguage language, ClaimsPrincipal user, IMonthlyAnalysisService analyses) =>
+{
+    var stored = await analyses.ReadAsync(user.FindFirstValue("sub")!, year, month, language);
+    return stored is null ? Results.NotFound() : Results.Ok(stored);
+}).RequireAuthorization();
+
+app.MapDelete("/statistics/analysis/{id:guid}", async (
+    Guid id, ClaimsPrincipal user, IMonthlyAnalysisService analyses) =>
+    await analyses.DeleteAsync(user.FindFirstValue("sub")!, id)
+        ? Results.NoContent()
+        : Results.NotFound())
+    .RequireAuthorization();
+
+// The owner's kill switch, stored, so flipping it takes effect without a restart (#172).
+app.MapPut("/statistics/analysis/switch", async (AnalysisSwitchRequest body, IMonthlyAnalysisService analyses) =>
+{
+    await analyses.SetAvailableAsync(body.Enabled);
+    return Results.Ok();
+}).RequireAuthorization(AdminSeedOptions.RoleName);
 
 app.MapPost("/auth/login", async (LoginRequest request, IAuthService auth) =>
 {
@@ -582,6 +635,8 @@ internal sealed record PublicLogRequest(string RiderId);
 // Website is the honeypot: a real visitor never fills it, so a filled one is a bot and the submission is dropped.
 internal sealed record ContactRequest(string Name, string Email, string Message, string? Website);
 internal sealed record ContactSwitchRequest(bool Enabled);
+internal sealed record AnalysisRequest(int Year, int Month, AnalysisLanguage Language);
+internal sealed record AnalysisSwitchRequest(bool Enabled);
 internal sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt);
 
 // Exposed so WebApplicationFactory<Program> can boot the API in integration tests.
