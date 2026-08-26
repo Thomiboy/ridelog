@@ -39,6 +39,7 @@ builder.Services.AddRideLogImport();
 builder.Services.AddRideLogPolar(builder.Configuration);
 builder.Services.AddRideLogWeather();
 builder.Services.AddRideLogContact(builder.Configuration);
+builder.Services.AddRideLogAnalysis();
 
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("JWT configuration ('Jwt') is missing.");
