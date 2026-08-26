@@ -125,9 +125,12 @@ public static class InfrastructureServiceCollectionExtensions
     /// Registers the monthly analysis (#187, docs/adr/0008). The analyst itself is added separately,
     /// so the one thing that talks to a paid third party is a registration somebody had to write.
     /// </summary>
-    public static IServiceCollection AddRideLogAnalysis(this IServiceCollection services)
+    public static IServiceCollection AddRideLogAnalysis(
+        this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<AiOptions>(configuration.GetSection(AiOptions.SectionName));
         services.AddScoped<IMonthlyAnalysisService, MonthlyAnalysisService>();
+        services.AddScoped<ITrainingAnalyst, AnthropicTrainingAnalyst>();
 
         return services;
     }

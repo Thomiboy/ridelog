@@ -66,4 +66,12 @@ public sealed record StatisticsResult(
     IReadOnlyList<MonthlyAggregate> MonthlyAggregates,
     StatisticsRecords Records,
     IReadOnlyList<HrZoneSlice>? HrZones,
-    TemperatureStats? Temperature);
+    TemperatureStats? Temperature)
+{
+    /// <summary>
+    /// Whether the Monthly analysis section exists at all — the owner's switch is on and a key is
+    /// configured (#187). A fact about the app rather than about this rider's log, which is why the
+    /// endpoint fills it in rather than the query.
+    /// </summary>
+    public bool AnalysisAvailable { get; init; }
+}

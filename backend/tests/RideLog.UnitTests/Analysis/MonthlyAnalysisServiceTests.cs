@@ -19,11 +19,16 @@ public sealed class RecordingAnalyst : ITrainingAnalyst
 
     public string Model => "test-model";
 
+    /// <summary>Set to make the provider fail — a refusal and an outage look the same from here.</summary>
+    public bool Throws { get; set; }
+
     public Task<string> AnalyseAsync(
         MonthlyTrainingSummary summary, AnalysisLanguage language, CancellationToken cancellationToken = default)
     {
         Asked.Add((summary, language));
-        return Task.FromResult($"Reading of {summary.Month.Year}-{summary.Month.Month} in {language}.");
+        return Throws
+            ? throw new InvalidOperationException("the model declined")
+            : Task.FromResult($"Reading of {summary.Month.Year}-{summary.Month.Month} in {language}.");
     }
 }
 
@@ -89,6 +94,7 @@ public class MonthlyAnalysisServiceTests(AnalysisApiFactory factory) : IClassFix
     private async Task ResetAsync(bool available = true)
     {
         factory.Analyst.Asked.Clear();
+        factory.Analyst.Throws = false;
 
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<RideLogDbContext>();
@@ -222,6 +228,26 @@ public class MonthlyAnalysisServiceTests(AnalysisApiFactory factory) : IClassFix
         var second = await WriteAsync(2026, 6);
         Assert.Equal(AnalysisRefusal.None, second.Refusal);
         Assert.Equal(2, factory.Analyst.Asked.Count);
+    }
+
+    /// <summary>
+    /// Storing after the call means a failed call leaves nothing — no half-written row, and no spent
+    /// quota either, so the rider may simply try again. That is the accepted hole in a structural
+    /// ceiling (#187): a genuine failure is worth retrying, and the kill switch is the backstop.
+    /// </summary>
+    [Fact]
+    public async Task A_failed_call_stores_nothing_and_leaves_the_month_open()
+    {
+        await ResetAsync();
+        factory.Analyst.Throws = true;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => WriteAsync(2026, 6));
+
+        Assert.Null(await WithServiceAsync(s => s.ReadAsync(Rider, 2026, 6, AnalysisLanguage.Hungarian)));
+
+        factory.Analyst.Throws = false;
+        var retried = await WriteAsync(2026, 6);
+        Assert.Equal(AnalysisRefusal.None, retried.Refusal);
     }
 
     /// <summary>
