@@ -133,3 +133,11 @@ _Avoid_: Highlight, achievement, PB
 **Streak**:
 Consecutive calendar days each carrying at least one ride. Several rides on one day count once.
 _Avoid_: Run, series
+
+**Monthly analysis**:
+A written reading of one calendar month of a rider's own riding, in one language. Named for what it
+is rather than for what wrote it — the weather feature is Weather, not the Open-Meteo integration —
+and deliberately not for coaching, which it does not do: it describes what the figures show and
+suggests what they invite. Identified by its rider, its month and its language together, because
+prose cannot be translated, only written again.
+_Avoid_: AI coach, personal trainer, AI insights, report

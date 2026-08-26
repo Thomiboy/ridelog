@@ -34,6 +34,28 @@
     </mat-card-actions>
   </mat-card>
 
+  <!-- The owner's, not a rider's: this is the one feature that spends money per use, so whether it
+       exists at all is the owner's call and it is off until they make it (#187). -->
+  @if (isAdmin()) {
+    <mat-card appearance="outlined" class="card">
+      <mat-card-header>
+        <mat-card-title>{{ 'account.analysis.title' | transloco }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p>{{ 'account.analysis.hint' | transloco }}</p>
+        <label class="switch">
+          <input
+            type="checkbox"
+            data-analysis-switch
+            [checked]="analysisEnabled()"
+            (change)="toggleAnalysis($event)"
+          />
+          <span>{{ 'account.analysis.enabled' | transloco }}</span>
+        </label>
+      </mat-card-content>
+    </mat-card>
+  }
+
   <!-- The one card that crosses riders: raw files share one 32 GB database. -->
   @if (isAdmin()) {
     <mat-card appearance="outlined" class="card">

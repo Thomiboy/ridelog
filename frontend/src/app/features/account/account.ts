@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
+import { AnalysisService } from '../../core/api/analysis.service';
+import { StatisticsService } from '../../core/api/statistics.service';
 import { AccountService } from '../../core/api/account.service';
 import { MapState } from '../../core/map/map-state';
 import { ExternalNavigator } from '../../core/navigation/external-navigator';
@@ -32,9 +34,33 @@ export class Account {
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly analysis = inject(AnalysisService);
+  private readonly statistics = inject(StatisticsService);
 
   /** Only the bulk import is an admin's to run; everything else here is the rider's own log. */
   readonly isAdmin = this.auth.isAdmin;
+
+  /**
+   * Whether the monthly analysis exists for anyone. Off until the owner says otherwise — it is the
+   * one feature that spends money per use, and a feature that starts spending because nobody turned
+   * it off is the wrong default (#187).
+   */
+  readonly analysisEnabled = signal(false);
+
+  /** Reads the current state from the one place that already reports it: the statistics feed. */
+  private readAnalysisSwitch(): void {
+    this.statistics
+      .getStatistics()
+      .subscribe((stats) => this.analysisEnabled.set(stats.analysisAvailable === true));
+  }
+
+  toggleAnalysis(event: Event): void {
+    const enabled = (event.target as HTMLInputElement).checked;
+    this.analysis.setEnabled(enabled).subscribe({
+      next: () => this.analysisEnabled.set(enabled),
+      error: () => this.failed.set(true),
+    });
+  }
 
   /** Set when the API refused to close this account because it is the public log. */
   readonly closeRefused = signal(false);
@@ -59,6 +85,7 @@ export class Account {
     this.failed.set(polar === 'error');
 
     this.loadStatus();
+    this.readAnalysisSwitch();
     this.accountService
       .getSettings()
       .subscribe((settings) => this.maxHeartRate.set(settings.maxHeartRate));

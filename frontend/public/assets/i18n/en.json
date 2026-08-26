@@ -188,7 +188,23 @@
       "distribution": "Distance by temperature",
       "trend": "Monthly average"
     },
-    "allTime": "· all-time"
+    "allTime": "· all-time",
+    "analysis": {
+      "title": "Monthly analysis",
+      "month": "Month",
+      "generate": "Write this month up",
+      "generateThisLanguage": "Write it in English",
+      "writing": "Writing…",
+      "delete": "Delete",
+      "note": "Written by a language model from the figures on this page. A reading of your own numbers, not advice from a coach — and anything about heart-rate zones rests on the maximum you set yourself.",
+      "otherLanguage": "This reading was written in the other language.",
+      "error": "Something went wrong writing that. Please try again.",
+      "refusal": {
+        "AlreadyWritten": "This month already has a reading. Delete it to have it written again.",
+        "Unchanged": "Nothing has changed in this month since it was written. Ride, then ask again.",
+        "Unavailable": "The monthly analysis is switched off."
+      }
+    }
   },
   "activities": {
     "title": "Other activity",
@@ -251,6 +267,11 @@
       "confirm1": "Close your account? Your rides, files, Polar link and login are all removed.",
       "confirm2": "This cannot be undone and Polar cannot re-serve your synced rides. Are you absolutely sure?",
       "refusedPublicLog": "This account is the public log, so closing it would blank the public site. Point that setting at another rider first."
+    },
+    "analysis": {
+      "title": "Monthly analysis",
+      "hint": "Let riders ask for a written reading of one month of their riding. This is the only part of RideLog that costs money per use, so it is off until you turn it on — and it stays off unless an Anthropic API key is configured.",
+      "enabled": "Offer the monthly analysis"
     }
   },
   "riders": {

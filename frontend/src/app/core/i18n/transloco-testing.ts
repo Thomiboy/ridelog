@@ -61,6 +61,22 @@ const en = {
       temperatureDistribution: 'Distance by temperature',
     },
     allTime: '· all-time',
+    analysis: {
+      'title': 'Monthly analysis',
+      'month': 'Month',
+      'generate': 'Write this month up',
+      'generateThisLanguage': 'Write it in English',
+      'writing': 'Writing…',
+      'delete': 'Delete',
+      'note': 'Written by a language model from the figures on this page. A reading of your own numbers, not advice from a coach — and anything about heart-rate zones rests on the maximum you set yourself.',
+      'otherLanguage': 'This reading was written in the other language.',
+      'error': 'Something went wrong writing that. Please try again.',
+      'refusal': {
+            'AlreadyWritten': 'This month already has a reading. Delete it to have it written again.',
+            'Unchanged': 'Nothing has changed in this month since it was written. Ride, then ask again.',
+            'Unavailable': 'The monthly analysis is switched off.'
+      }
+},
     hrZones: { title: 'HR zones' },
     temperature: {
       title: 'Temperature',
@@ -178,6 +194,11 @@ const en = {
       maxHr: 'Max heart rate (bpm)',
       save: 'Save',
       saved: 'Saved.',
+    },
+    analysis: {
+      title: 'Monthly analysis',
+      hint: 'Let riders ask for a written reading of one month of their riding.',
+      enabled: 'Offer the monthly analysis',
     },
     close: {
       title: 'Close your account',

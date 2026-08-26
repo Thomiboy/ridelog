@@ -391,6 +391,12 @@
           </div>
         </section>
       }
+
+      <!-- A rider's own month, so it appears only on their own log, and only when the owner has
+           switched the feature on and configured a key. -->
+      @if (isOwnLog() && stats.analysisAvailable) {
+        <app-monthly-analysis [months]="stats.monthlyAggregates" />
+      }
     }
   }
 </section>
