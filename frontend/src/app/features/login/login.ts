@@ -1,33 +1,33 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../../core/auth/auth.service';
 
+/**
+ * The way in for everyone who has one: the sign-in providers, plus whatever the round trip came
+ * back saying. The seeded admin's password form is not here — it moved to `/login/password` (#186),
+ * because a new rider has no password and never will (docs/adr/0007).
+ */
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, TranslocoPipe, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [TranslocoPipe, MatButtonModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
 export class Login {
-  private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  /** Which message to show, if any — the two ways in fail for different reasons. */
-  readonly error = signal<'login.error' | 'login.externalError' | null>(null);
+  /** Set when the provider would not vouch for the rider, or the exchange failed. */
+  readonly failed = signal(false);
 
   /** Set when the provider knew who the rider is but the owner has not let them in yet. */
   readonly waiting = signal(false);
 
   /**
-   * New riders arrive through a provider; the password form is the seeded admin's way in. The names
-   * are not translated — they are the providers' own.
+   * New riders arrive through a provider. The names are not translated — they are the providers' own.
    */
   readonly providers = [
     { id: 'google', name: 'Google' },
@@ -42,35 +42,17 @@ export class Login {
     if (code) {
       this.auth.completeExternalSignIn(code).subscribe({
         next: () => this.router.navigateByUrl('/'),
-        error: () => this.error.set('login.externalError'),
+        error: () => this.failed.set(true),
       });
     } else if (query.get('status') === 'pending') {
       // The provider knew them; the owner has not decided. Not a failure, and not a way in either.
       this.waiting.set(true);
     } else if (query.get('error')) {
-      this.error.set('login.externalError');
+      this.failed.set(true);
     }
   }
 
   authorizeUrl(provider: string): string {
     return this.auth.authorizeUrl(provider);
-  }
-
-  readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
-  });
-
-  submit(): void {
-    if (this.form.invalid) {
-      return;
-    }
-
-    this.error.set(null);
-    const { email, password } = this.form.getRawValue();
-    this.auth.login(email, password).subscribe({
-      next: () => this.router.navigateByUrl('/'),
-      error: () => this.error.set('login.error'),
-    });
   }
 }

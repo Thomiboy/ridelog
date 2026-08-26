@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
 import { RideDetail } from './features/ride-detail/ride-detail';
+import { PasswordLogin } from './features/login/password-login';
 import { translocoTesting } from './core/i18n/transloco-testing';
 
 describe('app routing', () => {
@@ -60,6 +61,18 @@ describe('app routing', () => {
 
   it('serves the login page', async () => {
     expect(await navigate('/login')).toContain('Log in');
+  });
+
+  /**
+   * The break-glass way in (#186). Nothing links here — but an Angular route ships in the bundle, so
+   * this is an unadvertised door, not a hidden one, and the rate limit on `/auth/login` is what
+   * actually guards it. Asserted by component rather than by text: both pages are titled "Log in".
+   */
+  it('serves the password form at its own route', async () => {
+    configure(false);
+    const harness = await RouterTestingHarness.create();
+    const component = await harness.navigateByUrl('/login/password', PasswordLogin);
+    expect(component).toBeInstanceOf(PasswordLogin);
   });
 
   it('serves the admin page to admins', async () => {
