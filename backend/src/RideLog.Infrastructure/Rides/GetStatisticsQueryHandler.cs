@@ -38,19 +38,8 @@ internal sealed class GetStatisticsQueryHandler(RideLogDbContext context)
             .Where(s => s.UserId == query.RiderId)
             .ToDictionaryAsync(s => s.UserId, s => s.MaxHeartRate, cancellationToken);
 
-        var monthlyAggregates = rows
-            .GroupBy(r => (r.StartTime.Year, r.StartTime.Month))
-            .Select(g => new MonthlyAggregate(
-                g.Key.Year,
-                g.Key.Month,
-                Math.Round(g.Sum(r => r.DistanceMeters) / 1000.0, 1),
-                g.Sum(r => r.ElevationGainMeters ?? 0),
-                g.Count(),
-                g.Sum(r => r.Calories ?? 0),
-                // Moving time (docs/adr/0001), in minutes — the finest unit; the chart converts to hours.
-                Math.Round(g.Sum(r => r.Duration.TotalMinutes), 1)))
-            .OrderBy(m => m.Year).ThenBy(m => m.Month)
-            .ToList();
+        var monthlyAggregates = MonthlyAggregates.Group(rows.Select(r =>
+            new MonthlyRideFacts(r.StartTime, r.DistanceMeters, r.Duration, r.ElevationGainMeters, r.Calories)));
 
         return new StatisticsResult(
             monthlyAggregates, BuildRecords(rows), AggregateHrZones(rows, maxHeartRateByUser), AggregateTemperature(rows));
