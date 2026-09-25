@@ -104,6 +104,28 @@ There is no usage counter, because there is no need for one: rider, month and la
 reading, and a closed month never changes, so each is written once and read free from then on. The
 running month may be written again only once a ride has been added to it.
 
+### The basemap key
+
+The route maps draw on CARTO's raster basemaps, which need an API key (#193). OSM's own tile servers
+are not an option: they are donation-funded and meant for OSM's use and low-volume development, and
+this app paints a background map on every page — they blocked it.
+
+The key is **public by nature**: it ships in the JavaScript bundle and is visible in devtools on the
+deployed site. Its protection is the **domain restriction set at CARTO**, not secrecy — restrict it to
+the Static Web App origin. It is kept out of the repo anyway, so that rotating it is a secret update
+rather than a commit:
+
+- **Production**: a repository secret named `MAP_API_KEY`. Both frontend CI jobs run
+  `frontend/scripts/inject-map-key.mjs`, which writes it into `environment.ts` before the build. The
+  script **fails the build** if its placeholder has moved, rather than quietly shipping a bundle with
+  no basemap.
+- **Locally**: `environment.development.ts` ships an empty key, so `npm start` draws routes on a blank
+  map. Paste a key in while working on the map itself, and do not commit it.
+
+An empty key draws **no basemap at all** rather than the provider's "API KEY REQUIRED" notice tiled
+across the screen. That is deliberate: a wall of somebody else's error text looks enough like a map to
+go unnoticed, which is how the dark theme stayed broken while everyone looked at the light one.
+
 Apply the schema with `dotnet ef database update --project ../RideLog.Infrastructure`.
 The admin user (`AdminUser:Email`) is seeded on first run. Link Polar by signing in
 and visiting `/polar/authorize`; the hourly cron calls `/sync` with the shared secret.
