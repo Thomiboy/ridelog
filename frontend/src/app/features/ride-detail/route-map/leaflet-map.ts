@@ -4,15 +4,35 @@ import type { RestStop } from '../../../core/api/ride.models';
 import type { PointerOnMap } from '../../../core/map/map-state';
 import type { Theme } from '../../../core/theme/theme.service';
 
-/** Free basemaps per theme: OSM standard for light, CARTO dark for dark. */
+/**
+ * Credit, as both providers' terms require it: a link to the copyright page rather than the words on
+ * their own, and CARTO named alongside the data it renders.
+ */
+const TILE_ATTRIBUTION =
+  '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © CARTO';
+
+/**
+ * Both basemaps come from CARTO's tile CDN, and neither asks OSM's own servers (#191).
+ *
+ * Those servers are donation-funded and meant for OSM's use and low-volume development, and this app
+ * paints a background map on every page of a deployed site — they blocked it, and served the notice
+ * in place of every tile. Light used to point straight at them while dark already went through
+ * CARTO; that asymmetry is what let one theme break while the other looked fine, so both now come
+ * from the same place.
+ *
+ * The `{s}` stays, and deliberately. Sharding a host into a/b/c is a fault against *OSM's* policy —
+ * their servers, their HTTP/2 reasoning — and it stops mattering the moment nothing points at them.
+ * CARTO publishes the sharded hostnames as the way to use this CDN, and the dark theme has been
+ * serving from them in production all along, so the sharded form is the one with evidence behind it.
+ */
 const TILE_LAYERS: Record<Theme, { url: string; attribution: string }> = {
   light: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    attribution: TILE_ATTRIBUTION,
   },
   dark: {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors, © CARTO',
+    attribution: TILE_ATTRIBUTION,
   },
 };
 

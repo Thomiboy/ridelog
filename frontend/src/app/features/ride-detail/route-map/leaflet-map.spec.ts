@@ -57,14 +57,42 @@ describe('leaflet-map', () => {
     expect(api.map).toHaveBeenCalled();
   });
 
-  it('uses OSM tiles in light mode and a dark basemap in dark mode', () => {
+  /**
+   * Both themes come from a tile CDN, and neither asks OSM's own servers (#191). Those are
+   * donation-funded and meant for OSM's use and low-volume development; this app paints a background
+   * map on every page of a deployed site, and they blocked it. Light used to point straight at them
+   * while dark went through CARTO — the asymmetry is what let one theme break while the other looked
+   * fine, so the fix is one provider for both.
+   */
+  it('takes both basemaps from a tile CDN and asks OSM for nothing', () => {
     const { api, map } = fakeLeaflet();
 
     setTileLayer(map as never, 'light', api);
-    expect((api.tileLayer as unknown as Mock).mock.calls[0][0]).toContain('openstreetmap');
-
     setTileLayer(map as never, 'dark', api);
-    expect((api.tileLayer as unknown as Mock).mock.calls[1][0]).toContain('cartocdn');
+
+    const urls = (api.tileLayer as unknown as Mock).mock.calls.map((call) => call[0] as string);
+    expect(urls).toHaveLength(2);
+    for (const url of urls) {
+      expect(url).toContain('cartocdn');
+      expect(url).not.toContain('openstreetmap.org');
+    }
+  });
+
+  /**
+   * Credit has to be a link to the copyright page, not the words on their own — plain text satisfies
+   * nobody's terms, and CARTO wants OSM credited as well as itself.
+   */
+  it('credits OpenStreetMap with a link, and CARTO, in both themes', () => {
+    const { api, map } = fakeLeaflet();
+
+    setTileLayer(map as never, 'light', api);
+    setTileLayer(map as never, 'dark', api);
+
+    for (const call of (api.tileLayer as unknown as Mock).mock.calls) {
+      const attribution = (call[1] as { attribution: string }).attribution;
+      expect(attribution).toContain('https://www.openstreetmap.org/copyright');
+      expect(attribution).toContain('CARTO');
+    }
   });
 
   it('draws a single decoded route and fits the map to its bounds', () => {
