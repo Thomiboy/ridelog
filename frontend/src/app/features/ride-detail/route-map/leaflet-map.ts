@@ -108,7 +108,16 @@ export function setTileLayer(
   }
 
   const url = `https://basemaps.cartocdn.com/${TILE_STYLES[theme]}/{z}/{x}/{y}.png?key=${apiKey}`;
-  return api.tileLayer(url, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).addTo(map);
+  return api
+    .tileLayer(url, {
+      attribution: TILE_ATTRIBUTION,
+      maxZoom: 19,
+      // The key's only protection is CARTO's referer restriction, and the deployed page's effective
+      // policy is `same-origin` — which sends no Referer cross-site, so every restricted tile was
+      // refused (#195). A tile's own policy beats the document's: origin only, never the path.
+      referrerPolicy: 'strict-origin-when-cross-origin',
+    })
+    .addTo(map);
 }
 
 /**
