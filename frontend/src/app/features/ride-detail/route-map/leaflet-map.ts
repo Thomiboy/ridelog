@@ -3,6 +3,7 @@ import { decodePolyline } from './polyline-decoder';
 import type { RestStop } from '../../../core/api/ride.models';
 import type { PointerOnMap } from '../../../core/map/map-state';
 import type { Theme } from '../../../core/theme/theme.service';
+import { environment } from '../../../../environments/environment';
 
 /**
  * Credit, as both providers' terms require it: a link to the copyright page rather than the words on
@@ -12,28 +13,18 @@ const TILE_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © CARTO';
 
 /**
- * Both basemaps come from CARTO's tile CDN, and neither asks OSM's own servers (#191).
+ * CARTO's raster basemap styles, one per theme.
  *
- * Those servers are donation-funded and meant for OSM's use and low-volume development, and this app
- * paints a background map on every page of a deployed site — they blocked it, and served the notice
- * in place of every tile. Light used to point straight at them while dark already went through
- * CARTO; that asymmetry is what let one theme break while the other looked fine, so both now come
- * from the same place.
+ * Not OSM's own servers: those are donation-funded and meant for OSM's use and low-volume
+ * development, and this app paints a background map on every page of a deployed site — they blocked
+ * it (#191). CARTO's basemaps then turned out to need a key, which is what #193 is.
  *
- * The `{s}` stays, and deliberately. Sharding a host into a/b/c is a fault against *OSM's* policy —
- * their servers, their HTTP/2 reasoning — and it stops mattering the moment nothing points at them.
- * CARTO publishes the sharded hostnames as the way to use this CDN, and the dark theme has been
- * serving from them in production all along, so the sharded form is the one with evidence behind it.
+ * `voyager` is the URL CARTO's own dashboard hands out, bare host and all — there is no `{s}` here
+ * because their documented form no longer has one.
  */
-const TILE_LAYERS: Record<Theme, { url: string; attribution: string }> = {
-  light: {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-    attribution: TILE_ATTRIBUTION,
-  },
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-    attribution: TILE_ATTRIBUTION,
-  },
+const TILE_STYLES: Record<Theme, string> = {
+  light: 'rastertiles/voyager',
+  dark: 'rastertiles/dark_all',
 };
 
 /** The slice of the Leaflet API we use — injectable so tests pass a fake without module mocking. */
@@ -98,10 +89,26 @@ export function createRouteMap(element: HTMLElement, api: LeafletApi = Leaflet):
   return api.map(element);
 }
 
-/** Adds (and returns) the basemap tile layer for the given theme, so the caller can swap it later. */
-export function setTileLayer(map: Leaflet.Map, theme: Theme, api: LeafletApi = Leaflet): Leaflet.TileLayer {
-  const { url, attribution } = TILE_LAYERS[theme];
-  return api.tileLayer(url, { attribution, maxZoom: 19 }).addTo(map);
+/**
+ * Adds (and returns) the basemap tile layer for the given theme, so the caller can swap it later.
+ *
+ * With no key configured it adds nothing and returns undefined — deliberately a blank map with the
+ * routes still on it, rather than the provider's "API KEY REQUIRED" notice tiled across the screen.
+ * A wall of somebody else's error text looks enough like a map to go unnoticed, which is how the dark
+ * theme stayed broken while everyone looked at the light one (#193).
+ */
+export function setTileLayer(
+  map: Leaflet.Map,
+  theme: Theme,
+  api: LeafletApi = Leaflet,
+  apiKey: string = environment.mapApiKey,
+): Leaflet.TileLayer | undefined {
+  if (!apiKey) {
+    return undefined;
+  }
+
+  const url = `https://basemaps.cartocdn.com/${TILE_STYLES[theme]}/{z}/{x}/{y}.png?key=${apiKey}`;
+  return api.tileLayer(url, { attribution: TILE_ATTRIBUTION, maxZoom: 19 }).addTo(map);
 }
 
 /**

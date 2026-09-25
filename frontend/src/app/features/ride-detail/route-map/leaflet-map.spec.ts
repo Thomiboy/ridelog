@@ -67,8 +67,8 @@ describe('leaflet-map', () => {
   it('takes both basemaps from a tile CDN and asks OSM for nothing', () => {
     const { api, map } = fakeLeaflet();
 
-    setTileLayer(map as never, 'light', api);
-    setTileLayer(map as never, 'dark', api);
+    setTileLayer(map as never, 'light', api, 'a-key');
+    setTileLayer(map as never, 'dark', api, 'a-key');
 
     const urls = (api.tileLayer as unknown as Mock).mock.calls.map((call) => call[0] as string);
     expect(urls).toHaveLength(2);
@@ -76,6 +76,36 @@ describe('leaflet-map', () => {
       expect(url).toContain('cartocdn');
       expect(url).not.toContain('openstreetmap.org');
     }
+  });
+
+  /**
+   * CARTO's basemaps need a key (#193). Asserted by the key appearing in the request rather than by
+   * the shape of the query string, so confirming the provider's exact URL form is a one-line change
+   * here and not a test rewrite.
+   */
+  it('carries the configured key in both themes', () => {
+    const { api, map } = fakeLeaflet();
+
+    setTileLayer(map as never, 'light', api, 'a-key');
+    setTileLayer(map as never, 'dark', api, 'a-key');
+
+    for (const call of (api.tileLayer as unknown as Mock).mock.calls) {
+      expect(call[0] as string).toContain('a-key');
+    }
+  });
+
+  /**
+   * No key, no basemap — and deliberately not the provider's "API KEY REQUIRED" notice tiled across
+   * the screen. The routes still draw on a blank map, which is honest; a wall of somebody else's
+   * error text pretending to be a map is what let this break unnoticed on the dark theme (#193).
+   */
+  it('draws no basemap at all when no key is configured', () => {
+    const { api, map } = fakeLeaflet();
+
+    const layer = setTileLayer(map as never, 'light', api, '');
+
+    expect(layer).toBeUndefined();
+    expect(api.tileLayer).not.toHaveBeenCalled();
   });
 
   /**

@@ -23,6 +23,14 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # The basemap key is public by nature (it ships in the bundle) but is kept out of the repo, so
+      # it is written in here from the secret. Absent — on a PR, say — the build still succeeds and
+      # simply draws no basemap (#193).
+      - name: Inject the basemap key
+        env:
+          MAP_API_KEY: ${{ secrets.MAP_API_KEY }}
+        run: node scripts/inject-map-key.mjs
+
       - run: npm run build
       - run: npm test -- --watch=false
 
@@ -44,6 +52,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
+
+      # As above: the deployed bundle is the one that actually needs the key.
+      - name: Inject the basemap key
+        env:
+          MAP_API_KEY: ${{ secrets.MAP_API_KEY }}
+        run: node scripts/inject-map-key.mjs
+        working-directory: frontend
+
       - run: npm run build
         working-directory: frontend
 

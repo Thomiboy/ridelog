@@ -67,6 +67,23 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 - **GPX/TCX downloads need the file media type in `Accept`** — `application/gpx+xml` / `application/vnd.garmin.tcx+xml`. Sending `application/json` (the default for the JSON endpoints) → **HTTP 406** on the file sub-resources, so every GPS-ride sync failed at download. This was the real reason "sync ran but no ride appeared" (the visible rides had all come from manual import).
 - A failed exercise is **logged at error level** (`PolarSyncService`) and the last sync's imported/skipped/failed counts show on the admin Sync card. The transaction is **committed even on failure**, so a lost exercise is **not re-served** — recover it via Polar Flow export → admin Import.
 
+### Basemap tiles are a keyed third party now (learned twice in one day)
+The route maps drew on **OSM's own tile servers** for the light theme and CARTO for the dark one. OSM
+blocked the app — those servers are donation-funded and meant for OSM's use and low-volume
+development, and this app paints a background map on *every* page of a deployed site. Moving light to
+CARTO (#191) then revealed that **CARTO's keyless basemaps had already gone away**: the dark theme had
+been showing "API KEY REQUIRED" unnoticed, so #191 took a half-broken map to a fully broken one. Both
+themes now use `basemaps.cartocdn.com/rastertiles/…?key=` with a key injected at build time from the
+`MAP_API_KEY` secret (README: **The basemap key**), and an **empty key draws no basemap** rather than
+tiling the provider's error text — a wall of somebody else's notice looks enough like a map to hide a
+break for weeks.
+
+Two rules this cost: **no tile host is reachable from the dev sandbox** (the egress proxy blocks
+`cartocdn.com`, `tiles.stadiamaps.com`, `api.maptiler.com`, `tiles.openfreemap.org` and the OSM policy
+page alike), so production is the only proof for any basemap change; and **"the other theme works" is
+not evidence** unless somebody has just looked at it. #191's reasoning leaned on exactly that
+unverified claim while explicitly declining to guess elsewhere.
+
 ### Dev container quirk
 The container ships **Node 22.22.2**, but the Angular CLI's `SUPPORTED_NODE_VERSIONS` starts at `^22.22.3`, so `ng test` / `ng build` refuse to run after a fresh `npm install`. Workaround: relax the range in `frontend/node_modules/@angular/cli/src/utilities/node-version.js` (`'^22.22.3 ...'` → `'^22.22.2 ...'`). `node_modules` is gitignored, so this must be re-applied whenever dependencies are reinstalled.
 
