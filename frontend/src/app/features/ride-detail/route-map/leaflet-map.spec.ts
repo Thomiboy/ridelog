@@ -109,16 +109,37 @@ describe('leaflet-map', () => {
   });
 
   /**
+   * The key's only protection is CARTO's referer restriction, and it had nothing to match (#195): the
+   * page's effective policy was `same-origin`, so the tiles went out with no Referer at all and every
+   * one was refused. The tiles carry their own policy, which beats the document's — origin only, no
+   * path — so the restriction works whatever the hosting layer decides for the page.
+   */
+  it('sends its origin as the Referer, so the key can be domain-restricted', () => {
+    const { api, map } = fakeLeaflet();
+
+    setTileLayer(map as never, 'light', api, 'a-key');
+    setTileLayer(map as never, 'dark', api, 'a-key');
+
+    const calls = (api.tileLayer as unknown as Mock).mock.calls;
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
+      expect((call[1] as { referrerPolicy: unknown }).referrerPolicy).toBe('strict-origin-when-cross-origin');
+    }
+  });
+
+  /**
    * Credit has to be a link to the copyright page, not the words on their own — plain text satisfies
    * nobody's terms, and CARTO wants OSM credited as well as itself.
    */
   it('credits OpenStreetMap with a link, and CARTO, in both themes', () => {
     const { api, map } = fakeLeaflet();
 
-    setTileLayer(map as never, 'light', api);
-    setTileLayer(map as never, 'dark', api);
+    setTileLayer(map as never, 'light', api, 'a-key');
+    setTileLayer(map as never, 'dark', api, 'a-key');
 
-    for (const call of (api.tileLayer as unknown as Mock).mock.calls) {
+    const calls = (api.tileLayer as unknown as Mock).mock.calls;
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
       const attribution = (call[1] as { attribution: string }).attribution;
       expect(attribution).toContain('https://www.openstreetmap.org/copyright');
       expect(attribution).toContain('CARTO');
