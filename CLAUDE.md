@@ -88,7 +88,9 @@ The key's domain restriction then refused every tile (#195): the deployed page's
 policy is `same-origin`, so cross-site tile requests carried **no `Referer` at all** — not set by our
 code, source not established. The tile layer now sets its own `referrerPolicy`, which beats the
 document's. Settled from the owner's devtools (the request's *Referrer policy* line and its headers),
-the only place this could be seen.
+the only place this could be seen. **Verified in production (2026-09-25):** with the restriction on —
+CARTO's field takes a bare host, `happy-coast-00a3a2d1e.7.azurestaticapps.net` — the map draws in both
+themes.
 
 ### Dev container quirk
 The container ships **Node 22.22.2**, but the Angular CLI's `SUPPORTED_NODE_VERSIONS` starts at `^22.22.3`, so `ng test` / `ng build` refuse to run after a fresh `npm install`. Workaround: relax the range in `frontend/node_modules/@angular/cli/src/utilities/node-version.js` (`'^22.22.3 ...'` → `'^22.22.2 ...'`). `node_modules` is gitignored, so this must be re-applied whenever dependencies are reinstalled.
