@@ -112,8 +112,10 @@ this app paints a background map on every page — they blocked it.
 
 The key is **public by nature**: it ships in the JavaScript bundle and is visible in devtools on the
 deployed site. Its protection is the **domain restriction set at CARTO**, not secrecy — restrict it to
-the Static Web App origin. It is kept out of the repo anyway, so that rotating it is a secret update
-rather than a commit:
+the Static Web App's host. CARTO's field takes a **host only**, no scheme and no path
+(`happy-coast-00a3a2d1e.7.azurestaticapps.net`, not `https://…/`), with at most one wildcard. Do not
+use one here: `*.azurestaticapps.net` would admit every other Static Web App. The key is kept out of the
+repo anyway, so that rotating it is a secret update rather than a commit:
 
 - **Production**: a repository secret named `MAP_API_KEY`. Both frontend CI jobs run
   `frontend/scripts/inject-map-key.mjs`, which writes it into `environment.ts` before the build. The
@@ -121,7 +123,7 @@ rather than a commit:
   no basemap.
 - **Locally**: `environment.development.ts` ships an empty key, so `npm start` draws routes on a blank
   map. Paste a key in while working on the map itself, and do not commit it. The production key is
-  restricted to the deployed origin, so it is refused on `localhost` — use a second key for that.
+  restricted to the deployed origin, so it is refused on `localhost` — use a second key, restricted to `localhost`, for that.
 
 The restriction matches on the `Referer`, and the deployed page's effective referrer policy is
 `same-origin`, which sends none cross-site — so with the restriction on, every tile came back 403
